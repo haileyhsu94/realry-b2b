@@ -1,0 +1,364 @@
+/* Import Carbon styles first */
+@import '@carbon/styles/css/styles.css';
+
+/* Then Tailwind utilities */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Shopify-inspired theme overrides for Carbon */
+:root {
+  /* Brand color palette */
+  --brand-primary: #7256F6;
+  --brand-primary-hover: #5d3ef5;
+  --brand-primary-light: #f0edff;
+  --shopify-gray-50: #f6f6f7;
+  --shopify-gray-100: #e1e3e5;
+  --shopify-gray-200: #c9cccf;
+  --shopify-gray-300: #b1b5b8;
+  --shopify-gray-400: #9ca3af;
+  --shopify-gray-500: #6b7280;
+  --shopify-gray-600: #4b5563;
+  --shopify-gray-700: #374151;
+  --shopify-gray-800: #1f2937;
+  --shopify-gray-900: #111827;
+  --shopify-white: #ffffff;
+  --shopify-border: #e1e3e5;
+  --shopify-text-primary: #202223;
+  --shopify-text-secondary: #6d7175;
+  --shopify-success: #008060;
+  --shopify-warning: #f49342;
+  --shopify-critical: #d72c0d;
+}
+
+/* Override Carbon theme colors to match brand */
+.cds--g10 {
+  --cds-background: var(--shopify-white);
+  --cds-layer: var(--shopify-gray-50);
+  --cds-layer-accent: var(--shopify-gray-100);
+  --cds-field: var(--shopify-white);
+  --cds-border-subtle: var(--shopify-border);
+  --cds-border-strong: var(--shopify-gray-200);
+  --cds-text-primary: var(--shopify-text-primary);
+  --cds-text-secondary: var(--shopify-text-secondary);
+  --cds-link-primary: var(--brand-primary);
+  --cds-link-primary-hover: var(--brand-primary-hover);
+  --cds-button-primary: var(--brand-primary);
+  --cds-button-primary-hover: var(--brand-primary-hover);
+}
+
+/* Shopify-style sidebar */
+.shopify-sidebar {
+  background: var(--shopify-white);
+  border-right: 1px solid var(--shopify-border);
+  width: 240px;
+  min-height: 100vh;
+}
+
+/* Shopify-style card */
+.shopify-card {
+  background: var(--shopify-white);
+  border: 1px solid var(--shopify-border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Shopify-style button */
+.shopify-button {
+  background: var(--brand-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.shopify-button:hover {
+  background: var(--brand-primary-hover);
+}
+
+/* Shopify-style time range button */
+.shopify-time-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 1px solid var(--shopify-border);
+  border-radius: 6px;
+  background: white;
+  color: var(--shopify-text-primary);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: auto;
+  height: 32px;
+  line-height: 1;
+}
+
+.shopify-time-button:hover {
+  background: var(--shopify-gray-50);
+  border-color: var(--shopify-gray-300);
+  color: var(--shopify-text-primary);
+}
+
+.shopify-time-button.active {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: white;
+  font-weight: 500;
+}
+
+.shopify-time-button.active:hover {
+  background: var(--brand-primary-hover);
+  border-color: var(--brand-primary-hover);
+}
+
+/* Shopify-style navigation item - Modern & Clean */
+.shopify-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 0;
+  color: var(--shopify-text-secondary);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 400;
+  width: 100%;
+  text-align: left;
+  position: relative;
+}
+
+.shopify-nav-item:hover {
+  background: var(--shopify-gray-50);
+  color: var(--shopify-text-primary);
+}
+
+.shopify-nav-item.active {
+  background: var(--shopify-gray-50);
+  color: var(--shopify-text-primary);
+  font-weight: 500;
+  border-left-color: var(--brand-primary);
+}
+
+.shopify-nav-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.shopify-nav-item svg {
+  color: inherit;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+
+.shopify-nav-item:hover svg,
+.shopify-nav-item.active svg {
+  opacity: 1;
+}
+
+/* Shopify-style metric card */
+.shopify-metric-card {
+  background: var(--shopify-white);
+  border: 1px solid var(--shopify-border);
+  border-radius: 8px;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure sparkline charts don't overflow */
+.shopify-metric-card .recharts-wrapper {
+  overflow: visible;
+}
+
+.shopify-metric-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--shopify-text-primary);
+  line-height: 1.2;
+}
+
+.shopify-metric-label {
+  font-size: 13px;
+  color: var(--shopify-text-secondary);
+  margin-top: 4px;
+}
+
+.shopify-metric-change {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.shopify-metric-change.positive {
+  color: var(--shopify-success);
+}
+
+.shopify-metric-change.negative {
+  color: var(--shopify-critical);
+}
+
+/* Shopify-style chart container - Professional */
+.shopify-chart-container {
+  background: var(--shopify-white);
+  border: 1px solid var(--shopify-border);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin: 0;
+}
+
+/* Custom scrollbar to match Shopify */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--shopify-gray-50);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--shopify-gray-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--shopify-gray-400);
+}
+
+/* Freemium UI Styles */
+.upgrade-prompt {
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-hover) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 24px 0;
+}
+
+.upgrade-prompt h3 {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.upgrade-prompt p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.locked-feature {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.locked-feature::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.plan-badge.free {
+  background: var(--shopify-gray-100);
+  color: var(--shopify-text-secondary);
+}
+
+.plan-badge.paid {
+  background: var(--brand-primary-light);
+  color: var(--brand-primary);
+}
+
+.feature-locked-overlay {
+  position: relative;
+}
+
+.feature-locked-overlay::before {
+  content: '🔒';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  z-index: 10;
+  background: white;
+  padding: 8px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Table Styling - Professional & Clean */
+.cds--data-table {
+  background: var(--shopify-white);
+  border: 1px solid var(--shopify-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cds--data-table-container {
+  background: var(--shopify-white);
+}
+
+.cds--data-table thead {
+  background: var(--shopify-gray-50);
+}
+
+.cds--data-table th {
+  background: var(--shopify-gray-50) !important;
+  color: var(--shopify-text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.01em !important;
+  border-bottom: 1px solid var(--shopify-border) !important;
+  padding: 14px 16px !important;
+  text-transform: none !important;
+}
+
+.cds--data-table td {
+  color: var(--shopify-text-primary) !important;
+  font-size: 14px !important;
+  padding: 14px 16px !important;
+  border-bottom: 1px solid var(--shopify-border) !important;
+}
+
+.cds--data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.cds--data-table tbody tr:hover {
+  background: var(--shopify-gray-50) !important;
+}
+
+.cds--data-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
