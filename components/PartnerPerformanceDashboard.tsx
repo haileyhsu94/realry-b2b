@@ -39,6 +39,16 @@ import {
   Calendar,
   Filter,
   Download,
+  Currency,
+  ChartLineSmooth,
+  UserMultiple,
+  Star,
+  Trophy,
+  Idea,
+  Video,
+  Camera,
+  Time,
+  Chat,
 } from '@carbon/icons-react';
 import {
   LineChart,
@@ -57,6 +67,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
 import {
   mockPartnerPlans,
   mockWebsitePerformance,
@@ -94,17 +105,37 @@ const mockTopTierBenchmarks = [
 // Customer demographics data
 const customerDemographics = {
   topLocations: [
-    { location: 'California', percentage: 28, sales: 450 },
-    { location: 'New York', percentage: 22, sales: 355 },
-    { location: 'Texas', percentage: 18, sales: 290 },
-    { location: 'Florida', percentage: 15, sales: 242 },
-    { location: 'Illinois', percentage: 17, sales: 274 },
+    { location: 'California', percentage: 28, sales: 450, trend: 'up', trendValue: 3.2 },
+    { location: 'New York', percentage: 22, sales: 355, trend: 'down', trendValue: 4.4 },
+    { location: 'Texas', percentage: 18, sales: 290, trend: 'up', trendValue: 5.1 },
+    { location: 'Florida', percentage: 15, sales: 242, trend: 'down', trendValue: 2.3 },
+    { location: 'Illinois', percentage: 17, sales: 274, trend: 'up', trendValue: 1.8 },
+  ],
+  topCountries: [
+    { country: 'United States', iso: 'USA', percentage: 45, sales: 1820, trend: 'up', trendValue: 5.2 },
+    { country: 'United Kingdom', iso: 'GBR', percentage: 18, sales: 730, trend: 'down', trendValue: 2.8 },
+    { country: 'Canada', iso: 'CAN', percentage: 12, sales: 485, trend: 'up', trendValue: 8.5 },
+    { country: 'Germany', iso: 'DEU', percentage: 10, sales: 405, trend: 'up', trendValue: 12.3 },
+    { country: 'Australia', iso: 'AUS', percentage: 8, sales: 325, trend: 'up', trendValue: 6.7 },
+    { country: 'France', iso: 'FRA', percentage: 7, sales: 285, trend: 'down', trendValue: 1.5 },
+  ],
+  topCities: [
+    { city: 'New York', country: 'USA', sales: 485, trend: 'up', trendValue: 8.2 },
+    { city: 'Los Angeles', country: 'USA', sales: 356, trend: 'up', trendValue: 5.7 },
+    { city: 'London', country: 'UK', sales: 342, trend: 'down', trendValue: 3.5 },
+    { city: 'Toronto', country: 'Canada', sales: 265, trend: 'up', trendValue: 12.1 },
+    { city: 'Sydney', country: 'Australia', sales: 198, trend: 'up', trendValue: 7.3 },
+    { city: 'Berlin', country: 'Germany', sales: 176, trend: 'up', trendValue: 15.8 },
   ],
   interests: [
-    { category: 'Electronics', value: 35, color: '#0f62fe' },
-    { category: 'Fashion', value: 28, color: '#8a3ffc' },
-    { category: 'Home & Living', value: 20, color: '#0072c3' },
-    { category: 'Sports & Outdoors', value: 17, color: '#00539a' },
+    { category: 'Clothing', value: 28, color: '#1192E8' },     // Cyan 50
+    { category: 'Shoes', value: 18, color: '#6929C4' },        // Purple 70
+    { category: 'Bags', value: 15, color: '#002D9C' },         // Blue 80
+    { category: 'Wallets', value: 10, color: '#005D5D' },      // Teal 70
+    { category: 'Accessories', value: 12, color: '#198038' },  // Green 60
+    { category: 'Cosmetics', value: 9, color: '#9F1853' },     // Magenta 70
+    { category: 'Home', value: 5, color: '#B28600' },          // Yellow 50
+    { category: 'Tech', value: 3, color: '#EE538B' },          // Magenta 50
   ]
 };
 
@@ -117,11 +148,80 @@ const topPerformingItems = [
   { name: 'Wireless Earbuds Pro', type: 'Product', clicks: 1560, conversions: 234, cvr: 15.0, revenue: 8892, tag: 'Trending' },
 ];
 
+// State-level sales data for USA heatmap
+const usaStatesSalesData: { [key: string]: number } = {
+  'California': 485,
+  'New York': 356,
+  'Texas': 312,
+  'Florida': 245,
+  'Illinois': 198,
+  'Pennsylvania': 187,
+  'Ohio': 165,
+  'Georgia': 154,
+  'North Carolina': 143,
+  'Michigan': 132,
+  'New Jersey': 128,
+  'Virginia': 115,
+  'Washington': 108,
+  'Arizona': 98,
+  'Massachusetts': 95,
+  'Tennessee': 87,
+  'Indiana': 82,
+  'Missouri': 78,
+  'Maryland': 75,
+  'Wisconsin': 71,
+  'Colorado': 68,
+  'Minnesota': 65,
+  'South Carolina': 58,
+  'Alabama': 52,
+  'Louisiana': 48,
+  'Kentucky': 45,
+  'Oregon': 42,
+  'Oklahoma': 38,
+  'Connecticut': 35,
+  'Utah': 32,
+  'Iowa': 28,
+  'Nevada': 25,
+  'Arkansas': 22,
+  'Mississippi': 18,
+  'Kansas': 15,
+  'New Mexico': 12,
+  'Nebraska': 10,
+  'West Virginia': 8,
+  'Idaho': 7,
+  'Hawaii': 6,
+  'New Hampshire': 5,
+  'Maine': 4,
+  'Montana': 3,
+  'Rhode Island': 3,
+  'Delaware': 2,
+  'South Dakota': 2,
+  'North Dakota': 1,
+  'Alaska': 1,
+  'Vermont': 1,
+  'Wyoming': 1,
+};
+
 const PartnerPerformanceDashboard = () => {
   const [timeRange, setTimeRange] = useState('7d');
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [plans, setPlans] = useState<PartnerPlans>(mockPartnerPlans);
+  const [mapRegion, setMapRegion] = useState('north-america'); // north-america, europe, asia, oceania, global
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-95, 40]);
+  const [mapZoom, setMapZoom] = useState<number>(3);
+  const [mapType, setMapType] = useState<'world' | 'usa-states'>('world');
+  
+  // Tooltip states
+  const [hoveredRegion, setHoveredRegion] = useState<{
+    name: string;
+    sales: number;
+    percentage?: number;
+    trend?: 'up' | 'down';
+    trendValue?: number;
+  } | null>(null);
   
   // Custom date range states
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
@@ -132,6 +232,72 @@ const PartnerPerformanceDashboard = () => {
   // Filter states for detail tabs
   const [chartMetric, setChartMetric] = useState('revenue'); // revenue, clicks, conversions, roas
   const [campaignFilter, setCampaignFilter] = useState('all'); // all, active, completed
+
+  // Country coordinates mapping for map zoom
+  const countryCoordinates: { [key: string]: { center: [number, number], zoom: number } } = {
+    'United States': { center: [-95, 40], zoom: 4 },
+    'United Kingdom': { center: [-2, 54], zoom: 5 },
+    'Canada': { center: [-106, 56], zoom: 3.5 },
+    'Germany': { center: [10, 51], zoom: 5.5 },
+    'Australia': { center: [133, -27], zoom: 4 },
+    'France': { center: [2, 46], zoom: 5.5 },
+  };
+
+  // City coordinates mapping for detailed zoom
+  const cityCoordinates: { [key: string]: { center: [number, number], zoom: number, state?: string } } = {
+    'New York': { center: [-74, 40.7], zoom: 7, state: 'New York' },
+    'Los Angeles': { center: [-118.2, 34], zoom: 7, state: 'California' },
+    'London': { center: [-0.1, 51.5], zoom: 8 },
+    'Toronto': { center: [-79.4, 43.7], zoom: 8 },
+    'Sydney': { center: [151.2, -33.9], zoom: 8 },
+    'Berlin': { center: [13.4, 52.5], zoom: 8 },
+  };
+
+  // Handle country click to zoom map
+  const handleCountryClick = (countryName: string) => {
+    const coords = countryCoordinates[countryName];
+    if (coords) {
+      setSelectedCountry(countryName);
+      setSelectedCity(null);
+      setMapType('world');
+      setMapCenter(coords.center);
+      setMapZoom(coords.zoom);
+      setMapRegion(''); // Clear region dropdown when manually selecting country
+    }
+  };
+
+  // Handle city click to zoom map and switch to regional view
+  const handleCityClick = (cityName: string, countryName: string) => {
+    const coords = cityCoordinates[cityName];
+    if (coords) {
+      setSelectedCity(cityName);
+      setSelectedCountry(null);
+      
+      // Switch to regional map for USA cities
+      if (countryName === 'USA') {
+        setMapType('usa-states');
+        setMapCenter(coords.center);
+        setMapZoom(coords.zoom);
+      } else {
+        // For non-USA cities, just zoom on world map
+        setMapType('world');
+        setMapCenter(coords.center);
+        setMapZoom(coords.zoom);
+      }
+      
+      setMapRegion(''); // Clear region dropdown
+    }
+  };
+
+  // Reset to world map
+  const resetToWorldMap = () => {
+    setMapType('world');
+    setSelectedCity(null);
+    setSelectedCountry(null);
+    setMapCenter([0, 20]);
+    setMapZoom(1);
+    setMapRegion('global');
+  };
 
   // Plan utility functions
   const hasShopPlan = () => plans.shop !== null;
@@ -445,8 +611,8 @@ const PartnerPerformanceDashboard = () => {
         {/* Trend Chart - Prominent and visible with axes */}
         <div style={{ 
           width: '100%', 
-          height: '120px',
-          padding: '0 0 24px 0'
+          height: '180px',
+          padding: '0 12px 0 12px'
         }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
@@ -459,7 +625,7 @@ const PartnerPerformanceDashboard = () => {
                 stroke="#6d7175" 
                 tick={{ fontSize: 12, fill: '#6d7175' }}
                 tickLine={{ stroke: '#6d7175' }}
-                interval={0}
+                ticks={[trendData[0]?.date, trendData[Math.floor(trendData.length / 2)]?.date, trendData[trendData.length - 1]?.date]}
               />
               <YAxis 
                 stroke="#6d7175" 
@@ -481,9 +647,9 @@ const PartnerPerformanceDashboard = () => {
                 dataKey="value" 
                 stroke={metric.color} 
                 strokeWidth={2.5}
-                dot={false}
+                dot={{ r: 3, fill: metric.color, strokeWidth: 0 }}
                 isAnimationActive={false}
-                activeDot={{ r: 4, fill: metric.color }}
+                activeDot={{ r: 5, fill: metric.color }}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -817,7 +983,7 @@ const PartnerPerformanceDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {/* Nexus-style Header */}
         <header style={{
           height: '64px',
@@ -2172,8 +2338,12 @@ const PartnerPerformanceDashboard = () => {
               )}
 
               {/* KPI Cards */}
-              <div style={{ padding: '0 0 24px 0' }}>
-                <Grid narrow style={{ marginLeft: 0, marginRight: 0 }}>
+                <div style={{ 
+                  padding: '0 0 24px 0',
+                  marginLeft: '24px',
+                  marginRight: '24px',
+                  }}>
+                <Grid narrow style={{ marginLeft: 0, marginRight: 0, padding: '0' }}>
                   {metrics.map((metric, index) => (
                     <Column key={index} lg={4} md={4} sm={2}>
                       <StatCard metric={metric} />
@@ -2186,7 +2356,8 @@ const PartnerPerformanceDashboard = () => {
               
               {/* 1. Your Earnings Overview */}
               <div style={{ 
-                marginTop: '24px',
+                marginLeft: '24px',
+                marginRight: '24px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
                 border: '1px solid var(--shopify-border)',
@@ -2194,11 +2365,12 @@ const PartnerPerformanceDashboard = () => {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                   <div>
-                    <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                      💰 Your Earnings Overview
+                    <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Currency size={24} style={{ color: '#7256F6' }} />
+                      Performance Overview
                     </h3>
                     <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                      Track your commission and revenue performance
+                      Monitor your key financial metrics and efficiency
                     </p>
                   </div>
                   <Tag type="green">+12.5% vs last period</Tag>
@@ -2208,7 +2380,7 @@ const PartnerPerformanceDashboard = () => {
                 <Grid narrow style={{ marginBottom: '24px' }}>
                   <Column lg={5}>
                     <div style={{ padding: '20px', backgroundColor: '#f0edff', borderRadius: '8px', border: '1px solid #e0d9ff' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Total Commission</div>
+                      <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Total Revenue</div>
                       <div style={{ fontSize: '32px', fontWeight: '600', color: '#7256F6' }}>$47,234</div>
                       <div style={{ fontSize: '13px', color: '#16a34a', marginTop: '8px' }}>↑ $5,260 from last period</div>
                     </div>
@@ -2222,9 +2394,9 @@ const PartnerPerformanceDashboard = () => {
                   </Column>
                   <Column lg={6}>
                     <div style={{ padding: '20px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Revenue per Click</div>
+                      <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Net CPA</div>
                       <div style={{ fontSize: '32px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>$5.29</div>
-                      <div style={{ fontSize: '13px', color: '#6d7175', marginTop: '8px' }}>Earning efficiency</div>
+                      <div style={{ fontSize: '13px', color: '#6d7175', marginTop: '8px' }}>Cost to acquire one customer</div>
                     </div>
                   </Column>
                 </Grid>
@@ -2282,6 +2454,8 @@ const PartnerPerformanceDashboard = () => {
               {/* 2. Conversion Performance */}
               <div style={{ 
                 marginTop: '24px',
+                marginLeft: '24px',
+                marginRight: '24px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
                 border: '1px solid var(--shopify-border)',
@@ -2289,8 +2463,9 @@ const PartnerPerformanceDashboard = () => {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                   <div>
-                    <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                      🎯 Conversion Performance
+                    <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ChartLineSmooth size={24} style={{ color: '#16a34a' }} />
+                      Conversion Performance
                     </h3>
                     <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
                       Your click-to-purchase conversion funnel
@@ -2340,7 +2515,8 @@ const PartnerPerformanceDashboard = () => {
                   
                   <Column lg={8}>
                     {/* Conversion rate trend */}
-                    <ResponsiveContainer width="100%" height={200}>
+                    <div style={{ height: '100%', minHeight: '250px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
                       <LineChart 
                         data={mockRevenueData.map(item => ({ 
                           date: item.date, 
@@ -2377,6 +2553,7 @@ const PartnerPerformanceDashboard = () => {
                         />
                       </LineChart>
                     </ResponsiveContainer>
+                    </div>
                   </Column>
                 </Grid>
               </div>
@@ -2384,78 +2561,758 @@ const PartnerPerformanceDashboard = () => {
               {/* 3. Your Customers */}
               <div style={{ 
                 marginTop: '24px',
+                marginLeft: '24px',
+                marginRight: '24px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
                 border: '1px solid var(--shopify-border)',
                 padding: '24px'
               }}>
                 <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                    👥 Your Customers
+                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <UserMultiple size={24} style={{ color: '#0f62fe' }} />
+                    Your Customers
                   </h3>
                   <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
                     Demographics, interests, and shopping behavior
                   </p>
                 </div>
 
-                <Grid narrow>
-                  <Column lg={8}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '15px', fontWeight: '500', marginBottom: '16px' }}>Top Locations</div>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart 
-                          data={customerDemographics.topLocations}
-                          layout="vertical"
-                          margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis 
-                            type="number"
-                            tick={{ fill: '#6d7175', fontSize: 12 }}
-                            tickFormatter={(value) => `${value}%`}
-                          />
-                          <YAxis 
-                            type="category"
-                            dataKey="location"
-                            width={100}
-                            tick={{ fill: '#6d7175', fontSize: 12 }}
-                          />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'white',
-                              border: '1px solid #e0e0e0',
-                              borderRadius: '6px'
-                            }}
-                            formatter={(value: any) => [`${value}%`, 'Sales %']}
-                          />
-                          <Bar dataKey="percentage" fill="#7256F6" radius={[0, 4, 4, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                {/* Global Customer Distribution - World Map */}
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '15px', fontWeight: '600' }}>Global Customer Distribution</div>
+                    {/* Region Filter */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>Region:</span>
+                      <select
+                        value={mapRegion}
+                        onChange={(e) => {
+                          const region = e.target.value;
+                          setMapRegion(region);
+                          setSelectedCountry(null);
+                          setSelectedCity(null);
+                          setMapType('world');
+                          // Update map center and zoom based on region
+                          if (region === 'north-america') {
+                            setMapCenter([-95, 40]);
+                            setMapZoom(3);
+                          } else if (region === 'europe') {
+                            setMapCenter([15, 50]);
+                            setMapZoom(3.5);
+                          } else if (region === 'asia') {
+                            setMapCenter([100, 30]);
+                            setMapZoom(2.5);
+                          } else if (region === 'oceania') {
+                            setMapCenter([135, -25]);
+                            setMapZoom(3.5);
+                          } else {
+                            setMapCenter([0, 20]);
+                            setMapZoom(1);
+                          }
+                        }}
+                        style={{
+                          padding: '6px 24px 6px 12px',
+                          border: '1px solid var(--shopify-border)',
+                          borderRadius: '6px',
+                          backgroundColor: 'white',
+                          fontSize: '13px',
+                          color: 'var(--shopify-text-primary)',
+                          cursor: 'pointer',
+                          outline: 'none',
+                          appearance: 'none',
+                          backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'12\' height=\'8\' viewBox=\'0 0 12 8\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 1L6 6L11 1\' stroke=\'%236d7175\' stroke-width=\'2\' stroke-linecap=\'round\'/%3E%3C/svg%3E")',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 8px center',
+                          transition: 'border-color 0.15s ease'
+                        }}
+                      >
+                        <option value="north-america">North America</option>
+                        <option value="europe">Europe</option>
+                        <option value="asia">Asia</option>
+                        <option value="oceania">Oceania</option>
+                        <option value="global">Global View</option>
+                      </select>
                     </div>
-                  </Column>
-                  
-                  <Column lg={8}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '15px', fontWeight: '500', marginBottom: '16px' }}>Customer Interests</div>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <PieChart>
-                          <Pie
-                            data={customerDemographics.interests}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ category, value }) => `${category}: ${value}%`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
+                  </div>
+                  <Grid narrow>
+                    <Column lg={8}>
+                      {/* World Map Visualization */}
+                      <div style={{ 
+                        padding: '0px', 
+                        backgroundColor: 'white',
+                        border: '1px solid var(--shopify-border)',
+                        borderRadius: '8px',
+                        height: '320px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative'
+                      }}>
+                        <ComposableMap
+                          projection={mapType === 'usa-states' ? "geoAlbersUsa" : "geoMercator"}
+                          style={{ width: '100%', height: '100%' }}
+                        >
+                          <ZoomableGroup
+                            center={mapType === 'usa-states' ? [-95, 40] : mapCenter}
+                            zoom={mapType === 'usa-states' ? 1 : mapZoom}
                           >
-                            {customerDemographics.interests.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value: any) => [`${value}%`, 'Interest %']} />
-                        </PieChart>
-                      </ResponsiveContainer>
+                            {/* World Map */}
+                            {mapType === 'world' && (
+                              <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
+                              {({ geographies }) => {
+                                // Calculate max sales for color scaling
+                                const maxSales = Math.max(...customerDemographics.topCountries.map(c => c.sales));
+                                
+                                // Create a country name mapping for better matching
+                                const countryNameMap: { [key: string]: string } = {
+                                  'United States of America': 'United States',
+                                  'United Kingdom': 'United Kingdom',
+                                  'Canada': 'Canada',
+                                  'Germany': 'Germany',
+                                  'Australia': 'Australia',
+                                  'France': 'France',
+                                };
+                                
+                                return geographies.map((geo) => {
+                                  const geoName = geo.properties.name;
+                                  const mappedName = countryNameMap[geoName] || geoName;
+                                  
+                                  const countryData = customerDemographics.topCountries.find(
+                                    (c) => c.country === mappedName
+                                  );
+                                  const sales = countryData ? countryData.sales : 0;
+                                  const percentage = countryData ? countryData.percentage : 0;
+                                  const isHighlighted = selectedCountry === countryData?.country;
+                                  
+                                  // Calculate color intensity based on sales (heatmap)
+                                  const getHeatmapColor = (salesValue: number) => {
+                                    if (salesValue === 0) return '#f5f5f5';
+                                    const intensity = salesValue / maxSales;
+                                    // Use brand purple with varying opacity (same formula as USA states)
+                                    return `rgba(114, 86, 246, ${0.15 + intensity * 0.85})`;
+                                  };
+
+                                  return (
+                                    <Geography
+                                      key={geo.rsmKey}
+                                      geography={geo}
+                                      fill={isHighlighted ? '#7256F6' : getHeatmapColor(sales)}
+                                      stroke="#ffffff"
+                                      strokeWidth={0.5}
+                                      onMouseEnter={() => {
+                                        if (countryData) {
+                                          setHoveredRegion({
+                                            name: countryData.country,
+                                            sales: countryData.sales,
+                                            percentage: countryData.percentage,
+                                            trend: countryData.trend as 'up' | 'down',
+                                            trendValue: countryData.trendValue
+                                          });
+                                        }
+                                      }}
+                                      onMouseLeave={() => {
+                                        setHoveredRegion(null);
+                                      }}
+                                      style={{
+                                        default: { outline: 'none' },
+                                        hover: {
+                                          fill: '#7256F6',
+                                          outline: 'none',
+                                          cursor: 'pointer',
+                                          opacity: 0.8
+                                        },
+                                        pressed: { outline: 'none' }
+                                      }}
+                                    />
+                                  );
+                                });
+                              }}
+                            </Geographies>
+                            )}
+                            
+                            {/* USA States Map */}
+                            {mapType === 'usa-states' && (
+                              <Geographies geography="https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json">
+                              {({ geographies }: { geographies: any }) => {
+                                // Calculate max sales for color scaling
+                                const maxSales = Math.max(...Object.values(usaStatesSalesData));
+                                
+                                return geographies.map((geo: any) => {
+                                  const stateName = geo.properties.name;
+                                  const sales = usaStatesSalesData[stateName] || 0;
+                                  const isHighlighted = selectedCity && cityCoordinates[selectedCity]?.state === stateName;
+                                  
+                                  // Calculate color intensity based on sales (heatmap)
+                                  const getHeatmapColor = (salesValue: number) => {
+                                    if (salesValue === 0) return '#f5f5f5';
+                                    const intensity = salesValue / maxSales;
+                                    // Use brand purple with varying opacity
+                                    return `rgba(114, 86, 246, ${0.15 + intensity * 0.85})`;
+                                  };
+                                  
+                                  return (
+                                    <Geography
+                                      key={geo.rsmKey}
+                                      geography={geo}
+                                      fill={isHighlighted ? '#7256F6' : getHeatmapColor(sales)}
+                                      stroke="#ffffff"
+                                      strokeWidth={0.8}
+                                      onMouseEnter={() => {
+                                        if (sales > 0) {
+                                          setHoveredRegion({
+                                            name: stateName,
+                                            sales: sales
+                                          });
+                                        }
+                                      }}
+                                      onMouseLeave={() => {
+                                        setHoveredRegion(null);
+                                      }}
+                                      style={{
+                                        default: { outline: 'none' },
+                                        hover: {
+                                          fill: '#7256F6',
+                                          outline: 'none',
+                                          cursor: 'pointer',
+                                          opacity: 0.8
+                                        },
+                                        pressed: { outline: 'none' }
+                                      }}
+                                    />
+                                  );
+                                });
+                              }}
+                            </Geographies>
+                            )}
+                          </ZoomableGroup>
+                        </ComposableMap>
+                        
+                        {/* Custom Tooltip */}
+                        {hoveredRegion && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            backgroundColor: 'white',
+                            padding: '12px 16px',
+                            borderRadius: '8px',
+                            border: '1px solid var(--shopify-border)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            zIndex: 20,
+                            pointerEvents: 'none',
+                            minWidth: '180px'
+                          }}>
+                            <div style={{ 
+                              fontSize: '14px', 
+                              fontWeight: '600', 
+                              color: 'var(--shopify-text-primary)',
+                              marginBottom: '8px'
+                            }}>
+                              {hoveredRegion.name}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)' }}>Orders:</span>
+                                <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                  {hoveredRegion.sales.toLocaleString()}
+                                </span>
+                              </div>
+                              {hoveredRegion.percentage !== undefined && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)' }}>Share:</span>
+                                  <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                    {hoveredRegion.percentage}%
+                                  </span>
+                                </div>
+                              )}
+                              {hoveredRegion.trend && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)' }}>Trend:</span>
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '4px',
+                                    color: hoveredRegion.trend === 'up' ? '#16a34a' : '#dc2626',
+                                    fontSize: '12px',
+                                    fontWeight: '600'
+                                  }}>
+                                    {hoveredRegion.trend === 'up' ? (
+                                      <ArrowUp size={12} />
+                                    ) : (
+                                      <ArrowDown size={12} />
+                                    )}
+                                    {hoveredRegion.trendValue}%
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Back to World Map Button */}
+                        {mapType !== 'world' && (
+                          <button
+                            onClick={resetToWorldMap}
+                            style={{
+                              position: 'absolute',
+                              top: '16px',
+                              left: '16px',
+                              backgroundColor: 'white',
+                              padding: '8px 12px',
+                              borderRadius: '6px',
+                              border: '1px solid var(--shopify-border)',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                              zIndex: 10,
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              (e.currentTarget as HTMLElement).style.backgroundColor = '#f6f6f7';
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.currentTarget as HTMLElement).style.backgroundColor = 'white';
+                            }}
+                          >
+                            ← Back to World Map
+                          </button>
+                        )}
+                        
+                        {/* Map Type Indicator */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '16px',
+                          right: '16px',
+                          backgroundColor: mapType === 'usa-states' ? 'rgba(114, 86, 246, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          color: mapType === 'usa-states' ? 'white' : '#6d7175',
+                          fontWeight: '600',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                          zIndex: 10
+                        }}>
+                          {mapType === 'usa-states' ? '🇺🇸 USA States' : '🌍 World View'}
+                        </div>
+                        
+                        {/* Drag hint (only show in world view) */}
+                        {mapType === 'world' && (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '16px',
+                            left: '16px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            padding: '6px 10px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            color: '#6d7175',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                          }}>
+                            <span style={{ fontSize: '14px' }}>🖱️</span>
+                            <span>Drag to pan, scroll to zoom</span>
+                          </div>
+                        )}
+                        
+                        {/* Legend */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '16px',
+                          right: '16px',
+                          backgroundColor: 'white',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #e0e0e0',
+                          fontSize: '11px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <div style={{ width: '16px', height: '10px', background: 'linear-gradient(to right, rgba(114, 86, 246, 0.2), rgba(114, 86, 246, 1))', borderRadius: '2px' }}></div>
+                              <span style={{ color: '#6d7175' }}>Orders</span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#999', marginTop: '2px' }}>
+                            <span>Low</span>
+                            <span style={{ marginLeft: '24px' }}>High</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Column>
+                    
+                    <Column lg={4}>
+                      {/* Ranked Country List */}
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: 'white',
+                        border: '1px solid var(--shopify-border)',
+                        borderRadius: '8px',
+                        height: '320px',
+                        overflowY: 'auto'
+                      }}>
+                        <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px', color: 'var(--shopify-text-primary)' }}>
+                          Top Countries
+                        </div>
+                        {customerDemographics.topCountries.map((country, index) => {
+                          const maxSales = Math.max(...customerDemographics.topCountries.map(c => c.sales));
+                          const barWidth = (country.sales / maxSales) * 100;
+                          
+                          return (
+                            <div 
+                              key={index}
+                              style={{ 
+                                padding: '8px 0px',
+                                borderBottom: index < customerDemographics.topCountries.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                cursor: 'pointer',
+                                borderRadius: '6px',
+                                backgroundColor: selectedCountry === country.country ? '#f0edff' : 'transparent',
+                                transition: 'background-color 0.15s ease'
+                              }}
+                              onClick={() => handleCountryClick(country.country)}
+                              onMouseEnter={(e) => {
+                                if (selectedCountry !== country.country) {
+                                  e.currentTarget.style.backgroundColor = '#f9f9f9';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (selectedCountry !== country.country) {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }
+                              }}
+                            >
+                              {/* Top row: rank, country name, value, trend */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                  <span style={{ 
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    backgroundColor: selectedCountry === country.country ? '#7256F6' : (index === 0 ? '#7256F6' : '#f0f0f0'),
+                                    color: selectedCountry === country.country ? 'white' : (index === 0 ? 'white' : '#6d7175'),
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    flexShrink: 0
+                                  }}>
+                                    {index + 1}
+                                  </span>
+                                  <span style={{ 
+                                    fontSize: '12px', 
+                                    fontWeight: selectedCountry === country.country ? '600' : (index === 0 ? '600' : '500'),
+                                    color: selectedCountry === country.country ? '#7256F6' : 'var(--shopify-text-primary)',
+                                    overflow: 'visible',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    textDecoration: selectedCountry === country.country ? 'underline' : 'none'
+                                  }}>
+                                    {country.country}
+                                  </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                  <span style={{ 
+                                    fontSize: '11px', 
+                                    fontWeight: '600',
+                                    color: 'var(--shopify-text-primary)',
+                                    minWidth: '40px',
+                                    textAlign: 'right'
+                                  }}>
+                                    {country.sales.toLocaleString()}
+                                  </span>
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '2px',
+                                    color: country.trend === 'up' ? '#16a34a' : '#dc2626',
+                                    fontSize: '11px',
+                                    fontWeight: '500',
+                                    minWidth: '50px'
+                                  }}>
+                                    {country.trend === 'up' ? (
+                                      <ArrowUp size={12} />
+                                    ) : (
+                                      <ArrowDown size={12} />
+                                    )}
+                                    <span>{country.trendValue}%</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Bottom row: horizontal bar */}
+                              <div style={{ 
+                                width: 'calc(100% - 28px)',
+                                height: '4px', 
+                                backgroundColor: '#e8e8e8', 
+                                borderRadius: '2px',
+                                overflow: 'hidden',
+                                marginLeft: '28px'
+                              }}>
+                                <div style={{ 
+                                  width: `${barWidth}%`, 
+                                  height: '100%', 
+                                  backgroundColor: selectedCountry === country.country ? '#7256F6' : '#0f62fe',
+                                  borderRadius: '2px',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div style={{ 
+                          marginTop: '16px', 
+                          padding: '10px',
+                          backgroundColor: '#f6f6f7',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          color: 'var(--shopify-text-secondary)',
+                          textAlign: 'center'
+                        }}>
+                          {customerDemographics.topCountries.reduce((sum, country) => sum + country.sales, 0).toLocaleString()} orders
+                        </div>
+                      </div>
+                    </Column>
+                    
+                    <Column lg={4}>
+                      {/* Ranked City List */}
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: 'white',
+                        border: '1px solid var(--shopify-border)',
+                        borderRadius: '8px',
+                        height: '320px',
+                        overflowY: 'auto'
+                      }}>
+                        <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px', color: 'var(--shopify-text-primary)' }}>
+                          Top Cities
+                        </div>
+                        {customerDemographics.topCities.map((city, index) => {
+                          const maxSales = Math.max(...customerDemographics.topCities.map(c => c.sales));
+                          const barWidth = (city.sales / maxSales) * 100;
+                          
+                          return (
+                            <div 
+                              key={index}
+                              onClick={() => handleCityClick(city.city, city.country)}
+                              style={{ 
+                                padding: '8px 0px',
+                                borderBottom: index < customerDemographics.topCities.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                cursor: 'pointer',
+                                borderRadius: '6px',
+                                transition: 'background-color 0.15s ease',
+                                backgroundColor: selectedCity === city.city ? 'rgba(114, 86, 246, 0.08)' : 'transparent'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (selectedCity !== city.city) {
+                                  (e.currentTarget as HTMLElement).style.backgroundColor = '#f6f6f7';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (selectedCity !== city.city) {
+                                  (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                }
+                              }}
+                            >
+                              {/* Top row: rank, city name/country, value, trend */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                  <span style={{ 
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    backgroundColor: index === 0 ? '#0f62fe' : selectedCity === city.city ? '#7256F6' : '#f0f0f0',
+                                    color: (index === 0 || selectedCity === city.city) ? 'white' : '#6d7175',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    flexShrink: 0
+                                  }}>
+                                    {index + 1}
+                                  </span>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ 
+                                      fontSize: '12px', 
+                                      fontWeight: (index === 0 || selectedCity === city.city) ? '600' : '500',
+                                      color: selectedCity === city.city ? '#7256F6' : 'var(--shopify-text-primary)',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {city.city}
+                                    </div>
+                                    <div style={{ 
+                                      fontSize: '11px', 
+                                      color: 'var(--shopify-text-secondary)',
+                                      marginTop: '2px'
+                                    }}>
+                                      {city.country}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                  <span style={{ 
+                                    fontSize: '11px', 
+                                    fontWeight: '600',
+                                    color: 'var(--shopify-text-primary)',
+                                    minWidth: '40px',
+                                    textAlign: 'right'
+                                  }}>
+                                    {city.sales.toLocaleString()}
+                                  </span>
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '2px',
+                                    color: city.trend === 'up' ? '#16a34a' : '#dc2626',
+                                    fontSize: '11px',
+                                    fontWeight: '500',
+                                    minWidth: '50px'
+                                  }}>
+                                    {city.trend === 'up' ? (
+                                      <ArrowUp size={12} />
+                                    ) : (
+                                      <ArrowDown size={12} />
+                                    )}
+                                    <span>{city.trendValue}%</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Bottom row: horizontal bar */}
+                              <div style={{ 
+                                width: 'calc(100% - 28px)',
+                                height: '4px', 
+                                backgroundColor: '#e8e8e8', 
+                                borderRadius: '2px',
+                                overflow: 'hidden',
+                                marginLeft: '28px'
+                              }}>
+                                <div style={{ 
+                                  width: `${barWidth}%`, 
+                                  height: '100%', 
+                                  backgroundColor: selectedCity === city.city ? '#7256F6' : '#0f62fe',
+                                  borderRadius: '2px',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div style={{ 
+                          marginTop: '16px', 
+                          padding: '10px',
+                          backgroundColor: '#f6f6f7',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          color: 'var(--shopify-text-secondary)',
+                          textAlign: 'center'
+                        }}>
+                          {customerDemographics.topCities.reduce((sum, city) => sum + city.sales, 0).toLocaleString()} orders
+                        </div>
+                      </div>
+                    </Column>
+                  </Grid>
+                </div>
+
+                {/* Customer Interests */}
+                <Grid narrow>
+                  <Column lg={16}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px' }}>Customer Interests</div>
+                      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ flex: '0 0 380px' }}>
+                          <ResponsiveContainer width="100%" height={280}>
+                            <PieChart>
+                              <Pie
+                                data={customerDemographics.interests}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={(props: any) => {
+                                  const { cx, cy, midAngle, innerRadius, outerRadius, category, value } = props;
+                                  const RADIAN = Math.PI / 180;
+                                  const radius = outerRadius + 10;
+                                  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                  
+                                  return (
+                                    <text
+                                      x={x}
+                                      y={y}
+                                      fill="#6d7175"
+                                      textAnchor={x > cx ? 'start' : 'end'}
+                                      dominantBaseline="central"
+                                      fontSize="11px"
+                                      fontWeight="500"
+                                    >
+                                      {`${category}: ${value}%`}
+                                    </text>
+                                  );
+                                }}
+                                outerRadius={110}
+                                fill="#8884d8"
+                                dataKey="value"
+                              >
+                                {customerDemographics.interests.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value: any) => [`${value}%`, 'Interest %']} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div style={{ 
+                          flex: 1, 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '12px',
+                          padding: '16px',
+                          backgroundColor: '#f9f9f9',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '6px'
+                        }}>
+                          {customerDemographics.interests.map((interest, index) => (
+                            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ 
+                                width: '12px', 
+                                height: '12px', 
+                                borderRadius: '3px',
+                                backgroundColor: interest.color 
+                              }}></div>
+                              <span style={{ fontSize: '12px', color: 'var(--shopify-text-primary)', fontWeight: '500', minWidth: '140px' }}>
+                                {interest.category}
+                              </span>
+                              <div style={{ 
+                                flex: 1,
+                                height: '8px',
+                                backgroundColor: '#f0f0f0',
+                                borderRadius: '4px',
+                                overflow: 'hidden'
+                              }}>
+                                <div style={{ 
+                                  width: `${interest.value}%`,
+                                  height: '100%',
+                                  backgroundColor: interest.color,
+                                  borderRadius: '4px'
+                                }}></div>
+                              </div>
+                              <span style={{ fontSize: '12px', fontWeight: '600', color: interest.color, minWidth: '40px', textAlign: 'right' }}>
+                                {interest.value}%
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </Column>
                 </Grid>
@@ -2474,6 +3331,10 @@ const PartnerPerformanceDashboard = () => {
                     <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>7-9 PM</div>
                   </div>
                   <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Peak Shopping Day</div>
+                    <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>Fri, Sat, Sun</div>
+                  </div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Preferred Device</div>
                     <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>Mobile (68%)</div>
                   </div>
@@ -2487,14 +3348,17 @@ const PartnerPerformanceDashboard = () => {
               {/* 4. What's Working */}
               <div style={{ 
                 marginTop: '24px',
+                marginLeft: '24px',
+                marginRight: '24px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
                 border: '1px solid var(--shopify-border)',
                 padding: '24px'
               }}>
                 <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                    ⭐ What's Working Best for You
+                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Star size={24} style={{ color: '#d97706' }} />
+                    What's Working Best for You
                   </h3>
                   <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
                     Top performing products, ads, and traffic sources
@@ -2541,14 +3405,17 @@ const PartnerPerformanceDashboard = () => {
               {/* 5. Learn from Top Performers */}
               <div style={{ 
                 marginTop: '24px',
+                marginLeft: '24px',
+                marginRight: '24px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
                 border: '1px solid var(--shopify-border)',
                 padding: '24px'
               }}>
                 <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                    🏆 Learn from Top Performers
+                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Trophy size={24} style={{ color: '#8a3ffc' }} />
+                    Learn from Top Performers
                   </h3>
                   <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
                     Success patterns and best practices from high-earning sellers
@@ -2564,8 +3431,9 @@ const PartnerPerformanceDashboard = () => {
                       border: '1px solid #e0d9ff',
                       height: '100%'
                     }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#7256F6' }}>
-                        🎥 Video Content Advantage
+                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#7256F6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Video size={20} />
+                        Video Content Advantage
                       </div>
                       <div style={{ fontSize: '14px', color: '#6d7175', lineHeight: '1.6', marginBottom: '16px' }}>
                         Sellers using video in their posts see <strong>25% higher conversion rates</strong> and <strong>40% more engagement</strong> compared to image-only content.
@@ -2584,8 +3452,9 @@ const PartnerPerformanceDashboard = () => {
                       border: '1px solid #d0e8f2',
                       height: '100%'
                     }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0f62fe' }}>
-                        📸 Image Best Practice
+                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0f62fe', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Camera size={20} />
+                        Image Best Practice
                       </div>
                       <div style={{ fontSize: '14px', color: '#6d7175', lineHeight: '1.6', marginBottom: '16px' }}>
                         Top performers use <strong>3-5 product images</strong> per post, including lifestyle shots and close-ups for higher trust and conversions.
@@ -2606,8 +3475,9 @@ const PartnerPerformanceDashboard = () => {
                       border: '1px solid #c6e7d0',
                       height: '100%'
                     }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#16a34a' }}>
-                        ⏰ Timing Optimization
+                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Time size={20} />
+                        Timing Optimization
                       </div>
                       <div style={{ fontSize: '14px', color: '#6d7175', lineHeight: '1.6', marginBottom: '16px' }}>
                         Posts published on <strong>weekend evenings (7-9 PM)</strong> get <strong>2x more engagement</strong> and 35% better click-through rates.
@@ -2626,8 +3496,9 @@ const PartnerPerformanceDashboard = () => {
                       border: '1px solid #fde3c4',
                       height: '100%'
                     }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#d97706' }}>
-                        💬 Social Proof Works
+                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#d97706', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Chat size={20} />
+                        Social Proof Works
                       </div>
                       <div style={{ fontSize: '14px', color: '#6d7175', lineHeight: '1.6', marginBottom: '16px' }}>
                         Including <strong>customer reviews and ratings</strong> in product descriptions increases conversions by <strong>18%</strong> on average.
@@ -2643,6 +3514,8 @@ const PartnerPerformanceDashboard = () => {
               {/* 6. Recommended Actions */}
               <div style={{ 
                 marginTop: '24px',
+                marginLeft: '24px',
+                marginRight: '24px',
                 marginBottom: '24px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
@@ -2650,8 +3523,9 @@ const PartnerPerformanceDashboard = () => {
                 padding: '24px'
               }}>
                 <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                    💡 Recommended Actions
+                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Idea size={24} style={{ color: '#f1c21b' }} />
+                    Recommended Actions
                   </h3>
                   <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
                     AI-powered suggestions to maximize your earnings
