@@ -222,6 +222,7 @@ const PartnerPerformanceDashboard = () => {
     trend?: 'up' | 'down';
     trendValue?: number;
   } | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   
   // Custom date range states
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
@@ -2635,7 +2636,7 @@ const PartnerPerformanceDashboard = () => {
                       </select>
                     </div>
                   </div>
-                  <Grid narrow>
+                  <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
                     <Column lg={8}>
                       {/* World Map Visualization */}
                       <div style={{ 
@@ -2700,8 +2701,9 @@ const PartnerPerformanceDashboard = () => {
                                       fill={isHighlighted ? '#7256F6' : getHeatmapColor(sales)}
                                       stroke="#ffffff"
                                       strokeWidth={0.5}
-                                      onMouseEnter={() => {
-                                        if (countryData) {
+                                      onMouseMove={(e: any) => {
+                                        if (countryData && e.clientX && e.clientY) {
+                                          setTooltipPosition({ x: e.clientX, y: e.clientY });
                                           setHoveredRegion({
                                             name: countryData.country,
                                             sales: countryData.sales,
@@ -2711,11 +2713,11 @@ const PartnerPerformanceDashboard = () => {
                                           });
                                         }
                                       }}
-                                      onMouseLeave={() => {
+                                      onMouseOut={() => {
                                         setHoveredRegion(null);
                                       }}
                                       style={{
-                                        default: { outline: 'none' },
+                                        default: { outline: 'none', cursor: 'pointer' },
                                         hover: {
                                           fill: '#7256F6',
                                           outline: 'none',
@@ -2758,19 +2760,20 @@ const PartnerPerformanceDashboard = () => {
                                       fill={isHighlighted ? '#7256F6' : getHeatmapColor(sales)}
                                       stroke="#ffffff"
                                       strokeWidth={0.8}
-                                      onMouseEnter={() => {
-                                        if (sales > 0) {
+                                      onMouseMove={(e: any) => {
+                                        if (sales > 0 && e.clientX && e.clientY) {
+                                          setTooltipPosition({ x: e.clientX, y: e.clientY });
                                           setHoveredRegion({
                                             name: stateName,
                                             sales: sales
                                           });
                                         }
                                       }}
-                                      onMouseLeave={() => {
+                                      onMouseOut={() => {
                                         setHoveredRegion(null);
                                       }}
                                       style={{
-                                        default: { outline: 'none' },
+                                        default: { outline: 'none', cursor: 'pointer' },
                                         hover: {
                                           fill: '#7256F6',
                                           outline: 'none',
@@ -2791,16 +2794,16 @@ const PartnerPerformanceDashboard = () => {
                         {/* Custom Tooltip */}
                         {hoveredRegion && (
                           <div style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
+                            position: 'fixed',
+                            top: `${tooltipPosition.y - 120}px`,
+                            left: `${tooltipPosition.x}px`,
+                            transform: 'translateX(-50%)',
                             backgroundColor: 'white',
                             padding: '12px 16px',
                             borderRadius: '8px',
                             border: '1px solid var(--shopify-border)',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            zIndex: 20,
+                            zIndex: 1000,
                             pointerEvents: 'none',
                             minWidth: '180px'
                           }}>
@@ -2962,8 +2965,8 @@ const PartnerPerformanceDashboard = () => {
                           Top Countries
                         </div>
                         {customerDemographics.topCountries.map((country, index) => {
-                          const maxSales = Math.max(...customerDemographics.topCountries.map(c => c.sales));
-                          const barWidth = (country.sales / maxSales) * 100;
+                          const totalSales = customerDemographics.topCountries.reduce((sum, c) => sum + c.sales, 0);
+                          const barWidth = (country.sales / totalSales) * 100;
                           
                           return (
                             <div 
@@ -2992,16 +2995,10 @@ const PartnerPerformanceDashboard = () => {
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
                                   <span style={{ 
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '20px',
-                                    height: '20px',
-                                    borderRadius: '50%',
-                                    backgroundColor: selectedCountry === country.country ? '#7256F6' : (index === 0 ? '#7256F6' : '#f0f0f0'),
-                                    color: selectedCountry === country.country ? 'white' : (index === 0 ? 'white' : '#6d7175'),
-                                    fontSize: '11px',
+                                    fontSize: '12px',
                                     fontWeight: '600',
+                                    color: '#999',
+                                    minWidth: '14px',
                                     flexShrink: 0
                                   }}>
                                     {index + 1}
@@ -3095,8 +3092,8 @@ const PartnerPerformanceDashboard = () => {
                           Top Cities
                         </div>
                         {customerDemographics.topCities.map((city, index) => {
-                          const maxSales = Math.max(...customerDemographics.topCities.map(c => c.sales));
-                          const barWidth = (city.sales / maxSales) * 100;
+                          const totalSales = customerDemographics.topCities.reduce((sum, c) => sum + c.sales, 0);
+                          const barWidth = (city.sales / totalSales) * 100;
                           
                           return (
                             <div 
@@ -3125,16 +3122,10 @@ const PartnerPerformanceDashboard = () => {
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
                                   <span style={{ 
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '20px',
-                                    height: '20px',
-                                    borderRadius: '50%',
-                                    backgroundColor: index === 0 ? '#0f62fe' : selectedCity === city.city ? '#7256F6' : '#f0f0f0',
-                                    color: (index === 0 || selectedCity === city.city) ? 'white' : '#6d7175',
-                                    fontSize: '11px',
+                                    fontSize: '12px',
                                     fontWeight: '600',
+                                    color: '#999',
+                                    minWidth: '14px',
                                     flexShrink: 0
                                   }}>
                                     {index + 1}
@@ -3225,10 +3216,12 @@ const PartnerPerformanceDashboard = () => {
                 </div>
 
                 {/* Customer Interests */}
-                <Grid narrow>
-                  <Column lg={16}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px' }}>Customer Interests</div>
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '15px', fontWeight: '600' }}>Customer Interests</div>
+                  </div>
+                  <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
+                    <Column lg={16} style={{ paddingLeft: 0, paddingRight: 0 }}>
                       <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                         <div style={{ flex: '0 0 380px' }}>
                           <ResponsiveContainer width="100%" height={280}>
@@ -3313,9 +3306,9 @@ const PartnerPerformanceDashboard = () => {
                           ))}
                         </div>
                       </div>
-                    </div>
-                  </Column>
-                </Grid>
+                    </Column>
+                  </Grid>
+                </div>
 
                 {/* Shopping behavior insights */}
                 <div style={{ 
@@ -3340,7 +3333,7 @@ const PartnerPerformanceDashboard = () => {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Most Popular</div>
-                    <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>Electronics</div>
+                    <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>Clothing</div>
                   </div>
                 </div>
               </div>
