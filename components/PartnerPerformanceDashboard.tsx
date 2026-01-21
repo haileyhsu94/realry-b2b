@@ -104,6 +104,12 @@ const mockTopTierBenchmarks = [
 
 // Customer demographics data
 const customerDemographics = {
+  // Global totals for comparison
+  totals: {
+    orders: 6850,
+    customers: 4890,
+    revenue: 312450,
+  },
   topLocations: [
     { location: 'California', percentage: 28, sales: 450, trend: 'up', trendValue: 3.2 },
     { location: 'New York', percentage: 22, sales: 355, trend: 'down', trendValue: 4.4 },
@@ -112,20 +118,20 @@ const customerDemographics = {
     { location: 'Illinois', percentage: 17, sales: 274, trend: 'up', trendValue: 1.8 },
   ],
   topCountries: [
-    { country: 'United States', iso: 'USA', percentage: 45, sales: 1820, trend: 'up', trendValue: 5.2 },
-    { country: 'United Kingdom', iso: 'GBR', percentage: 18, sales: 730, trend: 'down', trendValue: 2.8 },
-    { country: 'Canada', iso: 'CAN', percentage: 12, sales: 485, trend: 'up', trendValue: 8.5 },
-    { country: 'Germany', iso: 'DEU', percentage: 10, sales: 405, trend: 'up', trendValue: 12.3 },
-    { country: 'Australia', iso: 'AUS', percentage: 8, sales: 325, trend: 'up', trendValue: 6.7 },
-    { country: 'France', iso: 'FRA', percentage: 7, sales: 285, trend: 'down', trendValue: 1.5 },
+    { country: 'United States', iso: 'USA', percentage: 45, sales: 1820, customers: 1245, revenue: 78450, cvr: 14.2, trend: 'up', trendValue: 5.2 },
+    { country: 'United Kingdom', iso: 'GBR', percentage: 18, sales: 730, customers: 512, revenue: 45200, cvr: 16.8, trend: 'down', trendValue: 2.8 },
+    { country: 'Canada', iso: 'CAN', percentage: 12, sales: 485, customers: 358, revenue: 28900, cvr: 15.3, trend: 'up', trendValue: 8.5 },
+    { country: 'Germany', iso: 'DEU', percentage: 10, sales: 405, customers: 298, revenue: 32650, cvr: 18.5, trend: 'up', trendValue: 12.3 },
+    { country: 'Australia', iso: 'AUS', percentage: 8, sales: 325, customers: 245, revenue: 31370, cvr: 17.2, trend: 'up', trendValue: 6.7 },
+    { country: 'France', iso: 'FRA', percentage: 7, sales: 285, customers: 198, revenue: 21950, cvr: 13.8, trend: 'down', trendValue: 1.5 },
   ],
   topCities: [
-    { city: 'New York', country: 'USA', sales: 485, trend: 'up', trendValue: 8.2 },
-    { city: 'Los Angeles', country: 'USA', sales: 356, trend: 'up', trendValue: 5.7 },
-    { city: 'London', country: 'UK', sales: 342, trend: 'down', trendValue: 3.5 },
-    { city: 'Toronto', country: 'Canada', sales: 265, trend: 'up', trendValue: 12.1 },
-    { city: 'Sydney', country: 'Australia', sales: 198, trend: 'up', trendValue: 7.3 },
-    { city: 'Berlin', country: 'Germany', sales: 176, trend: 'up', trendValue: 15.8 },
+    { city: 'New York', country: 'USA', sales: 485, customers: 342, revenue: 24650, cvr: 15.8, trend: 'up', trendValue: 8.2 },
+    { city: 'Los Angeles', country: 'USA', sales: 356, customers: 265, revenue: 18920, cvr: 14.5, trend: 'up', trendValue: 5.7 },
+    { city: 'London', country: 'UK', sales: 342, customers: 245, revenue: 21580, cvr: 17.2, trend: 'down', trendValue: 3.5 },
+    { city: 'Toronto', country: 'Canada', sales: 265, customers: 198, revenue: 16850, cvr: 16.1, trend: 'up', trendValue: 12.1 },
+    { city: 'Sydney', country: 'Australia', sales: 198, customers: 152, revenue: 19140, cvr: 18.9, trend: 'up', trendValue: 7.3 },
+    { city: 'Berlin', country: 'Germany', sales: 176, customers: 138, revenue: 14260, cvr: 19.2, trend: 'up', trendValue: 15.8 },
   ],
   interests: [
     { category: 'Clothing', value: 28, color: '#1192E8' },     // Cyan 50
@@ -149,57 +155,57 @@ const topPerformingItems = [
 ];
 
 // State-level sales data for USA heatmap
-const usaStatesSalesData: { [key: string]: number } = {
-  'California': 485,
-  'New York': 356,
-  'Texas': 312,
-  'Florida': 245,
-  'Illinois': 198,
-  'Pennsylvania': 187,
-  'Ohio': 165,
-  'Georgia': 154,
-  'North Carolina': 143,
-  'Michigan': 132,
-  'New Jersey': 128,
-  'Virginia': 115,
-  'Washington': 108,
-  'Arizona': 98,
-  'Massachusetts': 95,
-  'Tennessee': 87,
-  'Indiana': 82,
-  'Missouri': 78,
-  'Maryland': 75,
-  'Wisconsin': 71,
-  'Colorado': 68,
-  'Minnesota': 65,
-  'South Carolina': 58,
-  'Alabama': 52,
-  'Louisiana': 48,
-  'Kentucky': 45,
-  'Oregon': 42,
-  'Oklahoma': 38,
-  'Connecticut': 35,
-  'Utah': 32,
-  'Iowa': 28,
-  'Nevada': 25,
-  'Arkansas': 22,
-  'Mississippi': 18,
-  'Kansas': 15,
-  'New Mexico': 12,
-  'Nebraska': 10,
-  'West Virginia': 8,
-  'Idaho': 7,
-  'Hawaii': 6,
-  'New Hampshire': 5,
-  'Maine': 4,
-  'Montana': 3,
-  'Rhode Island': 3,
-  'Delaware': 2,
-  'South Dakota': 2,
-  'North Dakota': 1,
-  'Alaska': 1,
-  'Vermont': 1,
-  'Wyoming': 1,
+const usaStatesSalesData: { [key: string]: { sales: number; customers: number; revenue: number; cvr: number } } = {
+  'California': { sales: 485, customers: 342, revenue: 18250, cvr: 3.2 },
+  'New York': { sales: 356, customers: 258, revenue: 13420, cvr: 3.1 },
+  'Texas': { sales: 312, customers: 225, revenue: 11760, cvr: 3.3 },
+  'Florida': { sales: 245, customers: 178, revenue: 9245, cvr: 3.2 },
+  'Illinois': { sales: 198, customers: 145, revenue: 7524, cvr: 3.0 },
+  'Pennsylvania': { sales: 187, customers: 136, revenue: 7098, cvr: 2.9 },
+  'Ohio': { sales: 165, customers: 122, revenue: 6270, cvr: 3.1 },
+  'Georgia': { sales: 154, customers: 112, revenue: 5852, cvr: 3.0 },
+  'North Carolina': { sales: 143, customers: 104, revenue: 5434, cvr: 3.2 },
+  'Michigan': { sales: 132, customers: 96, revenue: 5016, cvr: 2.9 },
+  'New Jersey': { sales: 128, customers: 94, revenue: 4864, cvr: 3.0 },
+  'Virginia': { sales: 115, customers: 84, revenue: 4370, cvr: 3.1 },
+  'Washington': { sales: 108, customers: 79, revenue: 4104, cvr: 3.3 },
+  'Arizona': { sales: 98, customers: 72, revenue: 3724, cvr: 3.2 },
+  'Massachusetts': { sales: 95, customers: 70, revenue: 3610, cvr: 3.0 },
+  'Tennessee': { sales: 87, customers: 64, revenue: 3306, cvr: 3.1 },
+  'Indiana': { sales: 82, customers: 60, revenue: 3116, cvr: 2.9 },
+  'Missouri': { sales: 78, customers: 57, revenue: 2964, cvr: 3.0 },
+  'Maryland': { sales: 75, customers: 55, revenue: 2850, cvr: 3.2 },
+  'Wisconsin': { sales: 71, customers: 52, revenue: 2698, cvr: 2.9 },
+  'Colorado': { sales: 68, customers: 50, revenue: 2584, cvr: 3.3 },
+  'Minnesota': { sales: 65, customers: 48, revenue: 2470, cvr: 3.0 },
+  'South Carolina': { sales: 58, customers: 43, revenue: 2204, cvr: 3.1 },
+  'Alabama': { sales: 52, customers: 38, revenue: 1976, cvr: 2.9 },
+  'Louisiana': { sales: 48, customers: 35, revenue: 1824, cvr: 3.0 },
+  'Kentucky': { sales: 45, customers: 33, revenue: 1710, cvr: 3.1 },
+  'Oregon': { sales: 42, customers: 31, revenue: 1596, cvr: 3.2 },
+  'Oklahoma': { sales: 38, customers: 28, revenue: 1444, cvr: 2.9 },
+  'Connecticut': { sales: 35, customers: 26, revenue: 1330, cvr: 3.0 },
+  'Utah': { sales: 32, customers: 24, revenue: 1216, cvr: 3.3 },
+  'Iowa': { sales: 28, customers: 21, revenue: 1064, cvr: 2.9 },
+  'Nevada': { sales: 25, customers: 19, revenue: 950, cvr: 3.2 },
+  'Arkansas': { sales: 22, customers: 16, revenue: 836, cvr: 3.0 },
+  'Mississippi': { sales: 18, customers: 13, revenue: 684, cvr: 2.8 },
+  'Kansas': { sales: 15, customers: 11, revenue: 570, cvr: 2.9 },
+  'New Mexico': { sales: 12, customers: 9, revenue: 456, cvr: 3.1 },
+  'Nebraska': { sales: 10, customers: 7, revenue: 380, cvr: 2.9 },
+  'West Virginia': { sales: 8, customers: 6, revenue: 304, cvr: 2.7 },
+  'Idaho': { sales: 7, customers: 5, revenue: 266, cvr: 3.0 },
+  'Hawaii': { sales: 6, customers: 4, revenue: 228, cvr: 3.2 },
+  'New Hampshire': { sales: 5, customers: 4, revenue: 190, cvr: 2.8 },
+  'Maine': { sales: 4, customers: 3, revenue: 152, cvr: 2.9 },
+  'Montana': { sales: 3, customers: 2, revenue: 114, cvr: 2.7 },
+  'Rhode Island': { sales: 3, customers: 2, revenue: 114, cvr: 2.8 },
+  'Delaware': { sales: 2, customers: 1, revenue: 76, cvr: 2.6 },
+  'South Dakota': { sales: 2, customers: 1, revenue: 76, cvr: 2.7 },
+  'North Dakota': { sales: 1, customers: 1, revenue: 38, cvr: 2.5 },
+  'Alaska': { sales: 1, customers: 1, revenue: 38, cvr: 2.6 },
+  'Vermont': { sales: 1, customers: 1, revenue: 38, cvr: 2.5 },
+  'Wyoming': { sales: 1, customers: 1, revenue: 38, cvr: 2.5 },
 };
 
 const PartnerPerformanceDashboard = () => {
@@ -213,11 +219,15 @@ const PartnerPerformanceDashboard = () => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([-95, 40]);
   const [mapZoom, setMapZoom] = useState<number>(3);
   const [mapType, setMapType] = useState<'world' | 'usa-states'>('world');
+  const [selectedMetric, setSelectedMetric] = useState<'orders' | 'customers' | 'revenue' | 'cvr'>('orders');
   
   // Tooltip states
   const [hoveredRegion, setHoveredRegion] = useState<{
     name: string;
     sales: number;
+    customers?: number;
+    revenue?: number;
+    cvr?: number;
     percentage?: number;
     trend?: 'up' | 'down';
     trendValue?: number;
@@ -453,21 +463,21 @@ const PartnerPerformanceDashboard = () => {
       color: '#0f62fe'
     },
     {
-      title: 'Total Clicks',
-      value: '8,920',
-      change: '+23.1%',
+      title: 'Click Through Rate',
+      value: '4.2%',
+      change: '+0.8%',
       trend: 'up',
-      description: 'Last 7 days',
-      trendData: clicksTrend,
+      description: 'Average CTR',
+      trendData: cvrTrend,
       color: '#8a3ffc'
     },
     {
-      title: 'Conversions',
-      value: '1,243',
-      change: '+15.2%',
+      title: 'ROAS',
+      value: '3.8x',
+      change: '+0.5x',
       trend: 'up',
-      description: 'Last 7 days',
-      trendData: conversionsTrend,
+      description: 'Return on ad spend',
+      trendData: revenueTrend.map((v, i) => (v / 1000) * 0.7),
       color: '#0072c3'
     },
     {
@@ -475,7 +485,7 @@ const PartnerPerformanceDashboard = () => {
       value: '13.9%',
       change: '-0.3%',
       trend: 'down',
-      description: 'Average',
+      description: 'Average CVR',
       trendData: cvrTrend,
       color: '#00539a'
     },
@@ -560,8 +570,13 @@ const PartnerPerformanceDashboard = () => {
     const trendData = mockRevenueData.map((row, index) => ({
       date: row.date,
       value: metric.trendData[index] || 0,
+      revenueNew: row.revenueNew || 0,
+      revenueReturning: row.revenueReturning || 0,
       index
     }));
+
+    // Check if this is the Total Revenue card
+    const isTotalRevenueCard = metric.title === 'Total Revenue';
 
     return (
       <div className="shopify-metric-card">
@@ -609,52 +624,159 @@ const PartnerPerformanceDashboard = () => {
           </div>
         </div>
         
-        {/* Trend Chart - Prominent and visible with axes */}
+        {/* Chart - Stacked Bar Chart for Total Revenue, Line Chart for others */}
         <div style={{ 
           width: '100%', 
           height: '180px',
           padding: '0 12px 0 12px'
         }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={trendData} 
-              margin={{ top: 5, right: 10, left: 0, bottom: 25 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                stroke="#6d7175" 
-                tick={{ fontSize: 12, fill: '#6d7175' }}
-                tickLine={{ stroke: '#6d7175' }}
-                ticks={[trendData[0]?.date, trendData[Math.floor(trendData.length / 2)]?.date, trendData[trendData.length - 1]?.date]}
-              />
-              <YAxis 
-                stroke="#6d7175" 
-                tick={{ fontSize: 12, fill: '#6d7175' }}
-                tickLine={{ stroke: '#6d7175' }}
-                width={40}
-                tickFormatter={(value: number) => {
-                  if (metric.title.includes('Revenue')) {
+            {isTotalRevenueCard ? (
+              <BarChart 
+                data={trendData} 
+                margin={{ top: 5, right: 10, left: 0, bottom: 25 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#6d7175" 
+                  tick={{ fontSize: 12, fill: '#6d7175' }}
+                  tickLine={{ stroke: '#6d7175' }}
+                  ticks={[trendData[0]?.date, trendData[Math.floor(trendData.length / 2)]?.date, trendData[trendData.length - 1]?.date]}
+                />
+                <YAxis 
+                  stroke="#6d7175" 
+                  tick={{ fontSize: 12, fill: '#6d7175' }}
+                  tickLine={{ stroke: '#6d7175' }}
+                  width={40}
+                  tickFormatter={(value: number) => {
                     if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
                     return `$${value}`;
-                  }
-                  if (metric.title.includes('Rate')) return `${value.toFixed(0)}%`;
-                  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
-                  return value.toString();
-                }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke={metric.color} 
-                strokeWidth={2.5}
-                dot={{ r: 3, fill: metric.color, strokeWidth: 0 }}
-                isAnimationActive={false}
-                activeDot={{ r: 5, fill: metric.color }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'white', 
+                  }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white',
+                    border: '1px solid #e1e3e5',
+                    borderRadius: '6px',
+                    padding: '10px 14px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    fontSize: '13px'
+                  }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      const total = data.revenueNew + data.revenueReturning;
+                      const newPercent = ((data.revenueNew / total) * 100).toFixed(0);
+                      const returningPercent = ((data.revenueReturning / total) * 100).toFixed(0);
+                      
+                      return (
+                        <div style={{ 
+                          backgroundColor: 'white',
+                          border: '1px solid #e1e3e5',
+                          borderRadius: '6px',
+                          padding: '10px 14px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }}>
+                          <div style={{ fontWeight: '600', marginBottom: '8px', color: '#202124' }}>
+                            {data.date}
+                          </div>
+                          <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '10px', color: '#202124' }}>
+                            Total: ${total.toLocaleString()}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                            <div style={{ width: '12px', height: '12px', backgroundColor: '#0f62fe', borderRadius: '2px' }}></div>
+                            <span style={{ color: '#5f6368', fontSize: '13px' }}>New Users:</span>
+                            <span style={{ fontWeight: '600', color: '#202124', marginLeft: 'auto' }}>${data.revenueNew.toLocaleString()}</span>
+                            <span style={{ color: '#5f6368', fontSize: '12px' }}>({newPercent}%)</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '12px', height: '12px', backgroundColor: '#a6c8ff', borderRadius: '2px' }}></div>
+                            <span style={{ color: '#5f6368', fontSize: '13px' }}>Returning:</span>
+                            <span style={{ fontWeight: '600', color: '#202124', marginLeft: 'auto' }}>${data.revenueReturning.toLocaleString()}</span>
+                            <span style={{ color: '#5f6368', fontSize: '12px' }}>({returningPercent}%)</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Legend 
+                  verticalAlign="top" 
+                  height={36}
+                  formatter={(value: string) => {
+                    if (value === 'revenueNew') return 'New Users';
+                    if (value === 'revenueReturning') return 'Returning Users';
+                    if (value === 'value') return 'Total Trend';
+                    return value;
+                  }}
+                  wrapperStyle={{ fontSize: '12px', paddingBottom: '8px' }}
+                />
+                <Bar 
+                  dataKey="revenueNew" 
+                  stackId="revenue" 
+                  fill="#0f62fe"
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar 
+                  dataKey="revenueReturning" 
+                  stackId="revenue" 
+                  fill="#a6c8ff"
+                  radius={[4, 4, 0, 0]}
+                />
+                {/* Trend line overlay */}
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#161616" 
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: '#161616', strokeWidth: 0 }}
+                  isAnimationActive={false}
+                  activeDot={{ r: 5, fill: '#161616' }}
+                  strokeDasharray="5 5"
+                />
+              </BarChart>
+            ) : (
+              <LineChart 
+                data={trendData} 
+                margin={{ top: 5, right: 10, left: 0, bottom: 25 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#6d7175" 
+                  tick={{ fontSize: 12, fill: '#6d7175' }}
+                  tickLine={{ stroke: '#6d7175' }}
+                  ticks={[trendData[0]?.date, trendData[Math.floor(trendData.length / 2)]?.date, trendData[trendData.length - 1]?.date]}
+                />
+                <YAxis 
+                  stroke="#6d7175" 
+                  tick={{ fontSize: 12, fill: '#6d7175' }}
+                  tickLine={{ stroke: '#6d7175' }}
+                  width={40}
+                  tickFormatter={(value: number) => {
+                    if (metric.title.includes('Revenue')) {
+                      if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
+                      return `$${value}`;
+                    }
+                    if (metric.title.includes('Rate')) return `${value.toFixed(0)}%`;
+                    if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                    return value.toString();
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke={metric.color} 
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: metric.color, strokeWidth: 0 }}
+                  isAnimationActive={false}
+                  activeDot={{ r: 5, fill: metric.color }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
                   border: '1px solid var(--shopify-border)',
                   borderRadius: '6px',
                   padding: '4px 8px',
@@ -667,6 +789,7 @@ const PartnerPerformanceDashboard = () => {
                 }}
               />
             </LineChart>
+            )}
           </ResponsiveContainer>
         </div>
       </div>
@@ -2338,6 +2461,327 @@ const PartnerPerformanceDashboard = () => {
                 </div>
               )}
 
+              {/* 1. Recent Activity & Live Performance */}
+              <div style={{ 
+                marginTop: '24px',
+                marginLeft: '24px',
+                marginRight: '24px',
+                marginBottom: '24px',
+              }}>
+                <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
+                  {/* Left Panel - Historical Comparison */}
+                  <Column lg={11} style={{ paddingLeft: 0, paddingRight: 0 }}>
+                    <div style={{ 
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid var(--shopify-border)',
+                      padding: '24px',
+                      height: '100%'
+                    }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '400', color: '#202124', marginBottom: '20px' }}>
+                        Last 7 days vs. Previous period
+                      </h4>
+                      
+                      {/* KPI Cards - Last 7 Days vs Previous */}
+                      <div style={{ display: 'flex', gap: '32px', marginBottom: '24px' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '6px', fontWeight: '400' }}>New users</div>
+                          <div style={{ fontSize: '28px', fontWeight: '400', color: '#202124', lineHeight: '1.2', marginBottom: '4px' }}>241K</div>
+                          <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
+                            </svg>
+                            6.4%
+                          </div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '6px', fontWeight: '400' }}>Total users</div>
+                          <div style={{ fontSize: '28px', fontWeight: '400', color: '#202124', lineHeight: '1.2', marginBottom: '4px' }}>263K</div>
+                          <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
+                            </svg>
+                            6.9%
+                          </div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '6px', fontWeight: '400' }}>Impressions</div>
+                          <div style={{ fontSize: '28px', fontWeight: '400', color: '#202124', lineHeight: '1.2', marginBottom: '4px' }}>840K</div>
+                          <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
+                            </svg>
+                            5.2%
+                          </div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '6px', fontWeight: '400' }}>Returning users</div>
+                          <div style={{ fontSize: '28px', fontWeight: '400', color: '#202124', lineHeight: '1.2', marginBottom: '4px' }}>22K</div>
+                          <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
+                            </svg>
+                            8.3%
+                          </div>
+                        </div>
+                      </div>  
+
+                      {/* Comparison Line Chart */}
+                      <div style={{ marginTop: '20px' }}>
+                        <ResponsiveContainer width="100%" height={280}>
+                          <LineChart 
+                            data={[
+                              { date: 'Jan 13', current: 38000, previous: 42000 },
+                              { date: 'Jan 14', current: 35000, previous: 40000 },
+                              { date: 'Jan 15', current: 36500, previous: 41500 },
+                              { date: 'Jan 16', current: 34000, previous: 39500 },
+                              { date: 'Jan 17', current: 37500, previous: 43000 },
+                              { date: 'Jan 18', current: 39000, previous: 44500 },
+                              { date: 'Jan 19', current: 36000, previous: 41000 },
+                            ]}
+                            margin={{ top: 20, right: 10, left: -25, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f3f4" vertical={false} />
+                            <XAxis 
+                              dataKey="date" 
+                              tick={{ fontSize: 12, fill: '#5f6368' }}
+                              axisLine={{ stroke: '#dadce0' }}
+                              tickLine={false}
+                            />
+                            <YAxis 
+                              tick={{ fontSize: 12, fill: '#5f6368' }}
+                              axisLine={false}
+                              tickLine={false}
+                              tickFormatter={(value) => `${value / 1000}K`}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'white', 
+                                border: '1px solid #dadce0',
+                                borderRadius: '8px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                padding: '12px'
+                              }}
+                              labelStyle={{ 
+                                color: '#202124',
+                                fontWeight: '500',
+                                marginBottom: '8px'
+                              }}
+                              itemStyle={{
+                                color: '#5f6368',
+                                fontSize: '13px',
+                                padding: '4px 0'
+                              }}
+                              formatter={(value: any, name: any) => {
+                                const formattedValue = `${(value / 1000).toFixed(1)}K`;
+                                return [formattedValue, name];
+                              }}
+                              cursor={{ stroke: '#dadce0', strokeWidth: 1, strokeDasharray: '5 5' }}
+                            />
+                            <Legend 
+                              wrapperStyle={{ fontSize: '13px', paddingTop: '16px' }}
+                              formatter={(value, entry: any) => {
+                                const isDashed = entry.payload.strokeDasharray;
+                                return (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                    <svg width="20" height="2" style={{ marginRight: '4px' }}>
+                                      {isDashed ? (
+                                        <line x1="0" y1="1" x2="20" y2="1" stroke="#1a73e8" strokeWidth="2" strokeDasharray="3 3" />
+                                      ) : (
+                                        <line x1="0" y1="1" x2="20" y2="1" stroke="#1a73e8" strokeWidth="2" />
+                                      )}
+                                    </svg>
+                                    <span style={{ color: '#5f6368' }}>{value}</span>
+                                  </span>
+                                );
+                              }}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="previous" 
+                              stroke="#1a73e8" 
+                              strokeWidth={2}
+                              strokeDasharray="5 5"
+                              dot={false}
+                              activeDot={{ r: 5, fill: '#1a73e8', strokeWidth: 2, stroke: 'white' }}
+                              name="Previous period"
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="current" 
+                              stroke="#1a73e8" 
+                              strokeWidth={2}
+                              dot={false}
+                              activeDot={{ r: 5, fill: '#1a73e8', strokeWidth: 2, stroke: 'white' }}
+                              name="Last 7 days"
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                          <select style={{ 
+                            padding: '6px 12px', 
+                            border: '1px solid #dadce0', 
+                            borderRadius: '4px', 
+                            backgroundColor: 'white',
+                            fontSize: '13px',
+                            color: '#202124',
+                            cursor: 'pointer',
+                            outline: 'none'
+                          }}>
+                            <option>Last 7 days</option>
+                            <option>Last 28 days</option>
+                            <option>Last 90 days</option>
+                          </select>
+                          <div style={{ fontSize: '13px', color: '#1a73e8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            View reports snapshot
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M6 3L11 8L6 13" stroke="#1a73e8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Column>
+
+                  {/* Right Panel - Real-time Activity */}
+                  <Column lg={5} style={{ paddingLeft: 0, paddingRight: 0 }}>
+                    <div style={{ 
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid var(--shopify-border)',
+                      padding: '24px',
+                      height: '100%'
+                    }}>
+                      {/* Live Metric */}
+                      <div style={{ marginBottom: '24px' }}>
+                        <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '8px', fontWeight: '400', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" fill="#34a853"/>
+                            <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" stroke="white" strokeWidth="2"/>
+                          </svg>
+                          ACTIVE USERS IN LAST 30 MINUTES
+                        </div>
+                        <div style={{ fontSize: '40px', fontWeight: '400', color: '#202124', lineHeight: 1 }}>436</div>
+                      </div>
+
+                      {/* Orders Per Minute Chart */}
+                      <div style={{ marginBottom: '24px' }}>
+                        <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '12px', fontWeight: '400' }}>
+                          Active users per minute
+                        </div>
+                        <ResponsiveContainer width="100%" height={80}>
+                          <BarChart data={[
+                            { time: '1', value: 12 },
+                            { time: '2', value: 18 },
+                            { time: '3', value: 15 },
+                            { time: '4', value: 22 },
+                            { time: '5', value: 19 },
+                            { time: '6', value: 25 },
+                            { time: '7', value: 20 },
+                            { time: '8', value: 17 },
+                            { time: '9', value: 23 },
+                            { time: '10', value: 21 },
+                            { time: '11', value: 16 },
+                            { time: '12', value: 19 },
+                            { time: '13', value: 24 },
+                            { time: '14', value: 18 },
+                            { time: '15', value: 20 },
+                          ]}>
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'white', 
+                                border: '1px solid #dadce0',
+                                borderRadius: '8px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                padding: '8px 12px'
+                              }}
+                              labelStyle={{ 
+                                color: '#202124',
+                                fontWeight: '500',
+                                fontSize: '12px',
+                                marginBottom: '4px'
+                              }}
+                              itemStyle={{
+                                color: '#5f6368',
+                                fontSize: '13px'
+                              }}
+                              formatter={(value: any) => [`${value} users`, '']}
+                              labelFormatter={(label) => `${label} min ago`}
+                              cursor={{ fill: 'rgba(26, 115, 232, 0.1)' }}
+                            />
+                            <Bar dataKey="value" fill="#1a73e8" radius={[2, 2, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Geographic Breakdown */}
+                      <div>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between',
+                          fontSize: '11px',
+                          color: 'var(--shopify-text-secondary)',
+                          marginBottom: '12px',
+                          fontWeight: '600',
+                          textTransform: 'uppercase',
+                          borderBottom: '1px solid var(--shopify-border)',
+                          paddingBottom: '8px'
+                        }}>
+                          <span>Country</span>
+                          <span>Active Users</span>
+                        </div>
+                        
+                        {[
+                          { country: 'United States', users: 242 },
+                          { country: 'United Kingdom', users: 62 },
+                          { country: 'China', users: 61 },
+                          { country: 'Canada', users: 17 },
+                          { country: 'Germany', users: 15 },
+                        ].map((item, index) => {
+                          const maxUsers = 242;
+                          const barWidth = (item.users / maxUsers) * 100;
+                          
+                          return (
+                            <div key={index} style={{ marginBottom: '12px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '13px', color: 'var(--shopify-text-primary)', fontWeight: '500' }}>
+                                  {item.country}
+                                </span>
+                                <span style={{ fontSize: '13px', color: 'var(--shopify-text-primary)', fontWeight: '600' }}>
+                                  {item.users}
+                                </span>
+                              </div>
+                              <div style={{ 
+                                width: '100%', 
+                                height: '6px', 
+                                backgroundColor: '#e0e0e0',
+                                borderRadius: '3px',
+                                overflow: 'hidden'
+                              }}>
+                                <div style={{ 
+                                  width: `${barWidth}%`, 
+                                  height: '100%', 
+                                  backgroundColor: '#1a73e8',
+                                  borderRadius: '3px',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        <div style={{ fontSize: '13px', color: '#1a73e8', textAlign: 'right', marginTop: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                          View realtime
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 3L11 8L6 13" stroke="#1a73e8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </Column>
+                </Grid>
+              </div>
+
               {/* KPI Cards */}
                 <div style={{ 
                   padding: '0 0 24px 0',
@@ -2355,7 +2799,7 @@ const PartnerPerformanceDashboard = () => {
 
               {/* Seller-Focused Dashboard Sections */}
               
-              {/* 1. Your Earnings Overview */}
+              {/* 2. Performance Overview */}
               <div style={{ 
                 marginLeft: '24px',
                 marginRight: '24px',
@@ -2583,10 +3027,41 @@ const PartnerPerformanceDashboard = () => {
                 <div style={{ marginBottom: '24px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <div style={{ fontSize: '15px', fontWeight: '600' }}>Global Customer Distribution</div>
-                    {/* Region Filter */}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>Region:</span>
-                      <select
+                    {/* Metric and Region Filters */}
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                      {/* Metric Switcher */}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>View by:</span>
+                        <select
+                          value={selectedMetric}
+                          onChange={(e) => setSelectedMetric(e.target.value as 'orders' | 'customers' | 'revenue' | 'cvr')}
+                          style={{
+                            padding: '6px 24px 6px 12px',
+                            border: '1px solid var(--shopify-border)',
+                            borderRadius: '6px',
+                            backgroundColor: 'white',
+                            fontSize: '13px',
+                            color: 'var(--shopify-text-primary)',
+                            cursor: 'pointer',
+                            outline: 'none',
+                            appearance: 'none',
+                            backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'12\' height=\'8\' viewBox=\'0 0 12 8\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 1L6 6L11 1\' stroke=\'%236d7175\' stroke-width=\'2\' stroke-linecap=\'round\'/%3E%3C/svg%3E")',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 8px center',
+                            transition: 'border-color 0.15s ease',
+                            minWidth: '140px'
+                          }}
+                        >
+                          <option value="orders">Orders</option>
+                          <option value="customers">Customers</option>
+                          <option value="revenue">Revenue</option>
+                          <option value="cvr">Conversion Rate</option>
+                        </select>
+                      </div>
+                      {/* Region Filter */}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>Region:</span>
+                        <select
                         value={mapRegion}
                         onChange={(e) => {
                           const region = e.target.value;
@@ -2634,6 +3109,7 @@ const PartnerPerformanceDashboard = () => {
                         <option value="oceania">Oceania</option>
                         <option value="global">Global View</option>
                       </select>
+                      </div>
                     </div>
                   </div>
                   <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
@@ -2662,8 +3138,13 @@ const PartnerPerformanceDashboard = () => {
                             {mapType === 'world' && (
                               <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
                               {({ geographies }) => {
-                                // Calculate max sales for color scaling
-                                const maxSales = Math.max(...customerDemographics.topCountries.map(c => c.sales));
+                                // Calculate max value for color scaling based on selected metric
+                                const maxValue = Math.max(...customerDemographics.topCountries.map(c => {
+                                  if (selectedMetric === 'orders') return c.sales;
+                                  if (selectedMetric === 'customers') return c.customers;
+                                  if (selectedMetric === 'revenue') return c.revenue;
+                                  return c.cvr; // cvr
+                                }));
                                 
                                 // Create a country name mapping for better matching
                                 const countryNameMap: { [key: string]: string } = {
@@ -2682,23 +3163,53 @@ const PartnerPerformanceDashboard = () => {
                                   const countryData = customerDemographics.topCountries.find(
                                     (c) => c.country === mappedName
                                   );
-                                  const sales = countryData ? countryData.sales : 0;
-                                  const percentage = countryData ? countryData.percentage : 0;
+                                  
+                                  // Get the value based on selected metric
+                                  let metricValue = 0;
+                                  if (countryData) {
+                                    if (selectedMetric === 'orders') metricValue = countryData.sales;
+                                    else if (selectedMetric === 'customers') metricValue = countryData.customers;
+                                    else if (selectedMetric === 'revenue') metricValue = countryData.revenue;
+                                    else metricValue = countryData.cvr;
+                                  }
+                                  
                                   const isHighlighted = selectedCountry === countryData?.country;
                                   
-                                  // Calculate color intensity based on sales (heatmap)
-                                  const getHeatmapColor = (salesValue: number) => {
-                                    if (salesValue === 0) return '#f5f5f5';
-                                    const intensity = salesValue / maxSales;
-                                    // Use brand purple with varying opacity (same formula as USA states)
-                                    return `rgba(114, 86, 246, ${0.15 + intensity * 0.85})`;
+                                  // Get highlight color based on selected metric
+                                  const getHighlightColor = () => {
+                                    if (selectedMetric === 'orders') return '#7256F6'; // Purple
+                                    if (selectedMetric === 'customers') return '#1192E8'; // Blue
+                                    if (selectedMetric === 'revenue') return '#16A34A'; // Green
+                                    return '#F97316'; // Orange for CVR
+                                  };
+                                  
+                                  // Calculate color intensity based on metric value (heatmap)
+                                  // Use different colors for different metrics
+                                  const getHeatmapColor = (value: number) => {
+                                    if (value === 0) return '#f5f5f5';
+                                    const intensity = value / maxValue;
+                                    
+                                    // Different color for each metric
+                                    if (selectedMetric === 'orders') {
+                                      // Purple for orders
+                                      return `rgba(114, 86, 246, ${0.15 + intensity * 0.85})`;
+                                    } else if (selectedMetric === 'customers') {
+                                      // Blue for customers
+                                      return `rgba(17, 146, 232, ${0.15 + intensity * 0.85})`;
+                                    } else if (selectedMetric === 'revenue') {
+                                      // Green for revenue
+                                      return `rgba(22, 163, 74, ${0.15 + intensity * 0.85})`;
+                                    } else {
+                                      // Orange for CVR
+                                      return `rgba(249, 115, 22, ${0.15 + intensity * 0.85})`;
+                                    }
                                   };
 
                                   return (
                                     <Geography
                                       key={geo.rsmKey}
                                       geography={geo}
-                                      fill={isHighlighted ? '#7256F6' : getHeatmapColor(sales)}
+                                      fill={isHighlighted ? getHighlightColor() : getHeatmapColor(metricValue)}
                                       stroke="#ffffff"
                                       strokeWidth={0.5}
                                       onMouseMove={(e: any) => {
@@ -2707,6 +3218,9 @@ const PartnerPerformanceDashboard = () => {
                                           setHoveredRegion({
                                             name: countryData.country,
                                             sales: countryData.sales,
+                                            customers: countryData.customers,
+                                            revenue: countryData.revenue,
+                                            cvr: countryData.cvr,
                                             percentage: countryData.percentage,
                                             trend: countryData.trend as 'up' | 'down',
                                             trendValue: countryData.trendValue
@@ -2719,7 +3233,7 @@ const PartnerPerformanceDashboard = () => {
                                       style={{
                                         default: { outline: 'none', cursor: 'pointer' },
                                         hover: {
-                                          fill: '#7256F6',
+                                          fill: getHighlightColor(),
                                           outline: 'none',
                                           cursor: 'pointer',
                                           opacity: 0.8
@@ -2737,35 +3251,72 @@ const PartnerPerformanceDashboard = () => {
                             {mapType === 'usa-states' && (
                               <Geographies geography="https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json">
                               {({ geographies }: { geographies: any }) => {
-                                // Calculate max sales for color scaling
-                                const maxSales = Math.max(...Object.values(usaStatesSalesData));
+                                // Calculate max value for color scaling based on selected metric
+                                const maxValue = Math.max(...Object.values(usaStatesSalesData).map(data => {
+                                  if (selectedMetric === 'orders') return data.sales;
+                                  if (selectedMetric === 'customers') return data.customers;
+                                  if (selectedMetric === 'revenue') return data.revenue;
+                                  return data.cvr;
+                                }));
                                 
                                 return geographies.map((geo: any) => {
                                   const stateName = geo.properties.name;
-                                  const sales = usaStatesSalesData[stateName] || 0;
+                                  const stateData = usaStatesSalesData[stateName];
+                                  const sales = stateData?.sales || 0;
+                                  
+                                  // Get the value based on selected metric
+                                  let metricValue = 0;
+                                  if (stateData) {
+                                    if (selectedMetric === 'orders') metricValue = stateData.sales;
+                                    else if (selectedMetric === 'customers') metricValue = stateData.customers;
+                                    else if (selectedMetric === 'revenue') metricValue = stateData.revenue;
+                                    else metricValue = stateData.cvr;
+                                  }
+                                  
                                   const isHighlighted = selectedCity && cityCoordinates[selectedCity]?.state === stateName;
                                   
-                                  // Calculate color intensity based on sales (heatmap)
-                                  const getHeatmapColor = (salesValue: number) => {
-                                    if (salesValue === 0) return '#f5f5f5';
-                                    const intensity = salesValue / maxSales;
-                                    // Use brand purple with varying opacity
-                                    return `rgba(114, 86, 246, ${0.15 + intensity * 0.85})`;
+                                  // Get highlight color based on selected metric
+                                  const getHighlightColor = () => {
+                                    if (selectedMetric === 'orders') return '#7256F6'; // Purple
+                                    if (selectedMetric === 'customers') return '#1192E8'; // Blue
+                                    if (selectedMetric === 'revenue') return '#16A34A'; // Green
+                                    return '#F97316'; // Orange for CVR
+                                  };
+                                  
+                                  // Calculate color intensity based on metric value (heatmap)
+                                  // Use different colors for different metrics
+                                  const getHeatmapColor = (value: number) => {
+                                    if (value === 0) return '#f5f5f5';
+                                    const intensity = value / maxValue;
+                                    
+                                    // Match the color to selected metric
+                                    if (selectedMetric === 'orders') {
+                                      return `rgba(114, 86, 246, ${0.15 + intensity * 0.85})`;
+                                    } else if (selectedMetric === 'customers') {
+                                      return `rgba(17, 146, 232, ${0.15 + intensity * 0.85})`;
+                                    } else if (selectedMetric === 'revenue') {
+                                      return `rgba(22, 163, 74, ${0.15 + intensity * 0.85})`;
+                                    } else {
+                                      return `rgba(249, 115, 22, ${0.15 + intensity * 0.85})`;
+                                    }
                                   };
                                   
                                   return (
                                     <Geography
                                       key={geo.rsmKey}
                                       geography={geo}
-                                      fill={isHighlighted ? '#7256F6' : getHeatmapColor(sales)}
+                                      fill={isHighlighted ? getHighlightColor() : getHeatmapColor(metricValue)}
                                       stroke="#ffffff"
                                       strokeWidth={0.8}
                                       onMouseMove={(e: any) => {
-                                        if (sales > 0 && e.clientX && e.clientY) {
+                                        if (metricValue > 0 && e.clientX && e.clientY) {
                                           setTooltipPosition({ x: e.clientX, y: e.clientY });
                                           setHoveredRegion({
                                             name: stateName,
-                                            sales: sales
+                                            sales: stateData?.sales || 0,
+                                            customers: stateData?.customers,
+                                            revenue: stateData?.revenue,
+                                            cvr: stateData?.cvr
                                           });
                                         }
                                       }}
@@ -2775,7 +3326,7 @@ const PartnerPerformanceDashboard = () => {
                                       style={{
                                         default: { outline: 'none', cursor: 'pointer' },
                                         hover: {
-                                          fill: '#7256F6',
+                                          fill: getHighlightColor(),
                                           outline: 'none',
                                           cursor: 'pointer',
                                           opacity: 0.8
@@ -2815,39 +3366,54 @@ const PartnerPerformanceDashboard = () => {
                             }}>
                               {hoveredRegion.name}
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {/* Orders */}
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)' }}>Orders:</span>
-                                <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                                  {hoveredRegion.sales.toLocaleString()}
-                                </span>
-                              </div>
-                              {hoveredRegion.percentage !== undefined && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)' }}>Share:</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                                    {hoveredRegion.percentage}%
+                                    {hoveredRegion.sales.toLocaleString()}
+                                  </span>
+                                  {hoveredRegion.trend && (
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      gap: '2px',
+                                      color: hoveredRegion.trend === 'up' ? '#16a34a' : '#dc2626',
+                                      fontSize: '11px',
+                                      fontWeight: '600'
+                                    }}>
+                                      {hoveredRegion.trend === 'up' ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
+                                      {hoveredRegion.trendValue}%
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              {/* Customers */}
+                              {hoveredRegion.customers !== undefined && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)' }}>Customers:</span>
+                                  <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                    {hoveredRegion.customers.toLocaleString()}
                                   </span>
                                 </div>
                               )}
-                              {hoveredRegion.trend && (
+                              {/* Revenue */}
+                              {hoveredRegion.revenue !== undefined && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)' }}>Trend:</span>
-                                  <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '4px',
-                                    color: hoveredRegion.trend === 'up' ? '#16a34a' : '#dc2626',
-                                    fontSize: '12px',
-                                    fontWeight: '600'
-                                  }}>
-                                    {hoveredRegion.trend === 'up' ? (
-                                      <ArrowUp size={12} />
-                                    ) : (
-                                      <ArrowDown size={12} />
-                                    )}
-                                    {hoveredRegion.trendValue}%
-                                  </div>
+                                  <span style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)' }}>Revenue:</span>
+                                  <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                    ${hoveredRegion.revenue.toLocaleString()}
+                                  </span>
+                                </div>
+                              )}
+                              {/* Conversion Rate */}
+                              {hoveredRegion.cvr !== undefined && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)' }}>CVR:</span>
+                                  <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                    {hoveredRegion.cvr.toFixed(1)}%
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -2939,8 +3505,24 @@ const PartnerPerformanceDashboard = () => {
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <div style={{ width: '16px', height: '10px', background: 'linear-gradient(to right, rgba(114, 86, 246, 0.2), rgba(114, 86, 246, 1))', borderRadius: '2px' }}></div>
-                              <span style={{ color: '#6d7175' }}>Orders</span>
+                              <div style={{ 
+                                width: '16px', 
+                                height: '10px', 
+                                background: selectedMetric === 'orders' 
+                                  ? 'linear-gradient(to right, rgba(114, 86, 246, 0.2), rgba(114, 86, 246, 1))' 
+                                  : selectedMetric === 'customers'
+                                  ? 'linear-gradient(to right, rgba(17, 146, 232, 0.2), rgba(17, 146, 232, 1))'
+                                  : selectedMetric === 'revenue'
+                                  ? 'linear-gradient(to right, rgba(22, 163, 74, 0.2), rgba(22, 163, 74, 1))'
+                                  : 'linear-gradient(to right, rgba(249, 115, 22, 0.2), rgba(249, 115, 22, 1))',
+                                borderRadius: '2px' 
+                              }}></div>
+                              <span style={{ color: '#6d7175' }}>
+                                {selectedMetric === 'orders' ? 'Orders' 
+                                  : selectedMetric === 'customers' ? 'Customers'
+                                  : selectedMetric === 'revenue' ? 'Revenue'
+                                  : 'CVR'}
+                              </span>
                             </div>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#999', marginTop: '2px' }}>
@@ -2953,7 +3535,7 @@ const PartnerPerformanceDashboard = () => {
                     
                     <Column lg={4}>
                       {/* Ranked Country List */}
-                      <div style={{ 
+                      <div className="subtle-scrollbar" style={{ 
                         padding: '12px', 
                         backgroundColor: 'white',
                         border: '1px solid var(--shopify-border)',
@@ -2962,11 +3544,27 @@ const PartnerPerformanceDashboard = () => {
                         overflowY: 'auto'
                       }}>
                         <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px', color: 'var(--shopify-text-primary)' }}>
-                          Top Countries
+                          Top Countries by {selectedMetric === 'orders' ? 'Orders' : selectedMetric === 'customers' ? 'Customers' : selectedMetric === 'revenue' ? 'Revenue' : 'CVR'}
                         </div>
-                        {customerDemographics.topCountries.map((country, index) => {
-                          const totalSales = customerDemographics.topCountries.reduce((sum, c) => sum + c.sales, 0);
-                          const barWidth = (country.sales / totalSales) * 100;
+                        {[...customerDemographics.topCountries]
+                          .sort((a, b) => {
+                            if (selectedMetric === 'orders') return b.sales - a.sales;
+                            if (selectedMetric === 'customers') return b.customers - a.customers;
+                            if (selectedMetric === 'revenue') return b.revenue - a.revenue;
+                            return b.cvr - a.cvr;
+                          })
+                          .map((country, index) => {
+                          const totalValue = customerDemographics.topCountries.reduce((sum, c) => {
+                            if (selectedMetric === 'orders') return sum + c.sales;
+                            if (selectedMetric === 'customers') return sum + c.customers;
+                            if (selectedMetric === 'revenue') return sum + c.revenue;
+                            return sum + c.cvr;
+                          }, 0);
+                          
+                          const countryValue = selectedMetric === 'orders' ? country.sales : 
+                                             selectedMetric === 'customers' ? country.customers :
+                                             selectedMetric === 'revenue' ? country.revenue : country.cvr;
+                          const barWidth = (countryValue / totalValue) * 100;
                           
                           return (
                             <div 
@@ -3020,10 +3618,13 @@ const PartnerPerformanceDashboard = () => {
                                     fontSize: '11px', 
                                     fontWeight: '600',
                                     color: 'var(--shopify-text-primary)',
-                                    minWidth: '40px',
+                                    minWidth: '50px',
                                     textAlign: 'right'
                                   }}>
-                                    {country.sales.toLocaleString()}
+                                    {selectedMetric === 'orders' ? country.sales.toLocaleString() :
+                                     selectedMetric === 'customers' ? country.customers.toLocaleString() :
+                                     selectedMetric === 'revenue' ? `$${country.revenue.toLocaleString()}` :
+                                     `${country.cvr.toFixed(1)}%`}
                                   </span>
                                   <div style={{ 
                                     display: 'flex', 
@@ -3073,14 +3674,35 @@ const PartnerPerformanceDashboard = () => {
                           color: 'var(--shopify-text-secondary)',
                           textAlign: 'center'
                         }}>
-                          {customerDemographics.topCountries.reduce((sum, country) => sum + country.sales, 0).toLocaleString()} orders
+                          {selectedMetric === 'orders' ? 
+                            (() => {
+                              const listTotal = customerDemographics.topCountries.reduce((sum, country) => sum + country.sales, 0);
+                              const globalTotal = customerDemographics.totals.orders;
+                              const percentage = ((listTotal / globalTotal) * 100).toFixed(1);
+                              return `${listTotal.toLocaleString()} / ${globalTotal.toLocaleString()} orders (${percentage}%)`;
+                            })() :
+                           selectedMetric === 'customers' ? 
+                            (() => {
+                              const listTotal = customerDemographics.topCountries.reduce((sum, country) => sum + country.customers, 0);
+                              const globalTotal = customerDemographics.totals.customers;
+                              const percentage = ((listTotal / globalTotal) * 100).toFixed(1);
+                              return `${listTotal.toLocaleString()} / ${globalTotal.toLocaleString()} customers (${percentage}%)`;
+                            })() :
+                           selectedMetric === 'revenue' ? 
+                            (() => {
+                              const listTotal = customerDemographics.topCountries.reduce((sum, country) => sum + country.revenue, 0);
+                              const globalTotal = customerDemographics.totals.revenue;
+                              const percentage = ((listTotal / globalTotal) * 100).toFixed(1);
+                              return `$${listTotal.toLocaleString()} / $${globalTotal.toLocaleString()} revenue (${percentage}%)`;
+                            })() :
+                           `${(customerDemographics.topCountries.reduce((sum, country) => sum + country.cvr, 0) / customerDemographics.topCountries.length).toFixed(1)}% avg CVR`}
                         </div>
                       </div>
                     </Column>
                     
                     <Column lg={4}>
                       {/* Ranked City List */}
-                      <div style={{ 
+                      <div className="subtle-scrollbar" style={{ 
                         padding: '12px', 
                         backgroundColor: 'white',
                         border: '1px solid var(--shopify-border)',
@@ -3089,11 +3711,27 @@ const PartnerPerformanceDashboard = () => {
                         overflowY: 'auto'
                       }}>
                         <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px', color: 'var(--shopify-text-primary)' }}>
-                          Top Cities
+                          Top Cities by {selectedMetric === 'orders' ? 'Orders' : selectedMetric === 'customers' ? 'Customers' : selectedMetric === 'revenue' ? 'Revenue' : 'CVR'}
                         </div>
-                        {customerDemographics.topCities.map((city, index) => {
-                          const totalSales = customerDemographics.topCities.reduce((sum, c) => sum + c.sales, 0);
-                          const barWidth = (city.sales / totalSales) * 100;
+                        {[...customerDemographics.topCities]
+                          .sort((a, b) => {
+                            if (selectedMetric === 'orders') return b.sales - a.sales;
+                            if (selectedMetric === 'customers') return b.customers - a.customers;
+                            if (selectedMetric === 'revenue') return b.revenue - a.revenue;
+                            return b.cvr - a.cvr;
+                          })
+                          .map((city, index) => {
+                          const totalValue = customerDemographics.topCities.reduce((sum, c) => {
+                            if (selectedMetric === 'orders') return sum + c.sales;
+                            if (selectedMetric === 'customers') return sum + c.customers;
+                            if (selectedMetric === 'revenue') return sum + c.revenue;
+                            return sum + c.cvr;
+                          }, 0);
+                          
+                          const cityValue = selectedMetric === 'orders' ? city.sales : 
+                                           selectedMetric === 'customers' ? city.customers :
+                                           selectedMetric === 'revenue' ? city.revenue : city.cvr;
+                          const barWidth = (cityValue / totalValue) * 100;
                           
                           return (
                             <div 
@@ -3155,10 +3793,13 @@ const PartnerPerformanceDashboard = () => {
                                     fontSize: '11px', 
                                     fontWeight: '600',
                                     color: 'var(--shopify-text-primary)',
-                                    minWidth: '40px',
+                                    minWidth: '50px',
                                     textAlign: 'right'
                                   }}>
-                                    {city.sales.toLocaleString()}
+                                    {selectedMetric === 'orders' ? city.sales.toLocaleString() :
+                                     selectedMetric === 'customers' ? city.customers.toLocaleString() :
+                                     selectedMetric === 'revenue' ? `$${city.revenue.toLocaleString()}` :
+                                     `${city.cvr.toFixed(1)}%`}
                                   </span>
                                   <div style={{ 
                                     display: 'flex', 
@@ -3208,7 +3849,125 @@ const PartnerPerformanceDashboard = () => {
                           color: 'var(--shopify-text-secondary)',
                           textAlign: 'center'
                         }}>
-                          {customerDemographics.topCities.reduce((sum, city) => sum + city.sales, 0).toLocaleString()} orders
+                          {selectedMetric === 'orders' ? 
+                            (() => {
+                              const listTotal = customerDemographics.topCities.reduce((sum, city) => sum + city.sales, 0);
+                              const globalTotal = customerDemographics.totals.orders;
+                              const percentage = ((listTotal / globalTotal) * 100).toFixed(1);
+                              return `${listTotal.toLocaleString()} / ${globalTotal.toLocaleString()} orders (${percentage}%)`;
+                            })() :
+                           selectedMetric === 'customers' ? 
+                            (() => {
+                              const listTotal = customerDemographics.topCities.reduce((sum, city) => sum + city.customers, 0);
+                              const globalTotal = customerDemographics.totals.customers;
+                              const percentage = ((listTotal / globalTotal) * 100).toFixed(1);
+                              return `${listTotal.toLocaleString()} / ${globalTotal.toLocaleString()} customers (${percentage}%)`;
+                            })() :
+                           selectedMetric === 'revenue' ? 
+                            (() => {
+                              const listTotal = customerDemographics.topCities.reduce((sum, city) => sum + city.revenue, 0);
+                              const globalTotal = customerDemographics.totals.revenue;
+                              const percentage = ((listTotal / globalTotal) * 100).toFixed(1);
+                              return `$${listTotal.toLocaleString()} / $${globalTotal.toLocaleString()} revenue (${percentage}%)`;
+                            })() :
+                           `${(customerDemographics.topCities.reduce((sum, city) => sum + city.cvr, 0) / customerDemographics.topCities.length).toFixed(1)}% avg CVR`}
+                        </div>
+                      </div>
+                    </Column>
+                  </Grid>
+                </div>
+
+                {/* Regional Performance Insights */}
+                <div style={{ marginBottom: '24px' }}>
+                  <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
+                    <Column lg={16} style={{ paddingLeft: 0, paddingRight: 0 }}>
+                      <div style={{ 
+                        backgroundColor: 'white', 
+                        padding: '20px 24px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--shopify-border)'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                          <ChartLineSmooth size={18} style={{ color: '#7256F6' }} />
+                          <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                            Regional Performance Insights
+                          </span>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                          {/* Highest CVR */}
+                          <div style={{ 
+                            padding: '12px 16px',
+                            backgroundColor: '#fef3f2',
+                            borderRadius: '6px',
+                            borderLeft: '3px solid #F97316'
+                          }}>
+                            <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>
+                              🎯 Highest Conversion Rate
+                            </div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                              {(() => {
+                                const highest = [...customerDemographics.topCountries].sort((a, b) => b.cvr - a.cvr)[0];
+                                return `${highest.country} (${highest.cvr.toFixed(1)}%)`;
+                              })()}
+                            </div>
+                          </div>
+
+                          {/* Most Customers */}
+                          <div style={{ 
+                            padding: '12px 16px',
+                            backgroundColor: '#eff8ff',
+                            borderRadius: '6px',
+                            borderLeft: '3px solid #1192E8'
+                          }}>
+                            <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>
+                              👥 Most Customers
+                            </div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                              {(() => {
+                                const highest = [...customerDemographics.topCountries].sort((a, b) => b.customers - a.customers)[0];
+                                return `${highest.country} (${highest.customers.toLocaleString()} unique)`;
+                              })()}
+                            </div>
+                          </div>
+
+                          {/* Highest Revenue */}
+                          <div style={{ 
+                            padding: '12px 16px',
+                            backgroundColor: '#f0fdf4',
+                            borderRadius: '6px',
+                            borderLeft: '3px solid #16A34A'
+                          }}>
+                            <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>
+                              💰 Highest Revenue
+                            </div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                              {(() => {
+                                const highest = [...customerDemographics.topCountries].sort((a, b) => b.revenue - a.revenue)[0];
+                                return `${highest.country} ($${highest.revenue.toLocaleString()})`;
+                              })()}
+                            </div>
+                          </div>
+
+                          {/* Fastest Growing */}
+                          <div style={{ 
+                            padding: '12px 16px',
+                            backgroundColor: '#faf5ff',
+                            borderRadius: '6px',
+                            borderLeft: '3px solid #7256F6'
+                          }}>
+                            <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>
+                              📈 Fastest Growing
+                            </div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                              {(() => {
+                                const fastest = [...customerDemographics.topCountries]
+                                  .filter(c => c.trend === 'up')
+                                  .sort((a, b) => (b.trendValue || 0) - (a.trendValue || 0))[0];
+                                return fastest ? `${fastest.country} (+${fastest.trendValue}%)` : 'N/A';
+                              })()}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </Column>

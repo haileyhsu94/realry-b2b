@@ -330,13 +330,13 @@ export const mockCreatorPerformance: CreatorPerformance = {
 
 // Time series data for charts
 export const mockRevenueData = [
-  { date: 'Jan 8', revenue: 4200, clicks: 890, conversions: 124, roas: 3.1 },
-  { date: 'Jan 9', revenue: 5800, clicks: 1200, conversions: 165, roas: 3.3 },
-  { date: 'Jan 10', revenue: 4900, clicks: 980, conversions: 142, roas: 3.0 },
-  { date: 'Jan 11', revenue: 7100, clicks: 1450, conversions: 198, roas: 3.5 },
-  { date: 'Jan 12', revenue: 6400, clicks: 1320, conversions: 178, roas: 3.4 },
-  { date: 'Jan 13', revenue: 8200, clicks: 1680, conversions: 225, roas: 3.6 },
-  { date: 'Jan 14', revenue: 7800, clicks: 1590, conversions: 210, roas: 3.5 },
+  { date: 'Jan 8', revenue: 4200, revenueNew: 1680, revenueReturning: 2520, clicks: 890, conversions: 124, roas: 3.1 },
+  { date: 'Jan 9', revenue: 5800, revenueNew: 2320, revenueReturning: 3480, clicks: 1200, conversions: 165, roas: 3.3 },
+  { date: 'Jan 10', revenue: 4900, revenueNew: 1960, revenueReturning: 2940, clicks: 980, conversions: 142, roas: 3.0 },
+  { date: 'Jan 11', revenue: 7100, revenueNew: 2840, revenueReturning: 4260, clicks: 1450, conversions: 198, roas: 3.5 },
+  { date: 'Jan 12', revenue: 6400, revenueNew: 2560, revenueReturning: 3840, clicks: 1320, conversions: 178, roas: 3.4 },
+  { date: 'Jan 13', revenue: 8200, revenueNew: 3280, revenueReturning: 4920, clicks: 1680, conversions: 225, roas: 3.6 },
+  { date: 'Jan 14', revenue: 7800, revenueNew: 3120, revenueReturning: 4680, clicks: 1590, conversions: 210, roas: 3.5 },
 ];
 
 export const mockPreviousPeriodData = [

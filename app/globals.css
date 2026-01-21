@@ -236,6 +236,30 @@
   background: var(--shopify-gray-400);
 }
 
+/* Subtle scrollbar for ranked lists */
+.subtle-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Firefox scrollbar styling */
+.subtle-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+
 /* Freemium UI Styles */
 .upgrade-prompt {
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-hover) 100%);
