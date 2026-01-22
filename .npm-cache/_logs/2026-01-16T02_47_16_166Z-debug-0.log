@@ -1,0 +1,19 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@10.9.2
+2 info using node@v22.13.1
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/hsuyuhsuan/Desktop/Hailey/Work/realry/B2B/explore/.npmrc
+5 silly config load:file:/Users/hsuyuhsuan/.npmrc
+6 silly config load:file:/Users/hsuyuhsuan/.npm-global/etc/npmrc
+7 verbose title npm install
+8 verbose argv "install" "--cache" "./.npm-cache" "--loglevel" "error"
+9 verbose logfile logs-max:10 dir:/Users/hsuyuhsuan/Desktop/Hailey/Work/realry/B2B/explore/.npm-cache/_logs/2026-01-16T02_47_16_166Z-
+10 verbose logfile /Users/hsuyuhsuan/Desktop/Hailey/Work/realry/B2B/explore/.npm-cache/_logs/2026-01-16T02_47_16_166Z-debug-0.log
+11 silly logfile done cleaning log files
+12 verbose cwd /Users/hsuyuhsuan/Desktop/Hailey/Work/realry/B2B/explore
+13 verbose os Darwin 24.6.0
+14 verbose node v22.13.1
+15 verbose npm  v10.9.2
+16 verbose exit 1
+17 verbose code 1
+18 error A complete log of this run can be found in: /Users/hsuyuhsuan/Desktop/Hailey/Work/realry/B2B/explore/.npm-cache/_logs/2026-01-16T02_47_16_166Z-debug-0.log
