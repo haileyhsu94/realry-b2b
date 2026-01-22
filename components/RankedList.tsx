@@ -196,7 +196,6 @@ export const RankedList: React.FC<RankedListProps> = ({
               {/* Progress bar */}
               {showProgressBars && (
                 <div style={{
-                  width: '100%',
                   height: '6px',
                   backgroundColor: '#e0e0e0',
                   borderRadius: '3px',
