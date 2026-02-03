@@ -120,20 +120,12 @@ const customerDemographics = {
     { location: 'Illinois', percentage: 17, sales: 274, trend: 'up', trendValue: 1.8 },
   ],
   topCountries: [
-    { country: 'United States', iso: 'USA', percentage: 45, sales: 1820, customers: 1245, revenue: 78450, cvr: 14.2, trend: 'up', trendValue: 5.2 },
-    { country: 'United Kingdom', iso: 'GBR', percentage: 18, sales: 730, customers: 512, revenue: 45200, cvr: 16.8, trend: 'down', trendValue: 2.8 },
-    { country: 'Canada', iso: 'CAN', percentage: 12, sales: 485, customers: 358, revenue: 28900, cvr: 15.3, trend: 'up', trendValue: 8.5 },
-    { country: 'Germany', iso: 'DEU', percentage: 10, sales: 405, customers: 298, revenue: 32650, cvr: 18.5, trend: 'up', trendValue: 12.3 },
-    { country: 'Australia', iso: 'AUS', percentage: 8, sales: 325, customers: 245, revenue: 31370, cvr: 17.2, trend: 'up', trendValue: 6.7 },
-    { country: 'France', iso: 'FRA', percentage: 7, sales: 285, customers: 198, revenue: 21950, cvr: 13.8, trend: 'down', trendValue: 1.5 },
-  ],
-  topCities: [
-    { city: 'New York', country: 'USA', sales: 485, customers: 342, revenue: 24650, cvr: 15.8, trend: 'up', trendValue: 8.2 },
-    { city: 'Los Angeles', country: 'USA', sales: 356, customers: 265, revenue: 18920, cvr: 14.5, trend: 'up', trendValue: 5.7 },
-    { city: 'London', country: 'UK', sales: 342, customers: 245, revenue: 21580, cvr: 17.2, trend: 'down', trendValue: 3.5 },
-    { city: 'Toronto', country: 'Canada', sales: 265, customers: 198, revenue: 16850, cvr: 16.1, trend: 'up', trendValue: 12.1 },
-    { city: 'Sydney', country: 'Australia', sales: 198, customers: 152, revenue: 19140, cvr: 18.9, trend: 'up', trendValue: 7.3 },
-    { city: 'Berlin', country: 'Germany', sales: 176, customers: 138, revenue: 14260, cvr: 19.2, trend: 'up', trendValue: 15.8 },
+    { country: 'United States', iso: 'USA', percentage: 45, sales: 1820, customers: 1245, revenue: 78450, cvr: 14.2, trend: 'up', trendValue: 5.2, mobile: 68, desktop: 32 },
+    { country: 'United Kingdom', iso: 'GBR', percentage: 18, sales: 730, customers: 512, revenue: 45200, cvr: 16.8, trend: 'down', trendValue: 2.8, mobile: 62, desktop: 38 },
+    { country: 'Canada', iso: 'CAN', percentage: 12, sales: 485, customers: 358, revenue: 28900, cvr: 15.3, trend: 'up', trendValue: 8.5, mobile: 65, desktop: 35 },
+    { country: 'Germany', iso: 'DEU', percentage: 10, sales: 405, customers: 298, revenue: 32650, cvr: 18.5, trend: 'up', trendValue: 12.3, mobile: 58, desktop: 42 },
+    { country: 'Australia', iso: 'AUS', percentage: 8, sales: 325, customers: 245, revenue: 31370, cvr: 17.2, trend: 'up', trendValue: 6.7, mobile: 72, desktop: 28 },
+    { country: 'France', iso: 'FRA', percentage: 7, sales: 285, customers: 198, revenue: 21950, cvr: 13.8, trend: 'down', trendValue: 1.5, mobile: 60, desktop: 40 },
   ],
   interests: [
     { category: 'Clothing', value: 28, color: '#1192E8' },     // Cyan 50
@@ -216,52 +208,52 @@ const TargetIcon = ({ size = 20, style }: { size?: number; style?: React.CSSProp
 // Top performing items grouped by traffic source
 const topPerformingItemsByTrafficSource = {
   realry: [
-    { name: 'Premium Headphones', itemType: 'Product', clicks: 2340, conversions: 342, cvr: 14.6, revenue: 12956, tag: 'Best CVR' },
-    { name: 'Summer Sale Banner', itemType: 'Ad Creative', clicks: 1890, conversions: 265, cvr: 14.0, revenue: 10070, tag: null },
-    { name: 'Wireless Speaker Set', itemType: 'Product', clicks: 1650, conversions: 231, cvr: 14.0, revenue: 9240, tag: null },
-    { name: 'Holiday Collection Ad', itemType: 'Ad Creative', clicks: 1520, conversions: 198, cvr: 13.0, revenue: 9504, tag: null },
-    { name: 'Product Showcase Video', itemType: 'Content', clicks: 1420, conversions: 184, cvr: 13.0, revenue: 8808, tag: null },
-    { name: 'Smart Watch Pro', itemType: 'Product', clicks: 1380, conversions: 193, cvr: 14.0, revenue: 8694, tag: null },
-    { name: 'Flash Sale Banner', itemType: 'Ad Creative', clicks: 1280, conversions: 166, cvr: 13.0, revenue: 8064, tag: null },
-    { name: 'Unboxing Video', itemType: 'Content', clicks: 1180, conversions: 153, cvr: 13.0, revenue: 7344, tag: null },
-    { name: 'Gaming Mouse', itemType: 'Product', clicks: 1120, conversions: 156, cvr: 13.9, revenue: 7056, tag: null },
-    { name: 'New Arrivals Ad', itemType: 'Ad Creative', clicks: 1050, conversions: 136, cvr: 13.0, revenue: 6552, tag: null },
+    { name: 'Premium Headphones', itemType: 'Product', clicks: 2340, impressions: 15600, conversions: 342, cvr: 14.6, revenue: 12956, tag: 'Best CVR' },
+    { name: 'Summer Sale Banner', itemType: 'Ad Creative', clicks: 1890, impressions: 12600, conversions: 265, cvr: 14.0, revenue: 10070, tag: null },
+    { name: 'Wireless Speaker Set', itemType: 'Product', clicks: 1650, impressions: 11000, conversions: 231, cvr: 14.0, revenue: 9240, tag: null },
+    { name: 'Holiday Collection Ad', itemType: 'Ad Creative', clicks: 1520, impressions: 10133, conversions: 198, cvr: 13.0, revenue: 9504, tag: null },
+    { name: 'Product Showcase Video', itemType: 'Content', clicks: 1420, impressions: 9467, conversions: 184, cvr: 13.0, revenue: 8808, tag: null },
+    { name: 'Smart Watch Pro', itemType: 'Product', clicks: 1380, impressions: 9200, conversions: 193, cvr: 14.0, revenue: 8694, tag: null },
+    { name: 'Flash Sale Banner', itemType: 'Ad Creative', clicks: 1280, impressions: 8533, conversions: 166, cvr: 13.0, revenue: 8064, tag: null },
+    { name: 'Unboxing Video', itemType: 'Content', clicks: 1180, impressions: 7867, conversions: 153, cvr: 13.0, revenue: 7344, tag: null },
+    { name: 'Gaming Mouse', itemType: 'Product', clicks: 1120, impressions: 7467, conversions: 156, cvr: 13.9, revenue: 7056, tag: null },
+    { name: 'New Arrivals Ad', itemType: 'Ad Creative', clicks: 1050, impressions: 7000, conversions: 136, cvr: 13.0, revenue: 6552, tag: null },
   ],
   css: [
-    { name: 'Wireless Earbuds Pro', itemType: 'Product', clicks: 1560, conversions: 234, cvr: 15.0, revenue: 8892, tag: 'Trending' },
-    { name: 'Luxury Handbag Collection', itemType: 'Product', clicks: 1450, conversions: 217, cvr: 15.0, revenue: 8262, tag: null },
-    { name: 'Designer Sunglasses', itemType: 'Product', clicks: 1340, conversions: 201, cvr: 15.0, revenue: 7638, tag: null },
-    { name: 'Premium Watch Ad', itemType: 'Ad Creative', clicks: 1230, conversions: 172, cvr: 14.0, revenue: 6888, tag: null },
-    { name: 'Fashion Lookbook', itemType: 'Content', clicks: 1120, conversions: 157, cvr: 14.0, revenue: 6272, tag: null },
-    { name: 'Leather Jacket', itemType: 'Product', clicks: 1010, conversions: 141, cvr: 14.0, revenue: 5656, tag: null },
-    { name: 'Brand Story Video', itemType: 'Content', clicks: 980, conversions: 137, cvr: 14.0, revenue: 5488, tag: null },
-    { name: 'Exclusive Collection Ad', itemType: 'Ad Creative', clicks: 920, conversions: 129, cvr: 14.0, revenue: 5152, tag: null },
-    { name: 'High-End Sneakers', itemType: 'Product', clicks: 870, conversions: 122, cvr: 14.0, revenue: 4872, tag: null },
-    { name: 'Lifestyle Photography', itemType: 'Content', clicks: 810, conversions: 113, cvr: 14.0, revenue: 4536, tag: null },
+    { name: 'Wireless Earbuds Pro', itemType: 'Product', clicks: 1560, impressions: 10400, conversions: 234, cvr: 15.0, revenue: 8892, tag: 'Trending' },
+    { name: 'Luxury Handbag Collection', itemType: 'Product', clicks: 1450, impressions: 9667, conversions: 217, cvr: 15.0, revenue: 8262, tag: null },
+    { name: 'Designer Sunglasses', itemType: 'Product', clicks: 1340, impressions: 8933, conversions: 201, cvr: 15.0, revenue: 7638, tag: null },
+    { name: 'Premium Watch Ad', itemType: 'Ad Creative', clicks: 1230, impressions: 8200, conversions: 172, cvr: 14.0, revenue: 6888, tag: null },
+    { name: 'Fashion Lookbook', itemType: 'Content', clicks: 1120, impressions: 7467, conversions: 157, cvr: 14.0, revenue: 6272, tag: null },
+    { name: 'Leather Jacket', itemType: 'Product', clicks: 1010, impressions: 6733, conversions: 141, cvr: 14.0, revenue: 5656, tag: null },
+    { name: 'Brand Story Video', itemType: 'Content', clicks: 980, impressions: 6533, conversions: 137, cvr: 14.0, revenue: 5488, tag: null },
+    { name: 'Exclusive Collection Ad', itemType: 'Ad Creative', clicks: 920, impressions: 6133, conversions: 129, cvr: 14.0, revenue: 5152, tag: null },
+    { name: 'High-End Sneakers', itemType: 'Product', clicks: 870, impressions: 5800, conversions: 122, cvr: 14.0, revenue: 4872, tag: null },
+    { name: 'Lifestyle Photography', itemType: 'Content', clicks: 810, impressions: 5400, conversions: 113, cvr: 14.0, revenue: 4536, tag: null },
   ],
   instagramStories: [
-    { name: 'Product Video - Earbuds', itemType: 'Content', clicks: 3420, conversions: 445, cvr: 13.0, revenue: 16905, tag: 'Most Clicks' },
-    { name: 'Instagram Story - Sale', itemType: 'Ad Creative', clicks: 2890, conversions: 376, cvr: 13.0, revenue: 14280, tag: null },
-    { name: 'Behind the Scenes', itemType: 'Content', clicks: 2450, conversions: 319, cvr: 13.0, revenue: 12120, tag: null },
-    { name: 'Quick Product Demo', itemType: 'Content', clicks: 2120, conversions: 276, cvr: 13.0, revenue: 10488, tag: null },
-    { name: 'Flash Deal Story', itemType: 'Ad Creative', clicks: 1980, conversions: 257, cvr: 13.0, revenue: 9792, tag: null },
-    { name: 'User Testimonial Video', itemType: 'Content', clicks: 1850, conversions: 241, cvr: 13.0, revenue: 9156, tag: null },
-    { name: 'New Product Launch', itemType: 'Ad Creative', clicks: 1720, conversions: 224, cvr: 13.0, revenue: 8520, tag: null },
-    { name: 'Tutorial Video', itemType: 'Content', clicks: 1590, conversions: 207, cvr: 13.0, revenue: 7872, tag: null },
-    { name: 'Limited Edition Story', itemType: 'Ad Creative', clicks: 1460, conversions: 190, cvr: 13.0, revenue: 7224, tag: null },
-    { name: 'Daily Deal Story', itemType: 'Ad Creative', clicks: 1330, conversions: 173, cvr: 13.0, revenue: 6576, tag: null },
+    { name: 'Product Video - Earbuds', itemType: 'Content', clicks: 3420, impressions: 22800, conversions: 445, cvr: 13.0, revenue: 16905, tag: 'Most Clicks' },
+    { name: 'Instagram Story - Sale', itemType: 'Ad Creative', clicks: 2890, impressions: 19267, conversions: 376, cvr: 13.0, revenue: 14280, tag: null },
+    { name: 'Behind the Scenes', itemType: 'Content', clicks: 2450, impressions: 16333, conversions: 319, cvr: 13.0, revenue: 12120, tag: null },
+    { name: 'Quick Product Demo', itemType: 'Content', clicks: 2120, impressions: 14133, conversions: 276, cvr: 13.0, revenue: 10488, tag: null },
+    { name: 'Flash Deal Story', itemType: 'Ad Creative', clicks: 1980, impressions: 13200, conversions: 257, cvr: 13.0, revenue: 9792, tag: null },
+    { name: 'User Testimonial Video', itemType: 'Content', clicks: 1850, impressions: 12333, conversions: 241, cvr: 13.0, revenue: 9156, tag: null },
+    { name: 'New Product Launch', itemType: 'Ad Creative', clicks: 1720, impressions: 11467, conversions: 224, cvr: 13.0, revenue: 8520, tag: null },
+    { name: 'Tutorial Video', itemType: 'Content', clicks: 1590, impressions: 10600, conversions: 207, cvr: 13.0, revenue: 7872, tag: null },
+    { name: 'Limited Edition Story', itemType: 'Ad Creative', clicks: 1460, impressions: 9733, conversions: 190, cvr: 13.0, revenue: 7224, tag: null },
+    { name: 'Daily Deal Story', itemType: 'Ad Creative', clicks: 1330, impressions: 8867, conversions: 173, cvr: 13.0, revenue: 6576, tag: null },
   ],
   edm: [
-    { name: 'Email Campaign - New Arrivals', itemType: 'Ad Creative', clicks: 980, conversions: 145, cvr: 14.8, revenue: 5510, tag: null },
-    { name: 'Weekly Newsletter', itemType: 'Content', clicks: 920, conversions: 136, cvr: 14.8, revenue: 5168, tag: null },
-    { name: 'Abandoned Cart Email', itemType: 'Ad Creative', clicks: 870, conversions: 129, cvr: 14.8, revenue: 4890, tag: null },
-    { name: 'Product Recommendation', itemType: 'Product', clicks: 820, conversions: 121, cvr: 14.8, revenue: 4608, tag: null },
-    { name: 'Seasonal Promotion Email', itemType: 'Ad Creative', clicks: 780, conversions: 115, cvr: 14.7, revenue: 4368, tag: null },
-    { name: 'Member Exclusive Offer', itemType: 'Ad Creative', clicks: 740, conversions: 110, cvr: 14.9, revenue: 4158, tag: null },
-    { name: 'Birthday Special Email', itemType: 'Content', clicks: 700, conversions: 104, cvr: 14.9, revenue: 3936, tag: null },
-    { name: 'Flash Sale Alert', itemType: 'Ad Creative', clicks: 660, conversions: 98, cvr: 14.8, revenue: 3708, tag: null },
-    { name: 'Product Spotlight Email', itemType: 'Product', clicks: 620, conversions: 92, cvr: 14.8, revenue: 3480, tag: null },
-    { name: 'Thank You Email', itemType: 'Content', clicks: 580, conversions: 86, cvr: 14.8, revenue: 3252, tag: null },
+    { name: 'Email Campaign - New Arrivals', itemType: 'Ad Creative', clicks: 980, impressions: 6533, conversions: 145, cvr: 14.8, revenue: 5510, tag: null },
+    { name: 'Weekly Newsletter', itemType: 'Content', clicks: 920, impressions: 6133, conversions: 136, cvr: 14.8, revenue: 5168, tag: null },
+    { name: 'Abandoned Cart Email', itemType: 'Ad Creative', clicks: 870, impressions: 5800, conversions: 129, cvr: 14.8, revenue: 4890, tag: null },
+    { name: 'Product Recommendation', itemType: 'Product', clicks: 820, impressions: 5467, conversions: 121, cvr: 14.8, revenue: 4608, tag: null },
+    { name: 'Seasonal Promotion Email', itemType: 'Ad Creative', clicks: 780, impressions: 5200, conversions: 115, cvr: 14.7, revenue: 4368, tag: null },
+    { name: 'Member Exclusive Offer', itemType: 'Ad Creative', clicks: 740, impressions: 4933, conversions: 110, cvr: 14.9, revenue: 4158, tag: null },
+    { name: 'Birthday Special Email', itemType: 'Content', clicks: 700, impressions: 4667, conversions: 104, cvr: 14.9, revenue: 3936, tag: null },
+    { name: 'Flash Sale Alert', itemType: 'Ad Creative', clicks: 660, impressions: 4400, conversions: 98, cvr: 14.8, revenue: 3708, tag: null },
+    { name: 'Product Spotlight Email', itemType: 'Product', clicks: 620, impressions: 4133, conversions: 92, cvr: 14.8, revenue: 3480, tag: null },
+    { name: 'Thank You Email', itemType: 'Content', clicks: 580, impressions: 3867, conversions: 86, cvr: 14.8, revenue: 3252, tag: null },
   ],
 };
 
@@ -291,10 +283,10 @@ const bannerPerformance = {
 const partnerBenchmarking = {
   category: 'Luxury',
   metrics: {
-    cvr: { partner: 13.9, categoryAvg: 12.5, percentile: 75 },
-    aov: { partner: 38.02, categoryAvg: 42.50, percentile: 45 },
-    rpc: { partner: 5.29, categoryAvg: 4.85, percentile: 65 },
-    returnRate: { partner: 3.2, categoryAvg: 4.1, percentile: 70 }
+    cvr: { partner: 13.9, categoryAvg: 12.5, top25Percent: 16.2, percentile: 75 },
+    aov: { partner: 38.02, categoryAvg: 42.50, top25Percent: 52.80, percentile: 45 },
+    rpc: { partner: 5.29, categoryAvg: 4.85, top25Percent: 6.40, percentile: 65 },
+    returnRate: { partner: 3.2, categoryAvg: 4.1, top25Percent: 2.8, percentile: 70 }
   },
   recommendations: [
     'Your AOV is 10.5% below category average. Consider promoting higher-value items.',
@@ -3100,38 +3092,36 @@ const PartnerPerformanceDashboard = () => {
                 
                 {/* Grid of earning metrics */}
                 <Grid narrow style={{ marginBottom: '24px' }}>
-                  <Column lg={4}>
-                    <div style={{ padding: '20px', backgroundColor: '#f0edff', borderRadius: '8px', border: '1px solid #e0d9ff' }}>
+                  <Column lg={3} style={{ height: '100%' }}>
+                    <div style={{ padding: '20px', backgroundColor: '#f0edff', borderRadius: '8px', border: '1px solid #e0d9ff', height: '100%', minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Total Revenue</div>
                       <div style={{ fontSize: '32px', fontWeight: '600', color: '#7256F6' }}>$47,234</div>
                       <div style={{ fontSize: '13px', color: '#16a34a', marginTop: '8px' }}>↑ $5,260 from last period</div>
                     </div>
                   </Column>
-                  <Column lg={4}>
-                    <div style={{ padding: '20px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                  <Column lg={3} style={{ height: '100%' }}>
+                    <div style={{ padding: '20px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0', height: '100%', minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Avg Order Value</div>
                       <div style={{ fontSize: '32px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>$38.02</div>
                       <div style={{ fontSize: '13px', color: '#6d7175', marginTop: '8px' }}>Per transaction</div>
                     </div>
                   </Column>
-                  <Column lg={4}>
-                    <div style={{ padding: '20px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                  <Column lg={3} style={{ height: '100%' }}>
+                    <div style={{ padding: '20px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0', height: '100%', minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Revenue Per Click</div>
                       <div style={{ fontSize: '32px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>$5.29</div>
                       <div style={{ fontSize: '13px', color: '#6d7175', marginTop: '8px' }}>Per click</div>
                     </div>
                   </Column>
-                </Grid>
-                <Grid narrow style={{ marginBottom: '24px' }}>
-                  <Column lg={4}>
-                    <div style={{ padding: '20px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                  <Column lg={3} style={{ height: '100%' }}>
+                    <div style={{ padding: '20px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0', height: '100%', minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Net CPA</div>
                       <div style={{ fontSize: '32px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>$5.29</div>
                       <div style={{ fontSize: '13px', color: '#6d7175', marginTop: '8px' }}>Cost to acquire one customer</div>
                     </div>
                   </Column>
-                  <Column lg={4}>
-                    <div style={{ padding: '20px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                  <Column lg={3} style={{ height: '100%' }}>
+                    <div style={{ padding: '20px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0', height: '100%', minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Return Rate</div>
                       <div style={{ fontSize: '32px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>3.2%</div>
                       <div style={{ fontSize: '13px', color: '#16a34a', marginTop: '8px' }}>↓ 0.4% from last period</div>
@@ -3887,7 +3877,7 @@ const PartnerPerformanceDashboard = () => {
                     </Column>
                     
                     <Column lg={4}>
-                      {/* Ranked City List */}
+                      {/* Device Distribution by Country */}
                       <div className="subtle-scrollbar" style={{ 
                         padding: '12px', 
                         backgroundColor: 'white',
@@ -3897,52 +3887,52 @@ const PartnerPerformanceDashboard = () => {
                         overflowY: 'auto'
                       }}>
                         <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px', color: 'var(--shopify-text-primary)' }}>
-                          Top Cities by {selectedMetric === 'orders' ? 'Orders' : selectedMetric === 'customers' ? 'Customers' : selectedMetric === 'revenue' ? 'Revenue' : 'CVR'}
+                          Device Distribution by {selectedMetric === 'orders' ? 'Orders' : selectedMetric === 'customers' ? 'Customers' : selectedMetric === 'revenue' ? 'Revenue' : 'CVR'}
                         </div>
-                        {[...customerDemographics.topCities]
+                        {[...customerDemographics.topCountries]
                           .sort((a, b) => {
                             if (selectedMetric === 'orders') return b.sales - a.sales;
                             if (selectedMetric === 'customers') return b.customers - a.customers;
                             if (selectedMetric === 'revenue') return b.revenue - a.revenue;
                             return b.cvr - a.cvr;
                           })
-                          .map((city, index) => {
-                          const totalValue = customerDemographics.topCities.reduce((sum, c) => {
+                          .map((country, index) => {
+                          const totalValue = customerDemographics.topCountries.reduce((sum, c) => {
                             if (selectedMetric === 'orders') return sum + c.sales;
                             if (selectedMetric === 'customers') return sum + c.customers;
                             if (selectedMetric === 'revenue') return sum + c.revenue;
                             return sum + c.cvr;
                           }, 0);
                           
-                          const cityValue = selectedMetric === 'orders' ? city.sales : 
-                                           selectedMetric === 'customers' ? city.customers :
-                                           selectedMetric === 'revenue' ? city.revenue : city.cvr;
-                          const barWidth = (cityValue / totalValue) * 100;
+                          const countryValue = selectedMetric === 'orders' ? country.sales : 
+                                               selectedMetric === 'customers' ? country.customers :
+                                               selectedMetric === 'revenue' ? country.revenue : country.cvr;
+                          const barWidth = (countryValue / totalValue) * 100;
                           
                           return (
                             <div 
                               key={index}
-                              onClick={() => handleCityClick(city.city, city.country)}
+                              onClick={() => handleCountryClick(country.country)}
                               style={{ 
                                 padding: '8px 0px',
-                                borderBottom: index < customerDemographics.topCities.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                borderBottom: index < customerDemographics.topCountries.length - 1 ? '1px solid #f0f0f0' : 'none',
                                 cursor: 'pointer',
                                 borderRadius: '6px',
                                 transition: 'background-color 0.15s ease',
-                                backgroundColor: selectedCity === city.city ? 'rgba(114, 86, 246, 0.08)' : 'transparent'
+                                backgroundColor: selectedCountry === country.country ? 'rgba(114, 86, 246, 0.08)' : 'transparent'
                               }}
                               onMouseEnter={(e) => {
-                                if (selectedCity !== city.city) {
+                                if (selectedCountry !== country.country) {
                                   (e.currentTarget as HTMLElement).style.backgroundColor = '#f6f6f7';
                                 }
                               }}
                               onMouseLeave={(e) => {
-                                if (selectedCity !== city.city) {
+                                if (selectedCountry !== country.country) {
                                   (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
                                 }
                               }}
                             >
-                              {/* Top row: rank, city name/country, value, trend */}
+                              {/* Top row: rank, country name, value */}
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
                                   <span style={{ 
@@ -3957,20 +3947,13 @@ const PartnerPerformanceDashboard = () => {
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ 
                                       fontSize: '12px', 
-                                      fontWeight: (index === 0 || selectedCity === city.city) ? '600' : '500',
-                                      color: selectedCity === city.city ? '#7256F6' : 'var(--shopify-text-primary)',
+                                      fontWeight: (index === 0 || selectedCountry === country.country) ? '600' : '500',
+                                      color: selectedCountry === country.country ? '#7256F6' : 'var(--shopify-text-primary)',
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
                                       whiteSpace: 'nowrap'
                                     }}>
-                                      {city.city}
-                                    </div>
-                                    <div style={{ 
-                                      fontSize: '11px', 
-                                      color: 'var(--shopify-text-secondary)',
-                                      marginTop: '2px'
-                                    }}>
-                                      {city.country}
+                                      {country.country}
                                     </div>
                                   </div>
                                 </div>
@@ -3982,46 +3965,49 @@ const PartnerPerformanceDashboard = () => {
                                     minWidth: '50px',
                                     textAlign: 'right'
                                   }}>
-                                    {selectedMetric === 'orders' ? city.sales.toLocaleString() :
-                                     selectedMetric === 'customers' ? city.customers.toLocaleString() :
-                                     selectedMetric === 'revenue' ? `$${city.revenue.toLocaleString()}` :
-                                     `${city.cvr.toFixed(1)}%`}
+                                    {selectedMetric === 'orders' ? country.sales.toLocaleString() :
+                                     selectedMetric === 'customers' ? country.customers.toLocaleString() :
+                                     selectedMetric === 'revenue' ? `$${country.revenue.toLocaleString()}` :
+                                     `${country.cvr.toFixed(1)}%`}
                                   </span>
-                                  <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '2px',
-                                    color: city.trend === 'up' ? '#16a34a' : '#dc2626',
-                                    fontSize: '11px',
-                                    fontWeight: '500',
-                                    minWidth: '50px'
-                                  }}>
-                                    {city.trend === 'up' ? (
-                                      <ArrowUp size={12} />
-                                    ) : (
-                                      <ArrowDown size={12} />
-                                    )}
-                                    <span>{city.trendValue}%</span>
-                                  </div>
                                 </div>
                               </div>
                               
-                              {/* Bottom row: horizontal bar */}
+                              {/* Device distribution bar: mobile (left, blue) vs desktop (right, gray) */}
                               <div style={{ 
                                 width: 'calc(100% - 28px)',
-                                height: '4px', 
+                                height: '6px', 
                                 backgroundColor: '#e8e8e8', 
-                                borderRadius: '2px',
+                                borderRadius: '3px',
                                 overflow: 'hidden',
-                                marginLeft: '28px'
+                                marginLeft: '28px',
+                                marginBottom: '4px',
+                                display: 'flex'
                               }}>
                                 <div style={{ 
-                                  width: `${barWidth}%`, 
+                                  width: `${country.mobile}%`, 
                                   height: '100%', 
-                                  backgroundColor: selectedCity === city.city ? '#7256F6' : '#0f62fe',
-                                  borderRadius: '2px',
+                                  backgroundColor: selectedCountry === country.country ? '#0f62fe' : '#1192E8',
                                   transition: 'width 0.3s ease'
                                 }} />
+                                <div style={{ 
+                                  width: `${country.desktop}%`, 
+                                  height: '100%', 
+                                  backgroundColor: selectedCountry === country.country ? '#8d8d8d' : '#a6a6a6',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                              
+                              {/* Device percentages */}
+                              <div style={{ 
+                                marginLeft: '28px',
+                                fontSize: '10px',
+                                color: 'var(--shopify-text-secondary)',
+                                display: 'flex',
+                                gap: '8px'
+                              }}>
+                                <span>{country.mobile}% Mobile</span>
+                                <span>{country.desktop}% Desktop</span>
                               </div>
                             </div>
                           );
@@ -4037,28 +4023,84 @@ const PartnerPerformanceDashboard = () => {
                         }}>
                           {selectedMetric === 'orders' ? 
                             (() => {
-                              const listTotal = customerDemographics.topCities.reduce((sum, city) => sum + city.sales, 0);
+                              const listTotal = customerDemographics.topCountries.reduce((sum, country) => sum + country.sales, 0);
                               const globalTotal = customerDemographics.totals.orders;
                               const percentage = ((listTotal / globalTotal) * 100).toFixed(1);
                               return `${listTotal.toLocaleString()} / ${globalTotal.toLocaleString()} orders (${percentage}%)`;
                             })() :
                            selectedMetric === 'customers' ? 
                             (() => {
-                              const listTotal = customerDemographics.topCities.reduce((sum, city) => sum + city.customers, 0);
+                              const listTotal = customerDemographics.topCountries.reduce((sum, country) => sum + country.customers, 0);
                               const globalTotal = customerDemographics.totals.customers;
                               const percentage = ((listTotal / globalTotal) * 100).toFixed(1);
                               return `${listTotal.toLocaleString()} / ${globalTotal.toLocaleString()} customers (${percentage}%)`;
                             })() :
                            selectedMetric === 'revenue' ? 
                             (() => {
-                              const listTotal = customerDemographics.topCities.reduce((sum, city) => sum + city.revenue, 0);
+                              const listTotal = customerDemographics.topCountries.reduce((sum, country) => sum + country.revenue, 0);
                               const globalTotal = customerDemographics.totals.revenue;
                               const percentage = ((listTotal / globalTotal) * 100).toFixed(1);
                               return `$${listTotal.toLocaleString()} / $${globalTotal.toLocaleString()} revenue (${percentage}%)`;
                             })() :
-                           `${(customerDemographics.topCities.reduce((sum, city) => sum + city.cvr, 0) / customerDemographics.topCities.length).toFixed(1)}% avg CVR`}
+                           `${(customerDemographics.topCountries.reduce((sum, country) => sum + country.cvr, 0) / customerDemographics.topCountries.length).toFixed(1)}% avg CVR`}
                         </div>
                       </div>
+                      
+                      {/* Pie Chart for Selected Country */}
+                      {selectedCountry && (() => {
+                        const selectedCountryData = customerDemographics.topCountries.find(c => c.country === selectedCountry);
+                        if (!selectedCountryData || !selectedCountryData.mobile) return null;
+                        
+                        return (
+                          <div style={{ 
+                            marginTop: '16px',
+                            padding: '16px',
+                            backgroundColor: 'white',
+                            border: '1px solid var(--shopify-border)',
+                            borderRadius: '8px'
+                          }}>
+                            <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '12px', color: 'var(--shopify-text-primary)' }}>
+                              {selectedCountry} Device Distribution
+                            </div>
+                            <ResponsiveContainer width="100%" height={180}>
+                              <PieChart>
+                                <Pie
+                                  data={[
+                                    { name: 'Mobile', value: selectedCountryData.mobile, color: '#1192E8' },
+                                    { name: 'Desktop', value: selectedCountryData.desktop, color: '#8d8d8d' }
+                                  ]}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
+                                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                  outerRadius={70}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                >
+                                  {[
+                                    { name: 'Mobile', value: selectedCountryData.mobile, color: '#1192E8' },
+                                    { name: 'Desktop', value: selectedCountryData.desktop, color: '#8d8d8d' }
+                                  ].map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip 
+                                  contentStyle={{ 
+                                    backgroundColor: 'white',
+                                    border: '1px solid #e0e0e0',
+                                    borderRadius: '6px'
+                                  }}
+                                  formatter={(value: number) => `${value}%`}
+                                />
+                                <Legend 
+                                  wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
+                                  iconType="circle"
+                                />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        );
+                      })()}
                     </Column>
                   </Grid>
                 </div>
@@ -4328,7 +4370,7 @@ const PartnerPerformanceDashboard = () => {
                   };
 
                   return Object.entries(itemsByType).map(([itemType, items]) => {
-                    const sortedItems = [...items].sort((a, b) => b.clicks - a.clicks).slice(0, 15);
+                    const sortedItems = [...items].sort((a, b) => b.clicks - a.clicks).slice(0, 7);
                     const totals = sortedItems.reduce((acc, item) => ({
                       clicks: acc.clicks + item.clicks,
                       conversions: acc.conversions + item.conversions,
@@ -4366,37 +4408,49 @@ const PartnerPerformanceDashboard = () => {
                         </div>
 
                         {/* Table */}
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableHeader>Item Name</TableHeader>
-                              <TableHeader>Clicks</TableHeader>
-                              <TableHeader>CVR</TableHeader>
-                              <TableHeader>Revenue</TableHeader>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {sortedItems.map((item, index) => (
-                              <TableRow key={index}>
-                                <TableCell>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    {item.name}
-                                    {item.tag && (
-                                      <Tag type="green" size="sm">{item.tag}</Tag>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell>{item.clicks.toLocaleString()}</TableCell>
-                                <TableCell>
-                                  <span style={{ fontWeight: '600', color: item.cvr >= 14 ? '#16a34a' : 'inherit' }}>
-                                    {item.cvr}%
-                                  </span>
-                                </TableCell>
-                                <TableCell style={{ fontWeight: '600' }}>${item.revenue.toLocaleString()}</TableCell>
+                        <div style={{ 
+                          backgroundColor: 'white', 
+                          borderRadius: '6px',
+                          border: '1px solid #e0e0e0',
+                          overflow: 'hidden'
+                        }}>
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableHeader>Item Name</TableHeader>
+                                <TableHeader>Clicks</TableHeader>
+                                <TableHeader>CVR</TableHeader>
+                                <TableHeader>Revenue</TableHeader>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                            </TableHead>
+                            <TableBody>
+                              {sortedItems.map((item, index) => (
+                                <TableRow 
+                                  key={index}
+                                  style={{ 
+                                    backgroundColor: index % 2 === 0 ? 'white' : '#f9f9f9' 
+                                  }}
+                                >
+                                  <TableCell>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      {item.name}
+                                      {item.tag && (
+                                        <Tag type="green" size="sm">{item.tag}</Tag>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>{item.clicks.toLocaleString()}</TableCell>
+                                  <TableCell>
+                                    <span style={{ fontWeight: '600', color: item.cvr >= 14 ? '#16a34a' : 'inherit' }}>
+                                      {item.cvr}%
+                                    </span>
+                                  </TableCell>
+                                  <TableCell style={{ fontWeight: '600' }}>${item.revenue.toLocaleString()}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
 
                         {/* Footer Summary */}
                         <div style={{ 
@@ -4407,11 +4461,358 @@ const PartnerPerformanceDashboard = () => {
                           color: 'var(--shopify-text-secondary)',
                           textAlign: 'center'
                         }}>
-                          Total: {totals.clicks.toLocaleString()} clicks, ${totals.revenue.toLocaleString()} revenue
+                          <div style={{ marginBottom: '8px' }}>
+                            Total: {totals.clicks.toLocaleString()} clicks, ${totals.revenue.toLocaleString()} revenue
+                          </div>
+                          <a 
+                            href="/reports" 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ 
+                              fontSize: '13px',
+                              color: '#0f62fe',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontWeight: '500'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.textDecoration = 'underline';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.textDecoration = 'none';
+                            }}
+                          >
+                            View full report
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M7 3L12 8L7 13" stroke="#0f62fe" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </a>
                         </div>
                       </div>
                     );
                   });
+                })()}
+
+                {/* Product Optimization Opportunities */}
+                {(() => {
+                  // Aggregate all items
+                  const allItems = [
+                    ...topPerformingItemsByTrafficSource.realry,
+                    ...topPerformingItemsByTrafficSource.css,
+                    ...topPerformingItemsByTrafficSource.instagramStories,
+                    ...topPerformingItemsByTrafficSource.edm
+                  ];
+
+                  // Calculate CTR for all items
+                  const itemsWithCTR = allItems.map(item => ({
+                    ...item,
+                    ctr: item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0
+                  }));
+
+                  // Sort by CTR and CVR to find thresholds
+                  const sortedByCTR = [...itemsWithCTR].sort((a, b) => b.ctr - a.ctr);
+                  const sortedByCVR = [...itemsWithCTR].sort((a, b) => b.cvr - a.cvr);
+                  
+                  // Calculate 25th and 75th percentiles
+                  const ctr75th = sortedByCTR[Math.floor(sortedByCTR.length * 0.25)]?.ctr || 0;
+                  const ctr25th = sortedByCTR[Math.floor(sortedByCTR.length * 0.75)]?.ctr || 0;
+                  const cvr75th = sortedByCVR[Math.floor(sortedByCVR.length * 0.25)]?.cvr || 0;
+                  const cvr25th = sortedByCVR[Math.floor(sortedByCVR.length * 0.75)]?.cvr || 0;
+
+                  // High CTR but Low CVR (top 25% CTR, bottom 25% CVR)
+                  const highCTRLowCVR = itemsWithCTR
+                    .filter(item => item.ctr >= ctr75th && item.cvr <= cvr25th)
+                    .sort((a, b) => b.ctr - a.ctr)
+                    .slice(0, 3);
+
+                  // High CVR but Low CTR (top 25% CVR, bottom 25% CTR)
+                  const highCVRLowCTR = itemsWithCTR
+                    .filter(item => item.cvr >= cvr75th && item.ctr <= ctr25th)
+                    .sort((a, b) => b.cvr - a.cvr)
+                    .slice(0, 3);
+
+                  // Top Revenue Driver
+                  const topRevenueDriver = itemsWithCTR
+                    .sort((a, b) => b.revenue - a.revenue)[0];
+
+                  return (
+                    <div style={{ marginTop: '32px' }}>
+                      <div style={{ marginBottom: '20px' }}>
+                        <h4 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Idea size={20} style={{ color: '#d97706' }} />
+                          Product Optimization Opportunities
+                        </h4>
+                        <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
+                          Identify products that need optimization based on CTR and CVR performance
+                        </p>
+                      </div>
+
+                      <Grid narrow>
+                        {/* High CTR, Low CVR */}
+                        <Column lg={6} md={6} sm={12}>
+                          <div style={{ 
+                            backgroundColor: '#f9f9f9',
+                            borderRadius: '8px',
+                            border: '1px solid #e0e0e0',
+                            padding: '20px',
+                            height: '100%'
+                          }}>
+                            <div style={{ marginBottom: '16px' }}>
+                              <h5 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
+                                High CTR, Low CVR
+                              </h5>
+                              <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
+                                Top 25% CTR, Bottom 25% CVR - Optimize conversion funnel
+                              </p>
+                            </div>
+                            {highCTRLowCVR.length > 0 ? (
+                              <>
+                                <div style={{ 
+                                  backgroundColor: 'white', 
+                                  borderRadius: '6px',
+                                  border: '1px solid #e0e0e0',
+                                  overflow: 'hidden'
+                                }}>
+                                  <Table>
+                                    <TableHead>
+                                      <TableRow>
+                                        <TableHeader>Item Name</TableHeader>
+                                        <TableHeader>CTR</TableHeader>
+                                        <TableHeader>CVR</TableHeader>
+                                        <TableHeader>Revenue</TableHeader>
+                                      </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                      {highCTRLowCVR.map((item, index) => (
+                                        <TableRow 
+                                          key={index}
+                                          style={{ 
+                                            backgroundColor: index % 2 === 0 ? 'white' : '#f9f9f9' 
+                                          }}
+                                        >
+                                          <TableCell>{item.name}</TableCell>
+                                          <TableCell>
+                                            <span style={{ fontWeight: '600', color: '#16a34a' }}>
+                                              {item.ctr.toFixed(2)}%
+                                            </span>
+                                          </TableCell>
+                                          <TableCell>
+                                            <span style={{ fontWeight: '600', color: '#dc2626' }}>
+                                              {item.cvr}%
+                                            </span>
+                                          </TableCell>
+                                          <TableCell style={{ fontWeight: '600' }}>
+                                            ${item.revenue.toLocaleString()}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                                <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                                  <a 
+                                    href="/reports" 
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ 
+                                      fontSize: '12px',
+                                      color: '#0f62fe',
+                                      textDecoration: 'none',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.textDecoration = 'underline';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.textDecoration = 'none';
+                                    }}
+                                  >
+                                    View full report
+                                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M7 3L12 8L7 13" stroke="#0f62fe" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </a>
+                                </div>
+                              </>
+                            ) : (
+                              <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', textAlign: 'center', padding: '20px' }}>
+                                No items found in this category
+                              </p>
+                            )}
+                          </div>
+                        </Column>
+
+                        {/* High CVR, Low CTR */}
+                        <Column lg={6} md={6} sm={12}>
+                          <div style={{ 
+                            backgroundColor: '#f9f9f9',
+                            borderRadius: '8px',
+                            border: '1px solid #e0e0e0',
+                            padding: '20px',
+                            height: '100%'
+                          }}>
+                            <div style={{ marginBottom: '16px' }}>
+                              <h5 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
+                                High CVR, Low CTR
+                              </h5>
+                              <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
+                                Top 25% CVR, Bottom 25% CTR - Increase visibility and traffic
+                              </p>
+                            </div>
+                            {highCVRLowCTR.length > 0 ? (
+                              <>
+                                <div style={{ 
+                                  backgroundColor: 'white', 
+                                  borderRadius: '6px',
+                                  border: '1px solid #e0e0e0',
+                                  overflow: 'hidden'
+                                }}>
+                                  <Table>
+                                    <TableHead>
+                                      <TableRow>
+                                        <TableHeader>Item Name</TableHeader>
+                                        <TableHeader>CTR</TableHeader>
+                                        <TableHeader>CVR</TableHeader>
+                                        <TableHeader>Revenue</TableHeader>
+                                      </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                      {highCVRLowCTR.map((item, index) => (
+                                        <TableRow 
+                                          key={index}
+                                          style={{ 
+                                            backgroundColor: index % 2 === 0 ? 'white' : '#f9f9f9' 
+                                          }}
+                                        >
+                                          <TableCell>{item.name}</TableCell>
+                                          <TableCell>
+                                            <span style={{ fontWeight: '600', color: '#dc2626' }}>
+                                              {item.ctr.toFixed(2)}%
+                                            </span>
+                                          </TableCell>
+                                          <TableCell>
+                                            <span style={{ fontWeight: '600', color: '#16a34a' }}>
+                                              {item.cvr}%
+                                            </span>
+                                          </TableCell>
+                                          <TableCell style={{ fontWeight: '600' }}>
+                                            ${item.revenue.toLocaleString()}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                                <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                                  <a 
+                                    href="/reports" 
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ 
+                                      fontSize: '12px',
+                                      color: '#0f62fe',
+                                      textDecoration: 'none',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.textDecoration = 'underline';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.textDecoration = 'none';
+                                    }}
+                                  >
+                                    View full report
+                                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M7 3L12 8L7 13" stroke="#0f62fe" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </a>
+                                </div>
+                              </>
+                            ) : (
+                              <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', textAlign: 'center', padding: '20px' }}>
+                                No items found in this category
+                              </p>
+                            )}
+                          </div>
+                        </Column>
+                      </Grid>
+
+                      {/* Top Revenue Driver */}
+                      {topRevenueDriver && (
+                        <div style={{ 
+                          marginTop: '20px',
+                          backgroundColor: '#f0f9ff',
+                          borderRadius: '8px',
+                          border: '1px solid #0f62fe',
+                          padding: '20px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <div>
+                              <h5 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Trophy size={20} style={{ color: '#d97706' }} />
+                                Top Revenue Driver
+                              </h5>
+                              <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
+                                Your highest performing product by revenue
+                              </p>
+                            </div>
+                            <Tag type="green" size="md" style={{ fontSize: '14px', fontWeight: '600' }}>
+                              ${topRevenueDriver.revenue.toLocaleString()}
+                            </Tag>
+                          </div>
+                          <div style={{ 
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                            gap: '16px',
+                            marginTop: '16px'
+                          }}>
+                            <div>
+                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Item Name</div>
+                              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                {topRevenueDriver.name}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Type</div>
+                              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                {topRevenueDriver.itemType}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>CTR</div>
+                              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                {topRevenueDriver.ctr.toFixed(2)}%
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>CVR</div>
+                              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                {topRevenueDriver.cvr}%
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Clicks</div>
+                              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                {topRevenueDriver.clicks.toLocaleString()}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Conversions</div>
+                              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                {topRevenueDriver.conversions.toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
                 })()}
               </div>
 
@@ -4570,24 +4971,28 @@ const PartnerPerformanceDashboard = () => {
                           metric: 'CVR (%)', 
                           you: partnerBenchmarking.metrics.cvr.partner, 
                           average: partnerBenchmarking.metrics.cvr.categoryAvg,
+                          top25Percent: partnerBenchmarking.metrics.cvr.top25Percent,
                           percentile: partnerBenchmarking.metrics.cvr.percentile
                         },
                         { 
                           metric: 'AOV ($)', 
                           you: partnerBenchmarking.metrics.aov.partner, 
                           average: partnerBenchmarking.metrics.aov.categoryAvg,
+                          top25Percent: partnerBenchmarking.metrics.aov.top25Percent,
                           percentile: partnerBenchmarking.metrics.aov.percentile
                         },
                         { 
-                          metric: 'RPC ($)', 
+                          metric: 'Revenue Per Click ($)', 
                           you: partnerBenchmarking.metrics.rpc.partner, 
                           average: partnerBenchmarking.metrics.rpc.categoryAvg,
+                          top25Percent: partnerBenchmarking.metrics.rpc.top25Percent,
                           percentile: partnerBenchmarking.metrics.rpc.percentile
                         },
                         { 
                           metric: 'Return Rate (%)', 
                           you: partnerBenchmarking.metrics.returnRate.partner, 
                           average: partnerBenchmarking.metrics.returnRate.categoryAvg,
+                          top25Percent: partnerBenchmarking.metrics.returnRate.top25Percent,
                           percentile: partnerBenchmarking.metrics.returnRate.percentile
                         }
                       ]}
@@ -4607,12 +5012,16 @@ const PartnerPerformanceDashboard = () => {
                           if (name === 'You') {
                             return [`${value.toFixed(2)} (${props.payload.percentile}th percentile)`, 'You'];
                           }
+                          if (name === 'Top 25%') {
+                            return [value.toFixed(2), 'Top 25% Tier'];
+                          }
                           return [value.toFixed(2), 'Category Average'];
                         }}
                       />
                       <Legend />
                       <Bar dataKey="you" fill="#7256F6" name="You" />
                       <Bar dataKey="average" fill="#8d8d8d" name="Category Average" />
+                      <Bar dataKey="top25Percent" fill="#f1c21b" name="Top 25%" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
