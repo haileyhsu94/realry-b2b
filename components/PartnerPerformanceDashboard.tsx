@@ -281,12 +281,12 @@ const bannerPerformance = {
 
 // Partner Benchmarking Data
 const partnerBenchmarking = {
-  category: 'Luxury',
+  category: 'Fashion',
   metrics: {
-    cvr: { partner: 13.9, categoryAvg: 12.5, top25Percent: 16.2, percentile: 75 },
-    aov: { partner: 38.02, categoryAvg: 42.50, top25Percent: 52.80, percentile: 45 },
-    rpc: { partner: 5.29, categoryAvg: 4.85, top25Percent: 6.40, percentile: 65 },
-    returnRate: { partner: 3.2, categoryAvg: 4.1, top25Percent: 2.8, percentile: 70 }
+    cvr: { partner: 13.9, categoryAvg: 12.5, top5Percent: 16.2, percentile: 75 },
+    aov: { partner: 38.02, categoryAvg: 42.50, top5Percent: 52.80, percentile: 45 },
+    rpc: { partner: 5.29, categoryAvg: 4.85, top5Percent: 6.40, percentile: 65 },
+    returnRate: { partner: 3.2, categoryAvg: 4.1, top5Percent: 2.8, percentile: 70 }
   },
   recommendations: [
     'Your AOV is 10.5% below category average. Consider promoting higher-value items.',
@@ -296,22 +296,57 @@ const partnerBenchmarking = {
 };
 
 // Weekend vs Weekday Performance Data
-const weekendWeekdayPerformance = {
-  weekend: {
-    clicks: 3420,
-    conversions: 456,
-    cvr: 13.3,
-    revenue: 18920,
-    avgDaily: 1140
-  },
-  weekday: {
-    clicks: 5500,
-    conversions: 787,
-    cvr: 14.3,
-    revenue: 28320,
-    avgDaily: 1100
-  },
-  trend: 'up'
+// Weekly data for the last 5 weeks (default)
+const weekendWeekdayPerformanceWeekly = [
+  { week: 'Week 1', weekend: { clicks: 3200, conversions: 425, cvr: 13.3, revenue: 17800 }, weekday: { clicks: 5100, conversions: 730, cvr: 14.3, revenue: 26500 } },
+  { week: 'Week 2', weekend: { clicks: 3350, conversions: 445, cvr: 13.3, revenue: 18500 }, weekday: { clicks: 5250, conversions: 750, cvr: 14.3, revenue: 27200 } },
+  { week: 'Week 3', weekend: { clicks: 3420, conversions: 456, cvr: 13.3, revenue: 18920 }, weekday: { clicks: 5350, conversions: 765, cvr: 14.3, revenue: 27800 } },
+  { week: 'Week 4', weekend: { clicks: 3500, conversions: 465, cvr: 13.3, revenue: 19200 }, weekday: { clicks: 5450, conversions: 780, cvr: 14.3, revenue: 28500 } },
+  { week: 'Week 5', weekend: { clicks: 3580, conversions: 475, cvr: 13.3, revenue: 19800 }, weekday: { clicks: 5550, conversions: 795, cvr: 14.3, revenue: 29200 } },
+];
+
+// Monthly aggregated data (last 3 months)
+const weekendWeekdayPerformanceMonthly = [
+  { month: 'Month 1', weekend: { clicks: 13520, conversions: 1795, cvr: 13.3, revenue: 74420 }, weekday: { clicks: 21150, conversions: 3025, cvr: 14.3, revenue: 110200 } },
+  { month: 'Month 2', weekend: { clicks: 14200, conversions: 1885, cvr: 13.3, revenue: 78500 }, weekday: { clicks: 22000, conversions: 3145, cvr: 14.3, revenue: 114500 } },
+  { month: 'Month 3', weekend: { clicks: 14800, conversions: 1965, cvr: 13.3, revenue: 81800 }, weekday: { clicks: 22800, conversions: 3260, cvr: 14.3, revenue: 118800 } },
+];
+
+// 6 months data (bi-monthly)
+const weekendWeekdayPerformance6Months = [
+  { period: 'Months 1-2', weekend: { clicks: 27720, conversions: 3680, cvr: 13.3, revenue: 152920 }, weekday: { clicks: 43150, conversions: 6170, cvr: 14.3, revenue: 224700 } },
+  { period: 'Months 3-4', weekend: { clicks: 29000, conversions: 3850, cvr: 13.3, revenue: 160300 }, weekday: { clicks: 44800, conversions: 6405, cvr: 14.3, revenue: 233300 } },
+  { period: 'Months 5-6', weekend: { clicks: 30200, conversions: 4010, cvr: 13.3, revenue: 167100 }, weekday: { clicks: 46400, conversions: 6635, cvr: 14.3, revenue: 241800 } },
+];
+
+// 1 year data (quarterly)
+const weekendWeekdayPerformance1Year = [
+  { period: 'Q1', weekend: { clicks: 42520, conversions: 5645, cvr: 13.3, revenue: 235220 }, weekday: { clicks: 66150, conversions: 9455, cvr: 14.3, revenue: 344000 } },
+  { period: 'Q2', weekend: { clicks: 44800, conversions: 5945, cvr: 13.3, revenue: 247800 }, weekday: { clicks: 69600, conversions: 9945, cvr: 14.3, revenue: 362200 } },
+  { period: 'Q3', weekend: { clicks: 47200, conversions: 6265, cvr: 13.3, revenue: 261200 }, weekday: { clicks: 73200, conversions: 10460, cvr: 14.3, revenue: 381000 } },
+  { period: 'Q4', weekend: { clicks: 49500, conversions: 6570, cvr: 13.3, revenue: 273900 }, weekday: { clicks: 76800, conversions: 10985, cvr: 14.3, revenue: 399800 } },
+];
+
+// Helper function to aggregate data based on time period
+const aggregateWeekendWeekdayData = (data: typeof weekendWeekdayPerformanceWeekly) => {
+  const weekend = data.reduce((acc, week) => ({
+    clicks: acc.clicks + week.weekend.clicks,
+    conversions: acc.conversions + week.weekend.conversions,
+    revenue: acc.revenue + week.weekend.revenue,
+    cvr: 0, // Will calculate after
+  }), { clicks: 0, conversions: 0, revenue: 0, cvr: 0 });
+
+  const weekday = data.reduce((acc, week) => ({
+    clicks: acc.clicks + week.weekday.clicks,
+    conversions: acc.conversions + week.weekday.conversions,
+    revenue: acc.revenue + week.weekday.revenue,
+    cvr: 0, // Will calculate after
+  }), { clicks: 0, conversions: 0, revenue: 0, cvr: 0 });
+
+  weekend.cvr = weekend.clicks > 0 ? (weekend.conversions / weekend.clicks) * 100 : 0;
+  weekday.cvr = weekday.clicks > 0 ? (weekday.conversions / weekday.clicks) * 100 : 0;
+
+  return { weekend, weekday, trend: weekend.cvr > weekday.cvr ? 'up' : 'down' };
 };
 
 // State-level sales data for USA heatmap
@@ -368,12 +403,162 @@ const usaStatesSalesData: { [key: string]: { sales: number; customers: number; r
   'Wyoming': { sales: 1, customers: 1, revenue: 38, cvr: 2.5 },
 };
 
+// Metric definitions for tooltips
+const metricDefinitions: { [key: string]: { name: string; formula: string; description: string } } = {
+  ROAS: {
+    name: 'Return on Ad Spend',
+    formula: 'Revenue / Ad Spend',
+    description: 'Shows how much revenue you earn for every dollar spent on advertising. A ROAS of 3.0x means you earn $3 for every $1 spent.'
+  },
+  CVR: {
+    name: 'Conversion Rate',
+    formula: '(Conversions / Clicks) × 100',
+    description: 'Percentage of clicks that result in a conversion. Higher CVR indicates more effective traffic.'
+  },
+  CTR: {
+    name: 'Click-Through Rate',
+    formula: '(Clicks / Impressions) × 100',
+    description: 'Percentage of impressions that result in clicks. Higher CTR indicates more engaging content.'
+  },
+  AOV: {
+    name: 'Average Order Value',
+    formula: 'Total Revenue / Number of Orders',
+    description: 'Average amount spent per order. Higher AOV means customers are purchasing more per transaction.'
+  },
+  RPC: {
+    name: 'Revenue Per Click',
+    formula: 'Total Revenue / Total Clicks',
+    description: 'Average revenue generated per click. Useful for comparing traffic quality across different sources.'
+  },
+  'Net CPA': {
+    name: 'Net Cost Per Acquisition',
+    formula: 'Total Ad Spend / Number of Conversions',
+    description: 'Cost to acquire one customer. Lower CPA means more efficient customer acquisition.'
+  },
+  'Return Rate': {
+    name: 'Return Rate',
+    formula: '(Number of Returns / Number of Orders) × 100',
+    description: 'Percentage of orders that are returned. Lower return rates indicate better product quality and customer satisfaction.'
+  },
+  Revenue: {
+    name: 'Revenue',
+    formula: 'Sum of all order values',
+    description: 'Total income generated from sales. This is the gross revenue before any deductions.'
+  },
+  Conversions: {
+    name: 'Conversions',
+    formula: 'Number of completed purchases',
+    description: 'Total number of successful transactions or purchases.'
+  },
+  Clicks: {
+    name: 'Clicks',
+    formula: 'Number of user clicks on ads or links',
+    description: 'Total number of times users clicked on your ads, links, or call-to-action buttons.'
+  },
+  Impressions: {
+    name: 'Impressions',
+    formula: 'Number of times content was displayed',
+    description: 'Total number of times your ads or content were shown to users, regardless of clicks.'
+  }
+};
+
+// Custom Tooltip Component for Metric Definitions
+const MetricTooltip = ({ metric, children }: { metric: string; children: React.ReactNode }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const definition = metricDefinitions[metric];
+
+  if (!definition) return <>{children}</>;
+
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'help' }}
+      onMouseEnter={(e) => {
+        setShowTooltip(true);
+        setTooltipPosition({ x: e.clientX, y: e.clientY });
+      }}
+      onMouseMove={(e) => {
+        setTooltipPosition({ x: e.clientX, y: e.clientY });
+      }}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      {children}
+      <Information size={14} style={{ color: '#6d7175', opacity: 0.7 }} />
+      {showTooltip && (
+        <div
+          style={{
+            position: 'fixed',
+            top: tooltipPosition.y - 10,
+            left: tooltipPosition.x + 10,
+            backgroundColor: '#161616',
+            color: 'white',
+            padding: '12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            maxWidth: '280px',
+            zIndex: 10000,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            pointerEvents: 'none',
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div style={{ fontWeight: '600', marginBottom: '6px', fontSize: '13px' }}>{definition.name}</div>
+          <div style={{ marginBottom: '4px', opacity: 0.9 }}><strong>Formula:</strong> {definition.formula}</div>
+          <div style={{ opacity: 0.8, lineHeight: '1.4' }}>{definition.description}</div>
+        </div>
+      )}
+    </span>
+  );
+};
+
+// Sorting utility function
+const useTableSort = <T,>(data: T[], defaultSortKey?: keyof T) => {
+  const [sortConfig, setSortConfig] = useState<{ key: keyof T; direction: 'asc' | 'desc' } | null>(
+    defaultSortKey ? { key: defaultSortKey, direction: 'desc' } : null
+  );
+
+  const handleSort = (key: keyof T) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedData = React.useMemo(() => {
+    if (!sortConfig) return data;
+    
+    return [...data].sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+      
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+      
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      
+      const aString = String(aValue).toLowerCase();
+      const bString = String(bValue).toLowerCase();
+      
+      if (sortConfig.direction === 'asc') {
+        return aString < bString ? -1 : aString > bString ? 1 : 0;
+      } else {
+        return aString > bString ? -1 : aString < bString ? 1 : 0;
+      }
+    });
+  }, [data, sortConfig]);
+
+  return { sortedData, sortConfig, handleSort };
+};
+
 const PartnerPerformanceDashboard = () => {
   const [timeRange, setTimeRange] = useState('7d');
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [plans, setPlans] = useState<PartnerPlans>(mockPartnerPlans);
-  const [mapRegion, setMapRegion] = useState('north-america'); // north-america, europe, asia, oceania, global
+  const [mapRegion, setMapRegion] = useState('north-america'); // north-america, europe, asia, oceania, africa, global
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([-95, 40]);
@@ -394,6 +579,10 @@ const PartnerPerformanceDashboard = () => {
   } | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   
+  // Track mouse position for drag detection
+  const [mouseDownPos, setMouseDownPos] = useState<{ x: number; y: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  
   // Custom date range states
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [customStartDate, setCustomStartDate] = useState('');
@@ -403,6 +592,13 @@ const PartnerPerformanceDashboard = () => {
   // Filter states for detail tabs
   const [chartMetric, setChartMetric] = useState('revenue'); // revenue, clicks, conversions, roas
   const [campaignFilter, setCampaignFilter] = useState('all'); // all, active, completed
+  
+  // Weekend vs Weekday Performance time period
+  const [weekendWeekdayTimePeriod, setWeekendWeekdayTimePeriod] = useState<'1month' | '3months' | '6months' | '1year'>('1month');
+  
+  // Shop Performance and Creator Performance date filters
+  const [shopPerformanceDateFilter, setShopPerformanceDateFilter] = useState<'7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ'>('7d');
+  const [creatorPerformanceDateFilter, setCreatorPerformanceDateFilter] = useState<'7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ'>('7d');
 
   // Country coordinates mapping for map zoom
   const countryCoordinates: { [key: string]: { center: [number, number], zoom: number } } = {
@@ -743,32 +939,19 @@ const PartnerPerformanceDashboard = () => {
         {/* Header with title, info icon, and value */}
         <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <div className="shopify-metric-label">{metric.title}</div>
-            <Information 
-              size={16} 
-              style={{ 
-                color: 'var(--shopify-text-secondary)', 
-                opacity: 0.6,
-                cursor: 'pointer',
-                flexShrink: 0,
-                transition: 'opacity 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                const target = e.currentTarget as unknown as HTMLElement;
-                if (target && target.style) {
-                  target.style.opacity = '1';
-                  target.style.color = '#7256F6';
-                }
-              }}
-              onMouseLeave={(e) => {
-                const target = e.currentTarget as unknown as HTMLElement;
-                if (target && target.style) {
-                  target.style.opacity = '0.6';
-                  target.style.color = 'var(--shopify-text-secondary)';
-                }
-              }}
-              onClick={() => alert(`Information about ${metric.title}`)}
-            />
+            <MetricTooltip metric={
+              metric.title === 'Total Revenue' ? 'Revenue' :
+              metric.title === 'ROAS' ? 'ROAS' :
+              metric.title === 'Conversion Rate' ? 'CVR' :
+              metric.title === 'Click through rate' ? 'CTR' :
+              metric.title === 'Revenue Per Click' ? 'RPC' :
+              metric.title === 'Return Rate' ? 'Return Rate' :
+              metric.title === 'Avg Order Value' ? 'AOV' :
+              metric.title === 'Net CPA' ? 'Net CPA' :
+              metric.title
+            }>
+              <div className="shopify-metric-label">{metric.title}</div>
+            </MetricTooltip>
           </div>
           <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>{metric.value}</div>
           <div className={`shopify-metric-change ${metric.trend === 'up' ? 'positive' : 'negative'}`}>
@@ -1552,16 +1735,54 @@ const PartnerPerformanceDashboard = () => {
             {activeSection === 'shop-performance' && (
               <div style={{ width: '100%' }}>
                 <div style={{ padding: '24px', borderBottom: '1px solid var(--shopify-border)' }}>
-                  <h1 style={{ 
-                    fontSize: '24px', 
-                    fontWeight: '600', 
-                    color: 'var(--shopify-text-primary)',
-                    margin: 0,
-                    marginBottom: '8px',
-                    letterSpacing: '-0.02em'
-                  }}>
-                    Shop Performance
-                  </h1>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <h1 style={{ 
+                      fontSize: '24px', 
+                      fontWeight: '600', 
+                      color: 'var(--shopify-text-primary)',
+                      margin: 0,
+                      letterSpacing: '-0.02em'
+                    }}>
+                      Shop Performance
+                    </h1>
+                    <select
+                      value={shopPerformanceDateFilter}
+                      onChange={(e) => setShopPerformanceDateFilter(e.target.value as '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ')}
+                      style={{
+                        padding: '8px 32px 8px 12px',
+                        border: '1px solid var(--shopify-border)',
+                        borderRadius: '6px',
+                        backgroundColor: 'white',
+                        fontSize: '14px',
+                        color: 'var(--shopify-text-primary)',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        appearance: 'none',
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236d7175' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center',
+                        transition: 'border-color 0.15s ease'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#7256F6'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#7256F6';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (document.activeElement !== e.currentTarget) {
+                          e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                        }
+                      }}
+                    >
+                      <option value="7d">Last 7 days</option>
+                      <option value="14d">Last 14 days</option>
+                      <option value="30d">Last 30 days</option>
+                      <option value="thisMonth">This month</option>
+                      <option value="lastMonth">Last month</option>
+                      <option value="thisQ">This Q</option>
+                      <option value="lastQ">Last Q</option>
+                    </select>
+                  </div>
                   <p style={{ 
                     fontSize: '14px', 
                     color: 'var(--shopify-text-secondary)',
@@ -1671,13 +1892,29 @@ const PartnerPerformanceDashboard = () => {
                       ]}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" />
                         <XAxis dataKey="name" stroke="#6d7175" />
-                        <YAxis stroke="#6d7175" />
+                        <YAxis 
+                          stroke="#6d7175"
+                          tickFormatter={(value: number) => {
+                            // Format numbers with commas, add % for CVR
+                            if (value < 100) {
+                              return `${value}%`;
+                            }
+                            return value.toLocaleString();
+                          }}
+                        />
                         <Tooltip 
                           contentStyle={{ 
                             backgroundColor: 'white', 
                             border: '1px solid #e1e3e5',
                             borderRadius: '6px'
-                          }} 
+                          }}
+                          formatter={(value: number, name: string, props: any) => {
+                            // Add % for CVR, otherwise just format number
+                            if (props.payload.name === 'CVR') {
+                              return `${value}%`;
+                            }
+                            return value.toLocaleString();
+                          }}
                         />
                         <Bar dataKey="value" radius={[6, 6, 0, 0]} />
                       </BarChart>
@@ -1728,13 +1965,20 @@ const PartnerPerformanceDashboard = () => {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" />
                         <XAxis dataKey="date" stroke="#6d7175" />
-                        <YAxis stroke="#6d7175" />
+                        <YAxis 
+                          stroke="#6d7175"
+                          tickFormatter={(value: number) => {
+                            if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
+                            return `$${value}`;
+                          }}
+                        />
                         <Tooltip 
                           contentStyle={{ 
                             backgroundColor: 'white', 
                             border: '1px solid #e1e3e5',
                             borderRadius: '6px'
-                          }} 
+                          }}
+                          formatter={(value: number) => `$${value.toLocaleString()}`}
                         />
                         <Legend />
                         <Area 
@@ -1773,30 +2017,99 @@ const PartnerPerformanceDashboard = () => {
                       Source of truth: Daily revenue breakdown with detailed metrics
                     </p>
                   </div>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeader>Date</TableHeader>
-                        <TableHeader>Revenue</TableHeader>
-                        <TableHeader>Clicks</TableHeader>
-                        <TableHeader>Conversions</TableHeader>
-                        <TableHeader>ROAS</TableHeader>
-                        <TableHeader>CVR</TableHeader>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {mockRevenueData.map((row, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{row.date}</TableCell>
-                          <TableCell>${row.revenue.toLocaleString()}</TableCell>
-                          <TableCell>{row.clicks.toLocaleString()}</TableCell>
-                          <TableCell>{row.conversions.toLocaleString()}</TableCell>
-                          <TableCell>{row.roas.toFixed(1)}x</TableCell>
-                          <TableCell>{((row.conversions / row.clicks) * 100).toFixed(1)}%</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {(() => {
+                    const { sortedData, sortConfig, handleSort } = useTableSort(mockRevenueData, 'date');
+                    return (
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('date' as keyof typeof mockRevenueData[0])}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                Date
+                                {sortConfig?.key === 'date' && (
+                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                )}
+                              </div>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('revenue' as keyof typeof mockRevenueData[0])}
+                            >
+                              <MetricTooltip metric="Revenue">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  Revenue
+                                  {sortConfig?.key === 'revenue' && (
+                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  )}
+                                </div>
+                              </MetricTooltip>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('clicks' as keyof typeof mockRevenueData[0])}
+                            >
+                              <MetricTooltip metric="Clicks">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  Clicks
+                                  {sortConfig?.key === 'clicks' && (
+                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  )}
+                                </div>
+                              </MetricTooltip>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('conversions' as keyof typeof mockRevenueData[0])}
+                            >
+                              <MetricTooltip metric="Conversions">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  Conversions
+                                  {sortConfig?.key === 'conversions' && (
+                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  )}
+                                </div>
+                              </MetricTooltip>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('roas' as keyof typeof mockRevenueData[0])}
+                            >
+                              <MetricTooltip metric="ROAS">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  ROAS
+                                  {sortConfig?.key === 'roas' && (
+                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  )}
+                                </div>
+                              </MetricTooltip>
+                            </TableHeader>
+                            <TableHeader style={{ cursor: 'pointer', userSelect: 'none' }}>
+                              <MetricTooltip metric="CVR">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  CVR
+                                </div>
+                              </MetricTooltip>
+                            </TableHeader>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {sortedData.map((row, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{row.date}</TableCell>
+                              <TableCell>${row.revenue.toLocaleString()}</TableCell>
+                              <TableCell>{row.clicks.toLocaleString()}</TableCell>
+                              <TableCell>{row.conversions.toLocaleString()}</TableCell>
+                              <TableCell>{row.roas.toFixed(1)}x</TableCell>
+                              <TableCell>{((row.conversions / row.clicks) * 100).toFixed(1)}%</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    );
+                  })()}
                   </div>
                 </div>
 
@@ -1842,38 +2155,134 @@ const PartnerPerformanceDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeader>Campaign Name</TableHeader>
-                        <TableHeader>Type</TableHeader>
-                        <TableHeader>Status</TableHeader>
-                        <TableHeader>Clicks</TableHeader>
-                        <TableHeader>Conversions</TableHeader>
-                        <TableHeader>Revenue</TableHeader>
-                        <TableHeader>ROAS</TableHeader>
-                        <TableHeader>Spend</TableHeader>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {mockWebsitePerformance.campaigns.campaignPerformance.map((campaign) => (
-                        <TableRow key={campaign.id}>
-                          <TableCell>{campaign.name}</TableCell>
-                          <TableCell>{campaign.type}</TableCell>
-                          <TableCell>
-                            <Tag type={campaign.status === 'active' ? 'green' : 'gray'} size="sm">
-                              {campaign.status}
-                            </Tag>
-                          </TableCell>
-                          <TableCell>{campaign.clicks.toLocaleString()}</TableCell>
-                          <TableCell>{campaign.conversions.toLocaleString()}</TableCell>
-                          <TableCell>${campaign.revenue.toLocaleString()}</TableCell>
-                          <TableCell>{campaign.roas.toFixed(1)}x</TableCell>
-                          <TableCell>${campaign.spend.toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {(() => {
+                    const filteredCampaigns = campaignFilter === 'all' 
+                      ? mockWebsitePerformance.campaigns.campaignPerformance
+                      : mockWebsitePerformance.campaigns.campaignPerformance.filter(c => c.status === campaignFilter);
+                    const { sortedData, sortConfig, handleSort } = useTableSort(filteredCampaigns, 'revenue');
+                    return (
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('name' as keyof typeof filteredCampaigns[0])}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                Campaign Name
+                                {sortConfig?.key === 'name' && (
+                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                )}
+                              </div>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('type' as keyof typeof filteredCampaigns[0])}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                Type
+                                {sortConfig?.key === 'type' && (
+                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                )}
+                              </div>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('status' as keyof typeof filteredCampaigns[0])}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                Status
+                                {sortConfig?.key === 'status' && (
+                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                )}
+                              </div>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('clicks' as keyof typeof filteredCampaigns[0])}
+                            >
+                              <MetricTooltip metric="Clicks">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  Clicks
+                                  {sortConfig?.key === 'clicks' && (
+                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  )}
+                                </div>
+                              </MetricTooltip>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('conversions' as keyof typeof filteredCampaigns[0])}
+                            >
+                              <MetricTooltip metric="Conversions">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  Conversions
+                                  {sortConfig?.key === 'conversions' && (
+                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  )}
+                                </div>
+                              </MetricTooltip>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('revenue' as keyof typeof filteredCampaigns[0])}
+                            >
+                              <MetricTooltip metric="Revenue">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  Revenue
+                                  {sortConfig?.key === 'revenue' && (
+                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  )}
+                                </div>
+                              </MetricTooltip>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('roas' as keyof typeof filteredCampaigns[0])}
+                            >
+                              <MetricTooltip metric="ROAS">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  ROAS
+                                  {sortConfig?.key === 'roas' && (
+                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  )}
+                                </div>
+                              </MetricTooltip>
+                            </TableHeader>
+                            <TableHeader 
+                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleSort('spend' as keyof typeof filteredCampaigns[0])}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                Spend
+                                {sortConfig?.key === 'spend' && (
+                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                )}
+                              </div>
+                            </TableHeader>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {sortedData.map((campaign) => (
+                            <TableRow key={campaign.id}>
+                              <TableCell>{campaign.name}</TableCell>
+                              <TableCell>{campaign.type}</TableCell>
+                              <TableCell>
+                                <Tag type={campaign.status === 'active' ? 'green' : 'gray'} size="sm">
+                                  {campaign.status}
+                                </Tag>
+                              </TableCell>
+                              <TableCell>{campaign.clicks.toLocaleString()}</TableCell>
+                              <TableCell>{campaign.conversions.toLocaleString()}</TableCell>
+                              <TableCell>${campaign.revenue.toLocaleString()}</TableCell>
+                              <TableCell>{campaign.roas.toFixed(1)}x</TableCell>
+                              <TableCell>${campaign.spend.toLocaleString()}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    );
+                  })()}
                   </div>
                 </div>
 
@@ -2023,16 +2432,54 @@ const PartnerPerformanceDashboard = () => {
             {activeSection === 'creator-performance' && (
               <div style={{ width: '100%' }}>
                 <div style={{ padding: '24px', borderBottom: '1px solid var(--shopify-border)' }}>
-                  <h1 style={{ 
-                    fontSize: '24px', 
-                    fontWeight: '600', 
-                    color: 'var(--shopify-text-primary)',
-                    margin: 0,
-                    marginBottom: '8px',
-                    letterSpacing: '-0.02em'
-                  }}>
-                    Creator Performance
-                  </h1>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <h1 style={{ 
+                      fontSize: '24px', 
+                      fontWeight: '600', 
+                      color: 'var(--shopify-text-primary)',
+                      margin: 0,
+                      letterSpacing: '-0.02em'
+                    }}>
+                      Creator Performance
+                    </h1>
+                    <select
+                      value={creatorPerformanceDateFilter}
+                      onChange={(e) => setCreatorPerformanceDateFilter(e.target.value as '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ')}
+                      style={{
+                        padding: '8px 32px 8px 12px',
+                        border: '1px solid var(--shopify-border)',
+                        borderRadius: '6px',
+                        backgroundColor: 'white',
+                        fontSize: '14px',
+                        color: 'var(--shopify-text-primary)',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        appearance: 'none',
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236d7175' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center',
+                        transition: 'border-color 0.15s ease'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#7256F6'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#7256F6';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (document.activeElement !== e.currentTarget) {
+                          e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                        }
+                      }}
+                    >
+                      <option value="7d">Last 7 days</option>
+                      <option value="14d">Last 14 days</option>
+                      <option value="30d">Last 30 days</option>
+                      <option value="thisMonth">This month</option>
+                      <option value="lastMonth">Last month</option>
+                      <option value="thisQ">This Q</option>
+                      <option value="lastQ">Last Q</option>
+                    </select>
+                  </div>
                   <p style={{ 
                     fontSize: '14px', 
                     color: 'var(--shopify-text-secondary)',
@@ -2953,101 +3400,396 @@ const PartnerPerformanceDashboard = () => {
                   backgroundColor: 'white',
                   borderRadius: '8px',
                   border: '1px solid var(--shopify-border)',
-                  padding: '24px'
+                  padding: '24px 24px 24px 24px'
                 }}>
-                  <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '16px' }}>
-                    Weekend vs Weekday Performance
-                  </h4>
-                  <Grid narrow>
-                    <Column lg={6}>
-                      <div style={{ 
-                        padding: '20px',
-                        backgroundColor: '#f6f6f7',
-                        borderRadius: '8px',
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '12px' }}>
-                          Weekend (Fri-Sun)
-                        </div>
-                        <div style={{ display: 'flex', gap: '24px', marginBottom: '16px' }}>
-                          <div>
-                            <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Avg Daily Clicks</div>
-                            <div style={{ fontSize: '24px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                              {weekendWeekdayPerformance.weekend.avgDaily.toLocaleString()}
-                            </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingLeft: '24px', paddingRight: '24px' }}>
+                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: 0 }}>
+                      Weekend vs Weekday Performance
+                    </h4>
+                    <select
+                      value={weekendWeekdayTimePeriod}
+                      onChange={(e) => setWeekendWeekdayTimePeriod(e.target.value as '1month' | '3months' | '6months' | '1year')}
+                      style={{
+                        padding: '8px 32px 8px 12px',
+                        border: '1px solid var(--shopify-border)',
+                        borderRadius: '6px',
+                        backgroundColor: 'white',
+                        fontSize: '14px',
+                        color: 'var(--shopify-text-primary)',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        appearance: 'none',
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236d7175' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center',
+                        transition: 'border-color 0.15s ease'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#7256F6'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#7256F6';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (document.activeElement !== e.currentTarget) {
+                          e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                        }
+                      }}
+                    >
+                      <option value="1month">Last 1 Month</option>
+                      <option value="3months">Last 3 Months</option>
+                      <option value="6months">Last 6 Months</option>
+                      <option value="1year">Last 1 Year</option>
+                    </select>
+                  </div>
+                  
+                  {(() => {
+                    // Get data based on selected time period
+                    let chartData: any[] = [];
+                    let aggregatedData: ReturnType<typeof aggregateWeekendWeekdayData>;
+                    
+                    if (weekendWeekdayTimePeriod === '1month') {
+                      chartData = weekendWeekdayPerformanceWeekly.map(week => ({
+                        period: week.week,
+                        weekend: week.weekend,
+                        weekday: week.weekday
+                      }));
+                      aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformanceWeekly);
+                    } else if (weekendWeekdayTimePeriod === '3months') {
+                      chartData = weekendWeekdayPerformanceMonthly.map(month => ({
+                        period: month.month,
+                        weekend: month.weekend,
+                        weekday: month.weekday
+                      }));
+                      aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformanceMonthly.map(m => ({ week: m.month, weekend: m.weekend, weekday: m.weekday })));
+                    } else if (weekendWeekdayTimePeriod === '6months') {
+                      chartData = weekendWeekdayPerformance6Months.map(period => ({
+                        period: period.period,
+                        weekend: period.weekend,
+                        weekday: period.weekday
+                      }));
+                      aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformance6Months.map(p => ({ week: p.period, weekend: p.weekend, weekday: p.weekday })));
+                    } else {
+                      chartData = weekendWeekdayPerformance1Year.map(period => ({
+                        period: period.period,
+                        weekend: period.weekend,
+                        weekday: period.weekday
+                      }));
+                      aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformance1Year.map(p => ({ week: p.period, weekend: p.weekend, weekday: p.weekday })));
+                    }
+
+                    return (
+                      <>
+                        <Grid narrow style={{ paddingLeft: 0, paddingRight: 0 }}>
+                    {/* Clicks */}
+                    <Column lg={4} md={6} sm={12}>
+                      <div className="shopify-metric-card">
+                        <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '6px' }}>
+                            Total Clicks
                           </div>
-                          <div>
-                            <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>CVR</div>
-                            <div style={{ fontSize: '24px', fontWeight: '600', color: '#16a34a' }}>
-                              {weekendWeekdayPerformance.weekend.cvr}%
-                            </div>
+                          <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
+                            {aggregatedData.weekend.clicks.toLocaleString()} / {aggregatedData.weekday.clicks.toLocaleString()}
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                            <span>Weekend</span>
+                            <span>Weekday</span>
                           </div>
                         </div>
-                        <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>
-                          <span style={{ fontWeight: '500', color: 'var(--shopify-text-primary)' }}>Total Revenue:</span> ${weekendWeekdayPerformance.weekend.revenue.toLocaleString()}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginTop: '4px' }}>
-                          <span style={{ fontWeight: '500', color: 'var(--shopify-text-primary)' }}>Total Clicks:</span> {weekendWeekdayPerformance.weekend.clicks.toLocaleString()}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginTop: '4px' }}>
-                          <span style={{ fontWeight: '500', color: 'var(--shopify-text-primary)' }}>Conversions:</span> {weekendWeekdayPerformance.weekend.conversions.toLocaleString()}
+                        <div style={{ 
+                          width: '100%', 
+                          height: '180px',
+                          padding: '0 12px 0 12px'
+                        }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData.map(d => ({ period: d.period, weekend: d.weekend.clicks, weekday: d.weekday.clicks }))} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                              <XAxis 
+                                dataKey="period" 
+                                stroke="#6d7175" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#6d7175' }}
+                              />
+                              <YAxis 
+                                stroke="#6d7175" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#6d7175' }}
+                                width={40}
+                                tickFormatter={(value: number) => {
+                                  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                                  return value.toString();
+                                }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="weekend" 
+                                stroke="#0f62fe" 
+                                strokeWidth={2.5}
+                                dot={{ r: 3, fill: '#0f62fe', strokeWidth: 0 }}
+                                isAnimationActive={false}
+                                activeDot={{ r: 5, fill: '#0f62fe' }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="weekday" 
+                                stroke="#8a3ffc" 
+                                strokeWidth={2.5}
+                                dot={{ r: 3, fill: '#8a3ffc', strokeWidth: 0 }}
+                                isAnimationActive={false}
+                                activeDot={{ r: 5, fill: '#8a3ffc' }}
+                              />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: 'white', 
+                                  border: '1px solid var(--shopify-border)',
+                                  borderRadius: '6px',
+                                  padding: '4px 8px',
+                                  fontSize: '12px'
+                                }}
+                                formatter={(value: number) => value.toLocaleString()}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
                         </div>
                       </div>
                     </Column>
-                    <Column lg={6}>
-                      <div style={{ 
-                        padding: '20px',
-                        backgroundColor: '#f6f6f7',
-                        borderRadius: '8px',
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '12px' }}>
-                          Weekday (Mon-Thu)
-                        </div>
-                        <div style={{ display: 'flex', gap: '24px', marginBottom: '16px' }}>
-                          <div>
-                            <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Avg Daily Clicks</div>
-                            <div style={{ fontSize: '24px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                              {weekendWeekdayPerformance.weekday.avgDaily.toLocaleString()}
-                            </div>
+
+                    {/* Conversions */}
+                    <Column lg={4} md={6} sm={12}>
+                      <div className="shopify-metric-card">
+                        <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '6px' }}>
+                            Conversions
                           </div>
-                          <div>
-                            <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>CVR</div>
-                            <div style={{ fontSize: '24px', fontWeight: '600', color: '#6d7175' }}>
-                              {weekendWeekdayPerformance.weekday.cvr}%
-                            </div>
+                          <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
+                            {aggregatedData.weekend.conversions.toLocaleString()} / {aggregatedData.weekday.conversions.toLocaleString()}
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                            <span>Weekend</span>
+                            <span>Weekday</span>
                           </div>
                         </div>
-                        <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>
-                          <span style={{ fontWeight: '500', color: 'var(--shopify-text-primary)' }}>Total Revenue:</span> ${weekendWeekdayPerformance.weekday.revenue.toLocaleString()}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginTop: '4px' }}>
-                          <span style={{ fontWeight: '500', color: 'var(--shopify-text-primary)' }}>Total Clicks:</span> {weekendWeekdayPerformance.weekday.clicks.toLocaleString()}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginTop: '4px' }}>
-                          <span style={{ fontWeight: '500', color: 'var(--shopify-text-primary)' }}>Conversions:</span> {weekendWeekdayPerformance.weekday.conversions.toLocaleString()}
+                        <div style={{ 
+                          width: '100%', 
+                          height: '180px',
+                          padding: '0 12px 0 12px'
+                        }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData.map(d => ({ period: d.period, weekend: d.weekend.conversions, weekday: d.weekday.conversions }))} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                              <XAxis 
+                                dataKey="period" 
+                                stroke="#6d7175" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#6d7175' }}
+                              />
+                              <YAxis 
+                                stroke="#6d7175" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#6d7175' }}
+                                width={40}
+                                tickFormatter={(value: number) => {
+                                  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                                  return value.toString();
+                                }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="weekend" 
+                                stroke="#0f62fe" 
+                                strokeWidth={2.5}
+                                dot={{ r: 3, fill: '#0f62fe', strokeWidth: 0 }}
+                                isAnimationActive={false}
+                                activeDot={{ r: 5, fill: '#0f62fe' }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="weekday" 
+                                stroke="#8a3ffc" 
+                                strokeWidth={2.5}
+                                dot={{ r: 3, fill: '#8a3ffc', strokeWidth: 0 }}
+                                isAnimationActive={false}
+                                activeDot={{ r: 5, fill: '#8a3ffc' }}
+                              />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: 'white', 
+                                  border: '1px solid var(--shopify-border)',
+                                  borderRadius: '6px',
+                                  padding: '4px 8px',
+                                  fontSize: '12px'
+                                }}
+                                formatter={(value: number) => value.toLocaleString()}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
                         </div>
                       </div>
                     </Column>
-                  </Grid>
-                  {weekendWeekdayPerformance.trend === 'up' && (
-                    <div style={{ 
-                      marginTop: '16px',
-                      padding: '12px 16px',
-                      backgroundColor: '#e8f5e9',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      color: '#16a34a',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M8 12L4 8H12L8 12Z" fill="#16a34a"/>
-                      </svg>
-                      Weekend performance trending up compared to weekdays
-                    </div>
-                  )}
+
+                    {/* Revenue */}
+                    <Column lg={4} md={6} sm={12}>
+                      <div className="shopify-metric-card">
+                        <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '6px' }}>
+                            Revenue
+                          </div>
+                          <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
+                            ${(aggregatedData.weekend.revenue / 1000).toFixed(1)}K / ${(aggregatedData.weekday.revenue / 1000).toFixed(1)}K
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                            <span>Weekend</span>
+                            <span>Weekday</span>
+                          </div>
+                        </div>
+                        <div style={{ 
+                          width: '100%', 
+                          height: '180px',
+                          padding: '0 12px 0 12px'
+                        }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData.map(d => ({ period: d.period, weekend: d.weekend.revenue, weekday: d.weekday.revenue }))} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                              <XAxis 
+                                dataKey="period" 
+                                stroke="#6d7175" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#6d7175' }}
+                              />
+                              <YAxis 
+                                stroke="#6d7175" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#6d7175' }}
+                                width={40}
+                                tickFormatter={(value: number) => {
+                                  if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
+                                  return `$${value}`;
+                                }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="weekend" 
+                                stroke="#0f62fe" 
+                                strokeWidth={2.5}
+                                dot={{ r: 3, fill: '#0f62fe', strokeWidth: 0 }}
+                                isAnimationActive={false}
+                                activeDot={{ r: 5, fill: '#0f62fe' }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="weekday" 
+                                stroke="#8a3ffc" 
+                                strokeWidth={2.5}
+                                dot={{ r: 3, fill: '#8a3ffc', strokeWidth: 0 }}
+                                isAnimationActive={false}
+                                activeDot={{ r: 5, fill: '#8a3ffc' }}
+                              />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: 'white', 
+                                  border: '1px solid var(--shopify-border)',
+                                  borderRadius: '6px',
+                                  padding: '4px 8px',
+                                  fontSize: '12px'
+                                }}
+                                formatter={(value: number) => `$${value.toLocaleString()}`}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </Column>
+
+                    {/* CVR */}
+                    <Column lg={4} md={6} sm={12}>
+                      <div className="shopify-metric-card">
+                        <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '6px' }}>
+                            CVR
+                          </div>
+                          <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
+                            {aggregatedData.weekend.cvr.toFixed(1)}% / {aggregatedData.weekday.cvr.toFixed(1)}%
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                            <span>Weekend</span>
+                            <span>Weekday</span>
+                          </div>
+                        </div>
+                        <div style={{ 
+                          width: '100%', 
+                          height: '180px',
+                          padding: '0 12px 0 12px'
+                        }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData.map(d => ({ period: d.period, weekend: d.weekend.cvr, weekday: d.weekday.cvr }))} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                              <XAxis 
+                                dataKey="period" 
+                                stroke="#6d7175" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#6d7175' }}
+                              />
+                              <YAxis 
+                                stroke="#6d7175" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#6d7175' }}
+                                width={40}
+                                tickFormatter={(value: number) => `${value.toFixed(0)}%`}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="weekend" 
+                                stroke="#0f62fe" 
+                                strokeWidth={2.5}
+                                dot={{ r: 3, fill: '#0f62fe', strokeWidth: 0 }}
+                                isAnimationActive={false}
+                                activeDot={{ r: 5, fill: '#0f62fe' }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="weekday" 
+                                stroke="#8a3ffc" 
+                                strokeWidth={2.5}
+                                dot={{ r: 3, fill: '#8a3ffc', strokeWidth: 0 }}
+                                isAnimationActive={false}
+                                activeDot={{ r: 5, fill: '#8a3ffc' }}
+                              />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: 'white', 
+                                  border: '1px solid var(--shopify-border)',
+                                  borderRadius: '6px',
+                                  padding: '4px 8px',
+                                  fontSize: '12px'
+                                }}
+                                formatter={(value: number) => `${value.toFixed(1)}%`}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </Column>
+                        </Grid>
+                        {aggregatedData.trend === 'up' && (
+                          <div style={{ 
+                            marginTop: '16px',
+                            padding: '12px 24px',
+                            backgroundColor: '#e8f5e9',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            color: '#16a34a',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M8 12L4 8H12L8 12Z" fill="#16a34a"/>
+                            </svg>
+                            Weekend performance trending up compared to weekdays
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -3258,6 +4000,9 @@ const PartnerPerformanceDashboard = () => {
                           } else if (region === 'oceania') {
                             setMapCenter([135, -25]);
                             setMapZoom(3.5);
+                          } else if (region === 'africa') {
+                            setMapCenter([20, 0]);
+                            setMapZoom(2.5);
                           } else {
                             setMapCenter([0, 20]);
                             setMapZoom(1);
@@ -3283,6 +4028,7 @@ const PartnerPerformanceDashboard = () => {
                         <option value="europe">Europe</option>
                         <option value="asia">Asia</option>
                         <option value="oceania">Oceania</option>
+                        <option value="africa">Africa</option>
                         <option value="global">Global View</option>
                       </select>
                       </div>
@@ -3388,7 +4134,23 @@ const PartnerPerformanceDashboard = () => {
                                       fill={isHighlighted ? getHighlightColor() : getHeatmapColor(metricValue)}
                                       stroke="#ffffff"
                                       strokeWidth={0.5}
+                                      onMouseDown={(e: any) => {
+                                        isDraggingRef.current = false;
+                                        if (e.clientX && e.clientY) {
+                                          setMouseDownPos({ x: e.clientX, y: e.clientY });
+                                        }
+                                      }}
                                       onMouseMove={(e: any) => {
+                                        // Track if we're dragging
+                                        if (mouseDownPos && e.clientX && e.clientY) {
+                                          const deltaX = Math.abs(e.clientX - mouseDownPos.x);
+                                          const deltaY = Math.abs(e.clientY - mouseDownPos.y);
+                                          if (deltaX > 3 || deltaY > 3) {
+                                            isDraggingRef.current = true;
+                                          }
+                                        }
+                                        
+                                        // Show tooltip on hover
                                         if (countryData && e.clientX && e.clientY) {
                                           setTooltipPosition({ x: e.clientX, y: e.clientY });
                                           setHoveredRegion({
@@ -3403,8 +4165,33 @@ const PartnerPerformanceDashboard = () => {
                                           });
                                         }
                                       }}
+                                      onMouseUp={(e: any) => {
+                                        if (mouseDownPos && e.clientX && e.clientY) {
+                                          // Check if this was a click (not a drag)
+                                          const deltaX = Math.abs(e.clientX - mouseDownPos.x);
+                                          const deltaY = Math.abs(e.clientY - mouseDownPos.y);
+                                          const isClick = deltaX < 5 && deltaY < 5 && !isDraggingRef.current; // Threshold for click vs drag
+                                          
+                                          if (isClick && countryData) {
+                                            e.stopPropagation(); // Prevent map dragging
+                                            e.preventDefault(); // Prevent default behavior
+                                            handleCountryClick(countryData.country);
+                                          }
+                                          setMouseDownPos(null);
+                                          isDraggingRef.current = false;
+                                        }
+                                      }}
+                                      onClick={(e: any) => {
+                                        // Fallback click handler - only if we didn't just drag
+                                        if (countryData && !isDraggingRef.current) {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          handleCountryClick(countryData.country);
+                                        }
+                                      }}
                                       onMouseOut={() => {
                                         setHoveredRegion(null);
+                                        setMouseDownPos(null);
                                       }}
                                       style={{
                                         default: { outline: 'none', cursor: 'pointer' },
@@ -4072,7 +4859,27 @@ const PartnerPerformanceDashboard = () => {
                                   cx="50%"
                                   cy="50%"
                                   labelLine={false}
-                                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                  label={(props: any) => {
+                                    const { cx, cy, midAngle, innerRadius, outerRadius, name, percent } = props;
+                                    const RADIAN = Math.PI / 180;
+                                    const radius = outerRadius + 15; // Slightly further out to prevent cropping
+                                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                    
+                                    return (
+                                      <text
+                                        x={x}
+                                        y={y}
+                                        fill="#6d7175"
+                                        textAnchor={x > cx ? 'start' : 'end'}
+                                        dominantBaseline="central"
+                                        fontSize="10px"
+                                        fontWeight="500"
+                                      >
+                                        {`${name}: ${(percent * 100).toFixed(0)}%`}
+                                      </text>
+                                    );
+                                  }}
                                   outerRadius={70}
                                   fill="#8884d8"
                                   dataKey="value"
@@ -4414,17 +5221,66 @@ const PartnerPerformanceDashboard = () => {
                           border: '1px solid #e0e0e0',
                           overflow: 'hidden'
                         }}>
-                          <Table>
-                            <TableHead>
-                              <TableRow>
-                                <TableHeader>Item Name</TableHeader>
-                                <TableHeader>Clicks</TableHeader>
-                                <TableHeader>CVR</TableHeader>
-                                <TableHeader>Revenue</TableHeader>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {sortedItems.map((item, index) => (
+                          {(() => {
+                            const { sortedData, sortConfig, handleSort } = useTableSort(sortedItems, 'clicks');
+                            return (
+                              <Table>
+                                <TableHead>
+                                  <TableRow>
+                                    <TableHeader 
+                                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                                      onClick={() => handleSort('name' as keyof typeof sortedItems[0])}
+                                    >
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        Item Name
+                                        {sortConfig?.key === 'name' && (
+                                          sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                        )}
+                                      </div>
+                                    </TableHeader>
+                                    <TableHeader 
+                                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                                      onClick={() => handleSort('clicks' as keyof typeof sortedItems[0])}
+                                    >
+                                      <MetricTooltip metric="Clicks">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          Clicks
+                                          {sortConfig?.key === 'clicks' && (
+                                            sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                          )}
+                                        </div>
+                                      </MetricTooltip>
+                                    </TableHeader>
+                                    <TableHeader 
+                                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                                      onClick={() => handleSort('cvr' as keyof typeof sortedItems[0])}
+                                    >
+                                      <MetricTooltip metric="CVR">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          CVR
+                                          {sortConfig?.key === 'cvr' && (
+                                            sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                          )}
+                                        </div>
+                                      </MetricTooltip>
+                                    </TableHeader>
+                                    <TableHeader 
+                                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                                      onClick={() => handleSort('revenue' as keyof typeof sortedItems[0])}
+                                    >
+                                      <MetricTooltip metric="Revenue">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          Revenue
+                                          {sortConfig?.key === 'revenue' && (
+                                            sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                          )}
+                                        </div>
+                                      </MetricTooltip>
+                                    </TableHeader>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {sortedData.map((item, index) => (
                                 <TableRow 
                                   key={index}
                                   style={{ 
@@ -4447,9 +5303,11 @@ const PartnerPerformanceDashboard = () => {
                                   </TableCell>
                                   <TableCell style={{ fontWeight: '600' }}>${item.revenue.toLocaleString()}</TableCell>
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            );
+                          })()}
                         </div>
 
                         {/* Footer Summary */}
@@ -4575,17 +5433,66 @@ const PartnerPerformanceDashboard = () => {
                                   border: '1px solid #e0e0e0',
                                   overflow: 'hidden'
                                 }}>
-                                  <Table>
-                                    <TableHead>
-                                      <TableRow>
-                                        <TableHeader>Item Name</TableHeader>
-                                        <TableHeader>CTR</TableHeader>
-                                        <TableHeader>CVR</TableHeader>
-                                        <TableHeader>Revenue</TableHeader>
-                                      </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                      {highCTRLowCVR.map((item, index) => (
+                                  {(() => {
+                                    const { sortedData, sortConfig, handleSort } = useTableSort(highCTRLowCVR, 'ctr');
+                                    return (
+                                      <Table>
+                                        <TableHead>
+                                          <TableRow>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => handleSort('name' as keyof typeof highCTRLowCVR[0])}
+                                            >
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                Item Name
+                                                {sortConfig?.key === 'name' && (
+                                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                )}
+                                              </div>
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => handleSort('ctr' as keyof typeof highCTRLowCVR[0])}
+                                            >
+                                              <MetricTooltip metric="CTR">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                  CTR
+                                                  {sortConfig?.key === 'ctr' && (
+                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  )}
+                                                </div>
+                                              </MetricTooltip>
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => handleSort('cvr' as keyof typeof highCTRLowCVR[0])}
+                                            >
+                                              <MetricTooltip metric="CVR">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                  CVR
+                                                  {sortConfig?.key === 'cvr' && (
+                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  )}
+                                                </div>
+                                              </MetricTooltip>
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => handleSort('revenue' as keyof typeof highCTRLowCVR[0])}
+                                            >
+                                              <MetricTooltip metric="Revenue">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                  Revenue
+                                                  {sortConfig?.key === 'revenue' && (
+                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  )}
+                                                </div>
+                                              </MetricTooltip>
+                                            </TableHeader>
+                                          </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                          {sortedData.map((item, index) => (
                                         <TableRow 
                                           key={index}
                                           style={{ 
@@ -4607,9 +5514,11 @@ const PartnerPerformanceDashboard = () => {
                                             ${item.revenue.toLocaleString()}
                                           </TableCell>
                                         </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    );
+                                  })()}
                                 </div>
                                 <div style={{ marginTop: '12px', textAlign: 'center' }}>
                                   <a 
@@ -4671,17 +5580,66 @@ const PartnerPerformanceDashboard = () => {
                                   border: '1px solid #e0e0e0',
                                   overflow: 'hidden'
                                 }}>
-                                  <Table>
-                                    <TableHead>
-                                      <TableRow>
-                                        <TableHeader>Item Name</TableHeader>
-                                        <TableHeader>CTR</TableHeader>
-                                        <TableHeader>CVR</TableHeader>
-                                        <TableHeader>Revenue</TableHeader>
-                                      </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                      {highCVRLowCTR.map((item, index) => (
+                                  {(() => {
+                                    const { sortedData, sortConfig, handleSort } = useTableSort(highCVRLowCTR, 'cvr');
+                                    return (
+                                      <Table>
+                                        <TableHead>
+                                          <TableRow>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => handleSort('name' as keyof typeof highCVRLowCTR[0])}
+                                            >
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                Item Name
+                                                {sortConfig?.key === 'name' && (
+                                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                )}
+                                              </div>
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => handleSort('ctr' as keyof typeof highCVRLowCTR[0])}
+                                            >
+                                              <MetricTooltip metric="CTR">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                  CTR
+                                                  {sortConfig?.key === 'ctr' && (
+                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  )}
+                                                </div>
+                                              </MetricTooltip>
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => handleSort('cvr' as keyof typeof highCVRLowCTR[0])}
+                                            >
+                                              <MetricTooltip metric="CVR">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                  CVR
+                                                  {sortConfig?.key === 'cvr' && (
+                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  )}
+                                                </div>
+                                              </MetricTooltip>
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => handleSort('revenue' as keyof typeof highCVRLowCTR[0])}
+                                            >
+                                              <MetricTooltip metric="Revenue">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                  Revenue
+                                                  {sortConfig?.key === 'revenue' && (
+                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  )}
+                                                </div>
+                                              </MetricTooltip>
+                                            </TableHeader>
+                                          </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                          {sortedData.map((item, index) => (
                                         <TableRow 
                                           key={index}
                                           style={{ 
@@ -4703,9 +5661,11 @@ const PartnerPerformanceDashboard = () => {
                                             ${item.revenue.toLocaleString()}
                                           </TableCell>
                                         </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    );
+                                  })()}
                                 </div>
                                 <div style={{ marginTop: '12px', textAlign: 'center' }}>
                                   <a 
@@ -4885,14 +5845,26 @@ const PartnerPerformanceDashboard = () => {
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                       <XAxis dataKey="name" tick={{ fill: '#6d7175', fontSize: 12 }} />
-                      <YAxis tick={{ fill: '#6d7175', fontSize: 12 }} />
+                      <YAxis 
+                        tick={{ fill: '#6d7175', fontSize: 12 }}
+                        tickFormatter={(value: number) => {
+                          if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+                          return value.toLocaleString();
+                        }}
+                      />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: 'white',
                           border: '1px solid #e0e0e0',
                           borderRadius: '6px'
                         }}
-                        formatter={(value: number) => value.toLocaleString()}
+                        formatter={(value: number, name: string, props: any) => {
+                          // Add $ for Revenue, otherwise just format number
+                          if (props.payload.name === 'Revenue') {
+                            return `$${value.toLocaleString()}`;
+                          }
+                          return value.toLocaleString();
+                        }}
                       />
                       <Legend />
                       <Bar dataKey="banner" fill="#0f62fe" name="Banner" />
@@ -4962,69 +5934,256 @@ const PartnerPerformanceDashboard = () => {
                   </Tag>
                 </div>
 
-                {/* Comparison Chart */}
-                <div style={{ marginBottom: '24px' }}>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart 
-                      data={[
-                        { 
-                          metric: 'CVR (%)', 
-                          you: partnerBenchmarking.metrics.cvr.partner, 
-                          average: partnerBenchmarking.metrics.cvr.categoryAvg,
-                          top25Percent: partnerBenchmarking.metrics.cvr.top25Percent,
-                          percentile: partnerBenchmarking.metrics.cvr.percentile
-                        },
-                        { 
-                          metric: 'AOV ($)', 
-                          you: partnerBenchmarking.metrics.aov.partner, 
-                          average: partnerBenchmarking.metrics.aov.categoryAvg,
-                          top25Percent: partnerBenchmarking.metrics.aov.top25Percent,
-                          percentile: partnerBenchmarking.metrics.aov.percentile
-                        },
-                        { 
-                          metric: 'Revenue Per Click ($)', 
-                          you: partnerBenchmarking.metrics.rpc.partner, 
-                          average: partnerBenchmarking.metrics.rpc.categoryAvg,
-                          top25Percent: partnerBenchmarking.metrics.rpc.top25Percent,
-                          percentile: partnerBenchmarking.metrics.rpc.percentile
-                        },
-                        { 
-                          metric: 'Return Rate (%)', 
-                          you: partnerBenchmarking.metrics.returnRate.partner, 
-                          average: partnerBenchmarking.metrics.returnRate.categoryAvg,
-                          top25Percent: partnerBenchmarking.metrics.returnRate.top25Percent,
-                          percentile: partnerBenchmarking.metrics.returnRate.percentile
-                        }
-                      ]}
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                      <XAxis type="number" tick={{ fill: '#6d7175', fontSize: 12 }} />
-                      <YAxis dataKey="metric" type="category" tick={{ fill: '#6d7175', fontSize: 12 }} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'white',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '6px'
-                        }}
-                        formatter={(value: number, name: string, props: any) => {
-                          if (name === 'You') {
-                            return [`${value.toFixed(2)} (${props.payload.percentile}th percentile)`, 'You'];
-                          }
-                          if (name === 'Top 25%') {
-                            return [value.toFixed(2), 'Top 25% Tier'];
-                          }
-                          return [value.toFixed(2), 'Category Average'];
-                        }}
-                      />
-                      <Legend />
-                      <Bar dataKey="you" fill="#7256F6" name="You" />
-                      <Bar dataKey="average" fill="#8d8d8d" name="Category Average" />
-                      <Bar dataKey="top25Percent" fill="#f1c21b" name="Top 25%" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                {/* Comparison Charts - 4 separate charts */}
+                <Grid narrow style={{ marginBottom: '24px' }}>
+                  {/* CVR Chart */}
+                  <Column lg={3} md={6} sm={12}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>
+                        CVR (%)
+                      </div>
+                      <ResponsiveContainer width="100%" height={140}>
+                        <BarChart 
+                          data={[
+                            { 
+                              name: 'You',
+                              value: partnerBenchmarking.metrics.cvr.partner,
+                              percentile: partnerBenchmarking.metrics.cvr.percentile
+                            },
+                            { 
+                              name: 'Average',
+                              value: partnerBenchmarking.metrics.cvr.categoryAvg
+                            },
+                            { 
+                              name: 'Top 5%',
+                              value: partnerBenchmarking.metrics.cvr.top5Percent
+                            }
+                          ]}
+                          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis 
+                            dataKey="name"
+                            tick={{ fill: '#6d7175', fontSize: 11 }}
+                          />
+                          <YAxis 
+                            tick={{ fill: '#6d7175', fontSize: 11 }}
+                            tickFormatter={(value: number) => `${value.toFixed(1)}%`}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'white',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '6px'
+                            }}
+                            formatter={(value: number, name: string, props: any) => {
+                              const formattedValue = `${value.toFixed(2)}%`;
+                              if (props.payload.name === 'You' && props.payload.percentile) {
+                                return [`${formattedValue} (${props.payload.percentile}th percentile)`, 'CVR'];
+                              }
+                              return [formattedValue, 'CVR'];
+                            }}
+                          />
+                          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                            {[
+                              { name: 'You', fill: '#7256F6' },
+                              { name: 'Average', fill: '#8d8d8d' },
+                              { name: 'Top 5%', fill: '#f1c21b' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Column>
+
+                  {/* AOV Chart */}
+                  <Column lg={3} md={6} sm={12}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>
+                        AOV ($)
+                      </div>
+                      <ResponsiveContainer width="100%" height={140}>
+                        <BarChart 
+                          data={[
+                            { 
+                              name: 'You',
+                              value: partnerBenchmarking.metrics.aov.partner,
+                              percentile: partnerBenchmarking.metrics.aov.percentile
+                            },
+                            { 
+                              name: 'Average',
+                              value: partnerBenchmarking.metrics.aov.categoryAvg
+                            },
+                            { 
+                              name: 'Top 5%',
+                              value: partnerBenchmarking.metrics.aov.top5Percent
+                            }
+                          ]}
+                          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis 
+                            dataKey="name"
+                            tick={{ fill: '#6d7175', fontSize: 11 }}
+                          />
+                          <YAxis 
+                            tick={{ fill: '#6d7175', fontSize: 11 }}
+                            tickFormatter={(value: number) => `$${value.toFixed(0)}`}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'white',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '6px'
+                            }}
+                            formatter={(value: number, name: string, props: any) => {
+                              const formattedValue = `$${value.toFixed(2)}`;
+                              if (props.payload.name === 'You' && props.payload.percentile) {
+                                return [`${formattedValue} (${props.payload.percentile}th percentile)`, 'AOV'];
+                              }
+                              return [formattedValue, 'AOV'];
+                            }}
+                          />
+                          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                            {[
+                              { name: 'You', fill: '#7256F6' },
+                              { name: 'Average', fill: '#8d8d8d' },
+                              { name: 'Top 5%', fill: '#f1c21b' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Column>
+
+                  {/* Revenue Per Click Chart */}
+                  <Column lg={3} md={6} sm={12}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>
+                        Revenue Per Click ($)
+                      </div>
+                      <ResponsiveContainer width="100%" height={140}>
+                        <BarChart 
+                          data={[
+                            { 
+                              name: 'You',
+                              value: partnerBenchmarking.metrics.rpc.partner,
+                              percentile: partnerBenchmarking.metrics.rpc.percentile
+                            },
+                            { 
+                              name: 'Average',
+                              value: partnerBenchmarking.metrics.rpc.categoryAvg
+                            },
+                            { 
+                              name: 'Top 5%',
+                              value: partnerBenchmarking.metrics.rpc.top5Percent
+                            }
+                          ]}
+                          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis 
+                            dataKey="name"
+                            tick={{ fill: '#6d7175', fontSize: 11 }}
+                          />
+                          <YAxis 
+                            tick={{ fill: '#6d7175', fontSize: 11 }}
+                            tickFormatter={(value: number) => `$${value.toFixed(2)}`}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'white',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '6px'
+                            }}
+                            formatter={(value: number, name: string, props: any) => {
+                              const formattedValue = `$${value.toFixed(2)}`;
+                              if (props.payload.name === 'You' && props.payload.percentile) {
+                                return [`${formattedValue} (${props.payload.percentile}th percentile)`, 'Revenue Per Click'];
+                              }
+                              return [formattedValue, 'Revenue Per Click'];
+                            }}
+                          />
+                          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                            {[
+                              { name: 'You', fill: '#7256F6' },
+                              { name: 'Average', fill: '#8d8d8d' },
+                              { name: 'Top 5%', fill: '#f1c21b' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Column>
+
+                  {/* Return Rate Chart */}
+                  <Column lg={3} md={6} sm={12}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>
+                        Return Rate (%)
+                      </div>
+                      <ResponsiveContainer width="100%" height={140}>
+                        <BarChart 
+                          data={[
+                            { 
+                              name: 'You',
+                              value: partnerBenchmarking.metrics.returnRate.partner,
+                              percentile: partnerBenchmarking.metrics.returnRate.percentile
+                            },
+                            { 
+                              name: 'Average',
+                              value: partnerBenchmarking.metrics.returnRate.categoryAvg
+                            },
+                            { 
+                              name: 'Top 5%',
+                              value: partnerBenchmarking.metrics.returnRate.top5Percent
+                            }
+                          ]}
+                          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis 
+                            dataKey="name"
+                            tick={{ fill: '#6d7175', fontSize: 11 }}
+                          />
+                          <YAxis 
+                            tick={{ fill: '#6d7175', fontSize: 11 }}
+                            tickFormatter={(value: number) => `${value.toFixed(1)}%`}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'white',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '6px'
+                            }}
+                            formatter={(value: number, name: string, props: any) => {
+                              const formattedValue = `${value.toFixed(2)}%`;
+                              if (props.payload.name === 'You' && props.payload.percentile) {
+                                return [`${formattedValue} (${props.payload.percentile}th percentile)`, 'Return Rate'];
+                              }
+                              return [formattedValue, 'Return Rate'];
+                            }}
+                          />
+                          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                            {[
+                              { name: 'You', fill: '#7256F6' },
+                              { name: 'Average', fill: '#8d8d8d' },
+                              { name: 'Top 5%', fill: '#f1c21b' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Column>
+                </Grid>
 
                 {/* Recommendations */}
                 <div style={{ 
