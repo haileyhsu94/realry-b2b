@@ -51,6 +51,7 @@ import {
   Chat,
   Application,
   Email,
+  Image,
 } from '@carbon/icons-react';
 import {
   LineChart,
@@ -208,51 +209,51 @@ const TargetIcon = ({ size = 20, style }: { size?: number; style?: React.CSSProp
 // Top performing items grouped by traffic source
 const topPerformingItemsByTrafficSource = {
   realry: [
-    { name: 'Premium Headphones', itemType: 'Product', clicks: 2340, impressions: 15600, conversions: 342, cvr: 14.6, revenue: 12956, tag: 'Best CVR' },
-    { name: 'Summer Sale Banner', itemType: 'Ad Creative', clicks: 1890, impressions: 12600, conversions: 265, cvr: 14.0, revenue: 10070, tag: null },
-    { name: 'Wireless Speaker Set', itemType: 'Product', clicks: 1650, impressions: 11000, conversions: 231, cvr: 14.0, revenue: 9240, tag: null },
-    { name: 'Holiday Collection Ad', itemType: 'Ad Creative', clicks: 1520, impressions: 10133, conversions: 198, cvr: 13.0, revenue: 9504, tag: null },
+    { name: 'Premium Headphones', itemType: 'Product', clicks: 2340, impressions: 15600, conversions: 342, cvr: 14.6, revenue: 12956, tag: 'Best CVR', imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&h=80&fit=crop', productUrl: '/products/premium-headphones' },
+    { name: 'Summer Sale Banner', itemType: 'Banner', clicks: 1890, impressions: 12600, conversions: 265, cvr: 14.0, revenue: 10070, tag: null },
+    { name: 'Wireless Speaker Set', itemType: 'Product', clicks: 1650, impressions: 11000, conversions: 231, cvr: 14.0, revenue: 9240, tag: null, imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=80&h=80&fit=crop', productUrl: '/products/wireless-speaker-set' },
+    { name: 'Holiday Collection Ad', itemType: 'Banner', clicks: 1520, impressions: 10133, conversions: 198, cvr: 13.0, revenue: 9504, tag: null },
     { name: 'Product Showcase Video', itemType: 'Content', clicks: 1420, impressions: 9467, conversions: 184, cvr: 13.0, revenue: 8808, tag: null },
-    { name: 'Smart Watch Pro', itemType: 'Product', clicks: 1380, impressions: 9200, conversions: 193, cvr: 14.0, revenue: 8694, tag: null },
-    { name: 'Flash Sale Banner', itemType: 'Ad Creative', clicks: 1280, impressions: 8533, conversions: 166, cvr: 13.0, revenue: 8064, tag: null },
+    { name: 'Smart Watch Pro', itemType: 'Product', clicks: 1380, impressions: 9200, conversions: 193, cvr: 14.0, revenue: 8694, tag: null, imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=80&h=80&fit=crop', productUrl: '/products/smart-watch-pro' },
+    { name: 'Flash Sale Banner', itemType: 'Banner', clicks: 1280, impressions: 8533, conversions: 166, cvr: 13.0, revenue: 8064, tag: null },
     { name: 'Unboxing Video', itemType: 'Content', clicks: 1180, impressions: 7867, conversions: 153, cvr: 13.0, revenue: 7344, tag: null },
-    { name: 'Gaming Mouse', itemType: 'Product', clicks: 1120, impressions: 7467, conversions: 156, cvr: 13.9, revenue: 7056, tag: null },
-    { name: 'New Arrivals Ad', itemType: 'Ad Creative', clicks: 1050, impressions: 7000, conversions: 136, cvr: 13.0, revenue: 6552, tag: null },
+    { name: 'Gaming Mouse', itemType: 'Product', clicks: 1120, impressions: 7467, conversions: 156, cvr: 13.9, revenue: 7056, tag: null, imageUrl: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=80&h=80&fit=crop', productUrl: '/products/gaming-mouse' },
+    { name: 'New Arrivals Ad', itemType: 'Banner', clicks: 1050, impressions: 7000, conversions: 136, cvr: 13.0, revenue: 6552, tag: null },
   ],
   css: [
-    { name: 'Wireless Earbuds Pro', itemType: 'Product', clicks: 1560, impressions: 10400, conversions: 234, cvr: 15.0, revenue: 8892, tag: 'Trending' },
-    { name: 'Luxury Handbag Collection', itemType: 'Product', clicks: 1450, impressions: 9667, conversions: 217, cvr: 15.0, revenue: 8262, tag: null },
-    { name: 'Designer Sunglasses', itemType: 'Product', clicks: 1340, impressions: 8933, conversions: 201, cvr: 15.0, revenue: 7638, tag: null },
-    { name: 'Premium Watch Ad', itemType: 'Ad Creative', clicks: 1230, impressions: 8200, conversions: 172, cvr: 14.0, revenue: 6888, tag: null },
+    { name: 'Wireless Earbuds Pro', itemType: 'Product', clicks: 1560, impressions: 10400, conversions: 234, cvr: 15.0, revenue: 8892, tag: 'Trending', imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=80&h=80&fit=crop', productUrl: '/products/wireless-earbuds-pro' },
+    { name: 'Luxury Handbag Collection', itemType: 'Product', clicks: 1450, impressions: 9667, conversions: 217, cvr: 15.0, revenue: 8262, tag: null, imageUrl: 'https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=80&h=80&fit=crop', productUrl: '/products/luxury-handbag-collection' },
+    { name: 'Designer Sunglasses', itemType: 'Product', clicks: 1340, impressions: 8933, conversions: 201, cvr: 15.0, revenue: 7638, tag: null, imageUrl: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=80&h=80&fit=crop', productUrl: '/products/designer-sunglasses' },
+    { name: 'Premium Watch Ad', itemType: 'Banner', clicks: 1230, impressions: 8200, conversions: 172, cvr: 14.0, revenue: 6888, tag: null },
     { name: 'Fashion Lookbook', itemType: 'Content', clicks: 1120, impressions: 7467, conversions: 157, cvr: 14.0, revenue: 6272, tag: null },
-    { name: 'Leather Jacket', itemType: 'Product', clicks: 1010, impressions: 6733, conversions: 141, cvr: 14.0, revenue: 5656, tag: null },
+    { name: 'Leather Jacket', itemType: 'Product', clicks: 1010, impressions: 6733, conversions: 141, cvr: 14.0, revenue: 5656, tag: null, imageUrl: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=80&h=80&fit=crop', productUrl: '/products/leather-jacket' },
     { name: 'Brand Story Video', itemType: 'Content', clicks: 980, impressions: 6533, conversions: 137, cvr: 14.0, revenue: 5488, tag: null },
-    { name: 'Exclusive Collection Ad', itemType: 'Ad Creative', clicks: 920, impressions: 6133, conversions: 129, cvr: 14.0, revenue: 5152, tag: null },
-    { name: 'High-End Sneakers', itemType: 'Product', clicks: 870, impressions: 5800, conversions: 122, cvr: 14.0, revenue: 4872, tag: null },
+    { name: 'Exclusive Collection Ad', itemType: 'Banner', clicks: 920, impressions: 6133, conversions: 129, cvr: 14.0, revenue: 5152, tag: null },
+    { name: 'High-End Sneakers', itemType: 'Product', clicks: 870, impressions: 5800, conversions: 122, cvr: 14.0, revenue: 4872, tag: null, imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=80&h=80&fit=crop', productUrl: '/products/high-end-sneakers' },
     { name: 'Lifestyle Photography', itemType: 'Content', clicks: 810, impressions: 5400, conversions: 113, cvr: 14.0, revenue: 4536, tag: null },
   ],
   instagramStories: [
     { name: 'Product Video - Earbuds', itemType: 'Content', clicks: 3420, impressions: 22800, conversions: 445, cvr: 13.0, revenue: 16905, tag: 'Most Clicks' },
-    { name: 'Instagram Story - Sale', itemType: 'Ad Creative', clicks: 2890, impressions: 19267, conversions: 376, cvr: 13.0, revenue: 14280, tag: null },
+    { name: 'Instagram Story - Sale', itemType: 'Banner', clicks: 2890, impressions: 19267, conversions: 376, cvr: 13.0, revenue: 14280, tag: null },
     { name: 'Behind the Scenes', itemType: 'Content', clicks: 2450, impressions: 16333, conversions: 319, cvr: 13.0, revenue: 12120, tag: null },
     { name: 'Quick Product Demo', itemType: 'Content', clicks: 2120, impressions: 14133, conversions: 276, cvr: 13.0, revenue: 10488, tag: null },
-    { name: 'Flash Deal Story', itemType: 'Ad Creative', clicks: 1980, impressions: 13200, conversions: 257, cvr: 13.0, revenue: 9792, tag: null },
+    { name: 'Flash Deal Story', itemType: 'Banner', clicks: 1980, impressions: 13200, conversions: 257, cvr: 13.0, revenue: 9792, tag: null },
     { name: 'User Testimonial Video', itemType: 'Content', clicks: 1850, impressions: 12333, conversions: 241, cvr: 13.0, revenue: 9156, tag: null },
-    { name: 'New Product Launch', itemType: 'Ad Creative', clicks: 1720, impressions: 11467, conversions: 224, cvr: 13.0, revenue: 8520, tag: null },
+    { name: 'New Product Launch', itemType: 'Banner', clicks: 1720, impressions: 11467, conversions: 224, cvr: 13.0, revenue: 8520, tag: null },
     { name: 'Tutorial Video', itemType: 'Content', clicks: 1590, impressions: 10600, conversions: 207, cvr: 13.0, revenue: 7872, tag: null },
-    { name: 'Limited Edition Story', itemType: 'Ad Creative', clicks: 1460, impressions: 9733, conversions: 190, cvr: 13.0, revenue: 7224, tag: null },
-    { name: 'Daily Deal Story', itemType: 'Ad Creative', clicks: 1330, impressions: 8867, conversions: 173, cvr: 13.0, revenue: 6576, tag: null },
+    { name: 'Limited Edition Story', itemType: 'Banner', clicks: 1460, impressions: 9733, conversions: 190, cvr: 13.0, revenue: 7224, tag: null },
+    { name: 'Daily Deal Story', itemType: 'Banner', clicks: 1330, impressions: 8867, conversions: 173, cvr: 13.0, revenue: 6576, tag: null },
   ],
   edm: [
-    { name: 'Email Campaign - New Arrivals', itemType: 'Ad Creative', clicks: 980, impressions: 6533, conversions: 145, cvr: 14.8, revenue: 5510, tag: null },
+    { name: 'Email Campaign - New Arrivals', itemType: 'Banner', clicks: 980, impressions: 6533, conversions: 145, cvr: 14.8, revenue: 5510, tag: null },
     { name: 'Weekly Newsletter', itemType: 'Content', clicks: 920, impressions: 6133, conversions: 136, cvr: 14.8, revenue: 5168, tag: null },
-    { name: 'Abandoned Cart Email', itemType: 'Ad Creative', clicks: 870, impressions: 5800, conversions: 129, cvr: 14.8, revenue: 4890, tag: null },
-    { name: 'Product Recommendation', itemType: 'Product', clicks: 820, impressions: 5467, conversions: 121, cvr: 14.8, revenue: 4608, tag: null },
-    { name: 'Seasonal Promotion Email', itemType: 'Ad Creative', clicks: 780, impressions: 5200, conversions: 115, cvr: 14.7, revenue: 4368, tag: null },
-    { name: 'Member Exclusive Offer', itemType: 'Ad Creative', clicks: 740, impressions: 4933, conversions: 110, cvr: 14.9, revenue: 4158, tag: null },
+    { name: 'Abandoned Cart Email', itemType: 'Banner', clicks: 870, impressions: 5800, conversions: 129, cvr: 14.8, revenue: 4890, tag: null },
+    { name: 'Product Recommendation', itemType: 'Product', clicks: 820, impressions: 5467, conversions: 121, cvr: 14.8, revenue: 4608, tag: null, imageUrl: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=80&h=80&fit=crop', productUrl: '/products/product-recommendation' },
+    { name: 'Seasonal Promotion Email', itemType: 'Banner', clicks: 780, impressions: 5200, conversions: 115, cvr: 14.7, revenue: 4368, tag: null },
+    { name: 'Member Exclusive Offer', itemType: 'Banner', clicks: 740, impressions: 4933, conversions: 110, cvr: 14.9, revenue: 4158, tag: null },
     { name: 'Birthday Special Email', itemType: 'Content', clicks: 700, impressions: 4667, conversions: 104, cvr: 14.9, revenue: 3936, tag: null },
-    { name: 'Flash Sale Alert', itemType: 'Ad Creative', clicks: 660, impressions: 4400, conversions: 98, cvr: 14.8, revenue: 3708, tag: null },
-    { name: 'Product Spotlight Email', itemType: 'Product', clicks: 620, impressions: 4133, conversions: 92, cvr: 14.8, revenue: 3480, tag: null },
+    { name: 'Flash Sale Alert', itemType: 'Banner', clicks: 660, impressions: 4400, conversions: 98, cvr: 14.8, revenue: 3708, tag: null },
+    { name: 'Product Spotlight Email', itemType: 'Product', clicks: 620, impressions: 4133, conversions: 92, cvr: 14.8, revenue: 3480, tag: null, imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=80&h=80&fit=crop', productUrl: '/products/product-spotlight' },
     { name: 'Thank You Email', itemType: 'Content', clicks: 580, impressions: 3867, conversions: 86, cvr: 14.8, revenue: 3252, tag: null },
   ],
 };
@@ -554,7 +555,7 @@ const useTableSort = <T,>(data: T[], defaultSortKey?: keyof T) => {
 };
 
 const PartnerPerformanceDashboard = () => {
-  const [timeRange, setTimeRange] = useState('7d');
+  const [timeRange, setTimeRange] = useState<'hourly' | '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ' | 'custom'>('7d');
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [plans, setPlans] = useState<PartnerPlans>(mockPartnerPlans);
@@ -592,6 +593,10 @@ const PartnerPerformanceDashboard = () => {
   // Filter states for detail tabs
   const [chartMetric, setChartMetric] = useState('revenue'); // revenue, clicks, conversions, roas
   const [campaignFilter, setCampaignFilter] = useState('all'); // all, active, completed
+  
+  // Dashboard metric selection (GA4 style)
+  const [dashboardMetric, setDashboardMetric] = useState<'newUsers' | 'totalUsers' | 'impressions' | 'returningUsers'>('newUsers');
+  const [dashboardDateRange, setDashboardDateRange] = useState<'7d' | '28d' | '90d' | 'custom'>('7d');
   
   // Weekend vs Weekday Performance time period
   const [weekendWeekdayTimePeriod, setWeekendWeekdayTimePeriod] = useState<'1month' | '3months' | '6months' | '1year'>('1month');
@@ -693,12 +698,17 @@ const PartnerPerformanceDashboard = () => {
   };
 
   // Handle time range selection
-  const handleTimeRangeChange = (range: string) => {
+  const handleTimeRangeChange = (range: 'hourly' | '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ' | 'custom') => {
     setTimeRange(range);
-    setIsCustomRange(false);
-    setShowCustomDatePicker(false);
-    setCustomStartDate('');
-    setCustomEndDate('');
+    if (range === 'custom') {
+      setShowCustomDatePicker(true);
+      setIsCustomRange(false);
+    } else {
+      setIsCustomRange(false);
+      setShowCustomDatePicker(false);
+      setCustomStartDate('');
+      setCustomEndDate('');
+    }
   };
 
   // Handle custom date range apply
@@ -2920,42 +2930,11 @@ const PartnerPerformanceDashboard = () => {
                 }}>
                   Dashboard
                 </h2>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  {/* Date Range Display */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 12px',
-                    border: '1px solid var(--shopify-border)',
-                    borderRadius: '6px',
-                    backgroundColor: 'white',
-                    fontSize: '14px',
-                    color: 'var(--shopify-text-primary)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onClick={() => setShowCustomDatePicker(!showCustomDatePicker)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#7256F6';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--shopify-border)';
-                  }}
-                  >
-                    {isCustomRange ? formatCustomDateRange() : (
-                      <>
-                        {timeRange === '24h' ? 'Last 24 hours' :
-                         timeRange === '7d' ? 'Last 7 days' :
-                         timeRange === '30d' ? 'Last 30 days' :
-                         'Last 90 days'}
-                      </>
-                    )}
-                    <Calendar size={16} style={{ opacity: 0.6 }} />
-                  </div>
-                  
-                  {/* Monthly/Period Dropdown */}
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Date Range Dropdown */}
                   <select
+                    value={timeRange}
+                    onChange={(e) => handleTimeRangeChange(e.target.value as 'hourly' | '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ' | 'custom')}
                     style={{
                       padding: '8px 32px 8px 12px',
                       border: '1px solid var(--shopify-border)',
@@ -2973,11 +2952,102 @@ const PartnerPerformanceDashboard = () => {
                     }}
                     onFocus={(e) => e.target.style.borderColor = '#7256F6'}
                     onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#7256F6';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (document.activeElement !== e.currentTarget) {
+                        e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                      }
+                    }}
                   >
-                    <option>Monthly</option>
-                    <option>Weekly</option>
-                    <option>Daily</option>
+                    <option value="hourly">Hourly</option>
+                    <option value="7d">Last 7 days</option>
+                    <option value="14d">Last 14 days</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="thisMonth">This month</option>
+                    <option value="lastMonth">Last month</option>
+                    <option value="thisQ">This quarter</option>
+                    <option value="lastQ">Last quarter</option>
+                    <option value="custom">Custom range</option>
                   </select>
+                  
+                  {/* Custom Date Range Picker - shown when custom is selected */}
+                  {timeRange === 'custom' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="date"
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          border: '1px solid var(--shopify-border)',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          color: 'var(--shopify-text-primary)',
+                          outline: 'none',
+                          transition: 'border-color 0.15s ease'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#7256F6'}
+                        onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#7256F6';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (document.activeElement !== e.currentTarget) {
+                            e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                          }
+                        }}
+                      />
+                      <span style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)' }}>to</span>
+                      <input
+                        type="date"
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          border: '1px solid var(--shopify-border)',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          color: 'var(--shopify-text-primary)',
+                          outline: 'none',
+                          transition: 'border-color 0.15s ease'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#7256F6'}
+                        onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#7256F6';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (document.activeElement !== e.currentTarget) {
+                            e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={handleCustomDateRangeApply}
+                        style={{
+                          padding: '8px 16px',
+                          border: '1px solid var(--shopify-border)',
+                          borderRadius: '6px',
+                          backgroundColor: '#7256F6',
+                          color: 'white',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          outline: 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#5a3fd4';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#7256F6';
+                        }}
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  )}
                   
                   {/* Filter Button */}
                   <button
@@ -3086,58 +3156,22 @@ const PartnerPerformanceDashboard = () => {
                       height: '100%'
                     }}>
                       <h4 style={{ fontSize: '14px', fontWeight: '400', color: '#202124', marginBottom: '20px' }}>
-                        Last 7 days vs. Previous period
+                        {timeRange === 'hourly' ? 'Hourly' :
+                         timeRange === '7d' ? 'Last 7 days' :
+                         timeRange === '14d' ? 'Last 14 days' :
+                         timeRange === '30d' ? 'Last 30 days' :
+                         timeRange === 'thisMonth' ? 'This month' :
+                         timeRange === 'lastMonth' ? 'Last month' :
+                         timeRange === 'thisQ' ? 'This quarter' :
+                         timeRange === 'lastQ' ? 'Last quarter' :
+                         isCustomRange ? formatCustomDateRange() : 'Selected period'} vs. Previous period
                       </h4>
                       
-                      {/* KPI Cards - Last 7 Days vs Previous */}
-                      <div style={{ display: 'flex', gap: '32px', marginBottom: '24px' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '6px', fontWeight: '400' }}>New users</div>
-                          <div style={{ fontSize: '28px', fontWeight: '400', color: '#202124', lineHeight: '1.2', marginBottom: '4px' }}>241K</div>
-                          <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
-                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
-                            </svg>
-                            6.4%
-                          </div>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '6px', fontWeight: '400' }}>Total users</div>
-                          <div style={{ fontSize: '28px', fontWeight: '400', color: '#202124', lineHeight: '1.2', marginBottom: '4px' }}>263K</div>
-                          <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
-                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
-                            </svg>
-                            6.9%
-                          </div>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '6px', fontWeight: '400' }}>Impressions</div>
-                          <div style={{ fontSize: '28px', fontWeight: '400', color: '#202124', lineHeight: '1.2', marginBottom: '4px' }}>840K</div>
-                          <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
-                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
-                            </svg>
-                            5.2%
-                          </div>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '6px', fontWeight: '400' }}>Returning users</div>
-                          <div style={{ fontSize: '28px', fontWeight: '400', color: '#202124', lineHeight: '1.2', marginBottom: '4px' }}>22K</div>
-                          <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
-                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
-                            </svg>
-                            8.3%
-                          </div>
-                        </div>
-                      </div>  
-
-                      {/* Comparison Line Chart */}
-                      <div style={{ marginTop: '20px' }}>
-                        <ResponsiveContainer width="100%" height={280}>
-                          <LineChart 
-                            data={[
+                      {/* Metric data configuration */}
+                      {(() => {
+                        const metricData = {
+                          newUsers: {
+                            data: [
                               { date: 'Jan 13', current: 38000, previous: 42000 },
                               { date: 'Jan 14', current: 35000, previous: 40000 },
                               { date: 'Jan 15', current: 36500, previous: 41500 },
@@ -3145,108 +3179,252 @@ const PartnerPerformanceDashboard = () => {
                               { date: 'Jan 17', current: 37500, previous: 43000 },
                               { date: 'Jan 18', current: 39000, previous: 44500 },
                               { date: 'Jan 19', current: 36000, previous: 41000 },
-                            ]}
-                            margin={{ top: 20, right: 10, left: -25, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f3f4" vertical={false} />
-                            <XAxis 
-                              dataKey="date" 
-                              tick={{ fontSize: 12, fill: '#5f6368' }}
-                              axisLine={{ stroke: '#dadce0' }}
-                              tickLine={false}
-                            />
-                            <YAxis 
-                              tick={{ fontSize: 12, fill: '#5f6368' }}
-                              axisLine={false}
-                              tickLine={false}
-                              tickFormatter={(value) => `${value / 1000}K`}
-                            />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: 'white', 
-                                border: '1px solid #dadce0',
-                                borderRadius: '8px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                padding: '12px'
-                              }}
-                              labelStyle={{ 
-                                color: '#202124',
-                                fontWeight: '500',
-                                marginBottom: '8px'
-                              }}
-                              itemStyle={{
-                                color: '#5f6368',
-                                fontSize: '13px',
-                                padding: '4px 0'
-                              }}
-                              formatter={(value: any, name: any) => {
-                                const formattedValue = `${(value / 1000).toFixed(1)}K`;
-                                return [formattedValue, name];
-                              }}
-                              cursor={{ stroke: '#dadce0', strokeWidth: 1, strokeDasharray: '5 5' }}
-                            />
-                            <Legend 
-                              wrapperStyle={{ fontSize: '13px', paddingTop: '16px' }}
-                              formatter={(value, entry: any) => {
-                                const isDashed = entry.payload.strokeDasharray;
+                            ],
+                            label: 'New users',
+                            yAxisLabel: 'Users',
+                            formatValue: (value: number) => `${(value / 1000).toFixed(1)}K`
+                          },
+                          totalUsers: {
+                            data: [
+                              { date: 'Jan 13', current: 42000, previous: 45000 },
+                              { date: 'Jan 14', current: 39000, previous: 43000 },
+                              { date: 'Jan 15', current: 40500, previous: 44500 },
+                              { date: 'Jan 16', current: 38000, previous: 42500 },
+                              { date: 'Jan 17', current: 41500, previous: 46000 },
+                              { date: 'Jan 18', current: 43000, previous: 47500 },
+                              { date: 'Jan 19', current: 40000, previous: 44000 },
+                            ],
+                            label: 'Total users',
+                            yAxisLabel: 'Users',
+                            formatValue: (value: number) => `${(value / 1000).toFixed(1)}K`
+                          },
+                          impressions: {
+                            data: [
+                              { date: 'Jan 13', current: 120000, previous: 135000 },
+                              { date: 'Jan 14', current: 110000, previous: 130000 },
+                              { date: 'Jan 15', current: 115000, previous: 140000 },
+                              { date: 'Jan 16', current: 105000, previous: 125000 },
+                              { date: 'Jan 17', current: 118000, previous: 142000 },
+                              { date: 'Jan 18', current: 125000, previous: 145000 },
+                              { date: 'Jan 19', current: 112000, previous: 132000 },
+                            ],
+                            label: 'Impressions',
+                            yAxisLabel: 'Impressions',
+                            formatValue: (value: number) => `${(value / 1000).toFixed(0)}K`
+                          },
+                          returningUsers: {
+                            data: [
+                              { date: 'Jan 13', current: 4000, previous: 3000 },
+                              { date: 'Jan 14', current: 4000, previous: 3000 },
+                              { date: 'Jan 15', current: 4000, previous: 3000 },
+                              { date: 'Jan 16', current: 4000, previous: 3000 },
+                              { date: 'Jan 17', current: 4000, previous: 3000 },
+                              { date: 'Jan 18', current: 4000, previous: 3000 },
+                              { date: 'Jan 19', current: 4000, previous: 3000 },
+                            ],
+                            label: 'Returning users',
+                            yAxisLabel: 'Users',
+                            formatValue: (value: number) => `${(value / 1000).toFixed(1)}K`
+                          }
+                        };
+
+                        const metricInfo = {
+                          newUsers: { label: 'New users', value: '241K', change: '6.4%' },
+                          totalUsers: { label: 'Total users', value: '263K', change: '6.9%' },
+                          impressions: { label: 'Impressions', value: '840K', change: '5.2%' },
+                          returningUsers: { label: 'Returning users', value: '22K', change: '8.3%' },
+                        };
+
+                        return (
+                          <>
+                            {/* KPI Cards - Last 7 Days vs Previous */}
+                            <div style={{ display: 'flex', gap: '32px', marginBottom: '24px' }}>
+                              {(['newUsers', 'totalUsers', 'impressions', 'returningUsers'] as const).map((metric) => {
+                                const isSelected = dashboardMetric === metric;
+                                const info = metricInfo[metric];
+
                                 return (
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                                    <svg width="20" height="2" style={{ marginRight: '4px' }}>
-                                      {isDashed ? (
-                                        <line x1="0" y1="1" x2="20" y2="1" stroke="#1a73e8" strokeWidth="2" strokeDasharray="3 3" />
-                                      ) : (
-                                        <line x1="0" y1="1" x2="20" y2="1" stroke="#1a73e8" strokeWidth="2" />
-                                      )}
-                                    </svg>
-                                    <span style={{ color: '#5f6368' }}>{value}</span>
-                                  </span>
+                                  <div 
+                                    key={metric}
+                                    onClick={() => setDashboardMetric(metric)}
+                                    style={{ 
+                                      flex: 1,
+                                      cursor: 'pointer',
+                                      padding: '16px',
+                                      borderRadius: '8px',
+                                      border: isSelected ? '1px solid #e8f0fe' : '1px solid transparent',
+                                      borderLeft: isSelected ? '3px solid #1a73e8' : '3px solid transparent',
+                                      backgroundColor: isSelected ? '#f8f9ff' : 'transparent',
+                                      boxShadow: isSelected ? '0 1px 3px rgba(26, 115, 232, 0.12)' : 'none',
+                                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                      position: 'relative'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (!isSelected) {
+                                        e.currentTarget.style.backgroundColor = '#fafbfc';
+                                        e.currentTarget.style.borderColor = '#e8eaed';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (!isSelected) {
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                        e.currentTarget.style.borderColor = 'transparent';
+                                      }
+                                    }}
+                                  >
+                                    {isSelected && (
+                                      <div style={{
+                                        position: 'absolute',
+                                        top: '12px',
+                                        right: '12px',
+                                        width: '6px',
+                                        height: '6px',
+                                        borderRadius: '50%',
+                                        backgroundColor: '#1a73e8',
+                                        boxShadow: '0 0 0 2px rgba(26, 115, 232, 0.2)'
+                                      }} />
+                                    )}
+                                    <div style={{ 
+                                      fontSize: '13px', 
+                                      color: isSelected ? '#1a73e8' : '#5f6368', 
+                                      marginBottom: '6px', 
+                                      fontWeight: isSelected ? '500' : '400',
+                                      transition: 'all 0.2s ease'
+                                    }}>
+                                      {info.label}
+                                    </div>
+                                    <div style={{ 
+                                      fontSize: '28px', 
+                                      fontWeight: isSelected ? '500' : '400', 
+                                      color: '#202124', 
+                                      lineHeight: '1.2', 
+                                      marginBottom: '4px',
+                                      transition: 'all 0.2s ease'
+                                    }}>
+                                      {info.value}
+                                    </div>
+                                    <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
+                                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
+                                      </svg>
+                                      {info.change}
+                                    </div>
+                                  </div>
                                 );
-                              }}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="previous" 
-                              stroke="#1a73e8" 
-                              strokeWidth={2}
-                              strokeDasharray="5 5"
-                              dot={false}
-                              activeDot={{ r: 5, fill: '#1a73e8', strokeWidth: 2, stroke: 'white' }}
-                              name="Previous period"
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="current" 
-                              stroke="#1a73e8" 
-                              strokeWidth={2}
-                              dot={false}
-                              activeDot={{ r: 5, fill: '#1a73e8', strokeWidth: 2, stroke: 'white' }}
-                              name="Last 7 days"
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                          <select style={{ 
-                            padding: '6px 12px', 
-                            border: '1px solid #dadce0', 
-                            borderRadius: '4px', 
-                            backgroundColor: 'white',
-                            fontSize: '13px',
-                            color: '#202124',
-                            cursor: 'pointer',
-                            outline: 'none'
-                          }}>
-                            <option>Last 7 days</option>
-                            <option>Last 28 days</option>
-                            <option>Last 90 days</option>
-                          </select>
-                          <div style={{ fontSize: '13px', color: '#1a73e8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            View reports snapshot
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M6 3L11 8L6 13" stroke="#1a73e8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
+                              })}
+                            </div>  
+
+                            {/* Comparison Line Chart */}
+                            <div style={{ marginTop: '20px' }}>
+                              <ResponsiveContainer width="100%" height={280}>
+                                <LineChart 
+                                  data={metricData[dashboardMetric].data}
+                                  margin={{ top: 20, right: 10, left: 25, bottom: 5 }}
+                                >
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f3f4" vertical={false} />
+                                  <XAxis 
+                                    dataKey="date" 
+                                    tick={{ fontSize: 12, fill: '#5f6368' }}
+                                    axisLine={{ stroke: '#dadce0' }}
+                                    tickLine={false}
+                                  />
+                                  <YAxis 
+                                    tick={{ fontSize: 12, fill: '#5f6368' }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tickFormatter={metricData[dashboardMetric].formatValue}
+                                    width={60}
+                                    label={{ 
+                                      value: metricData[dashboardMetric].yAxisLabel, 
+                                      angle: -90, 
+                                      position: 'insideLeft',
+                                      offset: 0,
+                                      style: { textAnchor: 'middle', fill: '#5f6368', fontSize: 12 }
+                                    }}
+                                  />
+                                  <Tooltip 
+                                    contentStyle={{ 
+                                      backgroundColor: 'white', 
+                                      border: '1px solid #dadce0',
+                                      borderRadius: '8px',
+                                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                      padding: '12px'
+                                    }}
+                                    labelStyle={{ 
+                                      color: '#202124',
+                                      fontWeight: '500',
+                                      marginBottom: '8px'
+                                    }}
+                                    itemStyle={{
+                                      color: '#5f6368',
+                                      fontSize: '13px',
+                                      padding: '4px 0'
+                                    }}
+                                    formatter={(value: any, name: any) => {
+                                      const formattedValue = metricData[dashboardMetric].formatValue(value);
+                                      return [formattedValue, name];
+                                    }}
+                                    cursor={{ stroke: '#dadce0', strokeWidth: 1, strokeDasharray: '5 5' }}
+                                  />
+                                  <Legend 
+                                    wrapperStyle={{ fontSize: '13px', paddingTop: '16px' }}
+                                    formatter={(value, entry: any) => {
+                                      const isDashed = entry.payload.strokeDasharray;
+                                      return (
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                          <svg width="20" height="2" style={{ marginRight: '4px' }}>
+                                            {isDashed ? (
+                                              <line x1="0" y1="1" x2="20" y2="1" stroke="#1a73e8" strokeWidth="2" strokeDasharray="3 3" />
+                                            ) : (
+                                              <line x1="0" y1="1" x2="20" y2="1" stroke="#1a73e8" strokeWidth="2" />
+                                            )}
+                                          </svg>
+                                          <span style={{ color: '#5f6368' }}>{value}</span>
+                                        </span>
+                                      );
+                                    }}
+                                  />
+                                  <Line 
+                                    type="monotone" 
+                                    dataKey="previous" 
+                                    stroke="#1a73e8" 
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
+                                    dot={false}
+                                    activeDot={{ r: 5, fill: '#1a73e8', strokeWidth: 2, stroke: 'white' }}
+                                    name="Previous period"
+                                  />
+                                  <Line 
+                                    type="monotone" 
+                                    dataKey="current" 
+                                    stroke="#1a73e8" 
+                                    strokeWidth={2}
+                                    dot={false}
+                                    activeDot={{ r: 5, fill: '#1a73e8', strokeWidth: 2, stroke: 'white' }}
+                                    name={timeRange === 'hourly' ? 'Hourly' :
+                                          timeRange === '7d' ? 'Last 7 days' :
+                                          timeRange === '14d' ? 'Last 14 days' :
+                                          timeRange === '30d' ? 'Last 30 days' :
+                                          timeRange === 'thisMonth' ? 'This month' :
+                                          timeRange === 'lastMonth' ? 'Last month' :
+                                          timeRange === 'thisQ' ? 'This quarter' :
+                                          timeRange === 'lastQ' ? 'Last quarter' :
+                                          isCustomRange ? formatCustomDateRange() : 'Selected period'}
+                                  />
+                                </LineChart>
+                              </ResponsiveContainer>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '12px' }}>
+                                <div style={{ fontSize: '13px', color: '#1a73e8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  View reports snapshot
+                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M6 3L11 8L6 13" stroke="#1a73e8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </Column>
 
@@ -5154,30 +5332,30 @@ const PartnerPerformanceDashboard = () => {
 
                 {/* Aggregate all items and group by Item Type */}
                 {(() => {
-                  // Aggregate all items from all traffic sources
+                  // Aggregate all items from all traffic sources, excluding Banner items
                   const allItems = [
                     ...topPerformingItemsByTrafficSource.realry,
                     ...topPerformingItemsByTrafficSource.css,
                     ...topPerformingItemsByTrafficSource.instagramStories,
                     ...topPerformingItemsByTrafficSource.edm
-                  ];
+                  ].filter(item => item.itemType !== 'Banner'); // Exclude Banner items
 
-                  // Group by itemType
+                  // Group by itemType (only Product and Content)
                   const itemsByType = {
                     'Product': allItems.filter(item => item.itemType === 'Product'),
-                    'Ad Creative': allItems.filter(item => item.itemType === 'Ad Creative'),
                     'Content': allItems.filter(item => item.itemType === 'Content')
                   };
 
                   // Item type icons and colors
                   const typeConfig = {
                     'Product': { icon: ShoppingCart, color: '#7256F6' },
-                    'Ad Creative': { icon: Video, color: '#0f62fe' },
                     'Content': { icon: Document, color: '#16a34a' }
                   };
 
-                  return Object.entries(itemsByType).map(([itemType, items]) => {
-                    const sortedItems = [...items].sort((a, b) => b.clicks - a.clicks).slice(0, 7);
+                  return Object.entries(itemsByType)
+                    .filter(([itemType, items]) => items.length > 0) // Only show categories with items
+                    .map(([itemType, items]) => {
+                    const sortedItems = [...items].sort((a, b) => b.clicks - a.clicks).slice(0, 5);
                     const totals = sortedItems.reduce((acc, item) => ({
                       clicks: acc.clicks + item.clicks,
                       conversions: acc.conversions + item.conversions,
@@ -5288,11 +5466,57 @@ const PartnerPerformanceDashboard = () => {
                                   }}
                                 >
                                   <TableCell>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      {item.name}
-                                      {item.tag && (
-                                        <Tag type="green" size="sm">{item.tag}</Tag>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      {/* Show image for Product items */}
+                                      {item.itemType === 'Product' && (item as any).imageUrl && (
+                                        <img 
+                                          src={(item as any).imageUrl} 
+                                          alt={item.name}
+                                          style={{ 
+                                            width: '40px', 
+                                            height: '40px', 
+                                            objectFit: 'cover',
+                                            borderRadius: '4px',
+                                            border: '1px solid #e0e0e0',
+                                            flexShrink: 0
+                                          }}
+                                          onError={(e) => {
+                                            // Fallback if image fails to load
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                          }}
+                                        />
                                       )}
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                        {/* Make Product names clickable */}
+                                        {item.itemType === 'Product' && (item as any).productUrl ? (
+                                          <a 
+                                            href={(item as any).productUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ 
+                                              color: '#0f62fe',
+                                              textDecoration: 'none',
+                                              fontWeight: '500',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis',
+                                              whiteSpace: 'nowrap'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.textDecoration = 'underline';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.textDecoration = 'none';
+                                            }}
+                                          >
+                                            {item.name}
+                                          </a>
+                                        ) : (
+                                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                                        )}
+                                        {item.tag && (
+                                          <Tag type="green" size="sm">{item.tag}</Tag>
+                                        )}
+                                      </div>
                                     </div>
                                   </TableCell>
                                   <TableCell>{item.clicks.toLocaleString()}</TableCell>
@@ -5499,7 +5723,56 @@ const PartnerPerformanceDashboard = () => {
                                             backgroundColor: index % 2 === 0 ? 'white' : '#f9f9f9' 
                                           }}
                                         >
-                                          <TableCell>{item.name}</TableCell>
+                                          <TableCell>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                              {/* Show image for Product items */}
+                                              {item.itemType === 'Product' && (item as any).imageUrl && (
+                                                <img 
+                                                  src={(item as any).imageUrl} 
+                                                  alt={item.name}
+                                                  style={{ 
+                                                    width: '40px', 
+                                                    height: '40px', 
+                                                    objectFit: 'cover',
+                                                    borderRadius: '4px',
+                                                    border: '1px solid #e0e0e0',
+                                                    flexShrink: 0
+                                                  }}
+                                                  onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                  }}
+                                                />
+                                              )}
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                                {/* Make Product names clickable */}
+                                                {item.itemType === 'Product' && (item as any).productUrl ? (
+                                                  <a 
+                                                    href={(item as any).productUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ 
+                                                      color: '#0f62fe',
+                                                      textDecoration: 'none',
+                                                      fontWeight: '500',
+                                                      overflow: 'hidden',
+                                                      textOverflow: 'ellipsis',
+                                                      whiteSpace: 'nowrap'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                      e.currentTarget.style.textDecoration = 'underline';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                      e.currentTarget.style.textDecoration = 'none';
+                                                    }}
+                                                  >
+                                                    {item.name}
+                                                  </a>
+                                                ) : (
+                                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </TableCell>
                                           <TableCell>
                                             <span style={{ fontWeight: '600', color: '#16a34a' }}>
                                               {item.ctr.toFixed(2)}%
@@ -5646,7 +5919,56 @@ const PartnerPerformanceDashboard = () => {
                                             backgroundColor: index % 2 === 0 ? 'white' : '#f9f9f9' 
                                           }}
                                         >
-                                          <TableCell>{item.name}</TableCell>
+                                          <TableCell>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                              {/* Show image for Product items */}
+                                              {item.itemType === 'Product' && (item as any).imageUrl && (
+                                                <img 
+                                                  src={(item as any).imageUrl} 
+                                                  alt={item.name}
+                                                  style={{ 
+                                                    width: '40px', 
+                                                    height: '40px', 
+                                                    objectFit: 'cover',
+                                                    borderRadius: '4px',
+                                                    border: '1px solid #e0e0e0',
+                                                    flexShrink: 0
+                                                  }}
+                                                  onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                  }}
+                                                />
+                                              )}
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                                {/* Make Product names clickable */}
+                                                {item.itemType === 'Product' && (item as any).productUrl ? (
+                                                  <a 
+                                                    href={(item as any).productUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ 
+                                                      color: '#0f62fe',
+                                                      textDecoration: 'none',
+                                                      fontWeight: '500',
+                                                      overflow: 'hidden',
+                                                      textOverflow: 'ellipsis',
+                                                      whiteSpace: 'nowrap'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                      e.currentTarget.style.textDecoration = 'underline';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                      e.currentTarget.style.textDecoration = 'none';
+                                                    }}
+                                                  >
+                                                    {item.name}
+                                                  </a>
+                                                ) : (
+                                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </TableCell>
                                           <TableCell>
                                             <span style={{ fontWeight: '600', color: '#dc2626' }}>
                                               {item.ctr.toFixed(2)}%
@@ -5726,18 +6048,78 @@ const PartnerPerformanceDashboard = () => {
                               ${topRevenueDriver.revenue.toLocaleString()}
                             </Tag>
                           </div>
+                          {/* Product Image and Name */}
+                          {topRevenueDriver.itemType === 'Product' && (topRevenueDriver as any).imageUrl && (
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '12px', 
+                              marginTop: '16px',
+                              padding: '12px',
+                              backgroundColor: 'white',
+                              borderRadius: '6px',
+                              border: '1px solid #e0e0e0'
+                            }}>
+                              <img 
+                                src={(topRevenueDriver as any).imageUrl} 
+                                alt={topRevenueDriver.name}
+                                style={{ 
+                                  width: '60px', 
+                                  height: '60px', 
+                                  objectFit: 'cover',
+                                  borderRadius: '4px',
+                                  border: '1px solid #e0e0e0',
+                                  flexShrink: 0
+                                }}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Item Name</div>
+                                {topRevenueDriver.itemType === 'Product' && (topRevenueDriver as any).productUrl ? (
+                                  <a 
+                                    href={(topRevenueDriver as any).productUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ 
+                                      fontSize: '14px',
+                                      fontWeight: '600',
+                                      color: '#0f62fe',
+                                      textDecoration: 'none',
+                                      display: 'block'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.textDecoration = 'underline';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.textDecoration = 'none';
+                                    }}
+                                  >
+                                    {topRevenueDriver.name}
+                                  </a>
+                                ) : (
+                                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                    {topRevenueDriver.name}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           <div style={{ 
                             display: 'grid',
                             gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                             gap: '16px',
                             marginTop: '16px'
                           }}>
-                            <div>
-                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Item Name</div>
-                              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                                {topRevenueDriver.name}
+                            {(!(topRevenueDriver as any).imageUrl || topRevenueDriver.itemType !== 'Product') && (
+                              <div>
+                                <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Item Name</div>
+                                <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
+                                  {topRevenueDriver.name}
+                                </div>
                               </div>
-                            </div>
+                            )}
                             <div>
                               <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Type</div>
                               <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
@@ -5837,20 +6219,46 @@ const PartnerPerformanceDashboard = () => {
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart 
                       data={[
-                        { name: 'Clicks', banner: bannerPerformance.bannerClicks, nonBanner: bannerPerformance.nonBannerClicks },
-                        { name: 'Conversions', banner: bannerPerformance.bannerConversions, nonBanner: bannerPerformance.nonBannerConversions },
-                        { name: 'Revenue', banner: bannerPerformance.bannerRevenue, nonBanner: bannerPerformance.nonBannerRevenue }
+                        { 
+                          name: 'Clicks', 
+                          bannerCount: bannerPerformance.bannerClicks, 
+                          nonBannerCount: bannerPerformance.nonBannerClicks
+                        },
+                        { 
+                          name: 'Conversions', 
+                          bannerCount: bannerPerformance.bannerConversions, 
+                          nonBannerCount: bannerPerformance.nonBannerConversions
+                        },
+                        { 
+                          name: 'Revenue', 
+                          bannerRevenue: bannerPerformance.bannerRevenue, 
+                          nonBannerRevenue: bannerPerformance.nonBannerRevenue
+                        }
                       ]}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      margin={{ top: 5, right: 50, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                       <XAxis dataKey="name" tick={{ fill: '#6d7175', fontSize: 12 }} />
+                      {/* Left Y-axis for Clicks and Conversions */}
                       <YAxis 
+                        yAxisId="left"
                         tick={{ fill: '#6d7175', fontSize: 12 }}
                         tickFormatter={(value: number) => {
                           if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
                           return value.toLocaleString();
                         }}
+                        label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#6d7175', fontSize: 12 } }}
+                      />
+                      {/* Right Y-axis for Revenue */}
+                      <YAxis 
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fill: '#6d7175', fontSize: 12 }}
+                        tickFormatter={(value: number) => {
+                          if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
+                          return `$${value.toLocaleString()}`;
+                        }}
+                        label={{ value: 'Revenue ($)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fill: '#6d7175', fontSize: 12 } }}
                       />
                       <Tooltip 
                         contentStyle={{ 
@@ -5858,17 +6266,22 @@ const PartnerPerformanceDashboard = () => {
                           border: '1px solid #e0e0e0',
                           borderRadius: '6px'
                         }}
-                        formatter={(value: number, name: string, props: any) => {
+                        formatter={(value: number, name: string) => {
+                          if (!value && value !== 0) return null;
                           // Add $ for Revenue, otherwise just format number
-                          if (props.payload.name === 'Revenue') {
+                          if (name.includes('Revenue')) {
                             return `$${value.toLocaleString()}`;
                           }
                           return value.toLocaleString();
                         }}
                       />
                       <Legend />
-                      <Bar dataKey="banner" fill="#0f62fe" name="Banner" />
-                      <Bar dataKey="nonBanner" fill="#8d8d8d" name="Non-Banner" />
+                      {/* Bars for Clicks and Conversions (left axis) */}
+                      <Bar yAxisId="left" dataKey="bannerCount" fill="#0f62fe" name="Banner" />
+                      <Bar yAxisId="left" dataKey="nonBannerCount" fill="#8d8d8d" name="Non-Banner" />
+                      {/* Bars for Revenue (right axis) */}
+                      <Bar yAxisId="right" dataKey="bannerRevenue" fill="#0f62fe" name="Banner Revenue" />
+                      <Bar yAxisId="right" dataKey="nonBannerRevenue" fill="#8d8d8d" name="Non-Banner Revenue" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
