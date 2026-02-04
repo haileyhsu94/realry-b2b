@@ -69,6 +69,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from 'recharts';
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
 import {
@@ -3580,80 +3581,23 @@ const PartnerPerformanceDashboard = () => {
                   border: '1px solid var(--shopify-border)',
                   padding: '24px 24px 24px 24px'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingLeft: '24px', paddingRight: '24px' }}>
-                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: 0 }}>
+                  <div style={{ marginBottom: '16px', paddingLeft: '0px', paddingRight: '0px' }}>
+                    <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: 0, marginBottom: '4px' }}>
                       Weekend vs Weekday Performance
                     </h4>
-                    <select
-                      value={weekendWeekdayTimePeriod}
-                      onChange={(e) => setWeekendWeekdayTimePeriod(e.target.value as '1month' | '3months' | '6months' | '1year')}
-                      style={{
-                        padding: '8px 32px 8px 12px',
-                        border: '1px solid var(--shopify-border)',
-                        borderRadius: '6px',
-                        backgroundColor: 'white',
-                        fontSize: '14px',
-                        color: 'var(--shopify-text-primary)',
-                        cursor: 'pointer',
-                        outline: 'none',
-                        appearance: 'none',
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236d7175' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 12px center',
-                        transition: 'border-color 0.15s ease'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#7256F6'}
-                      onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#7256F6';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (document.activeElement !== e.currentTarget) {
-                          e.currentTarget.style.borderColor = 'var(--shopify-border)';
-                        }
-                      }}
-                    >
-                      <option value="1month">Last 1 Month</option>
-                      <option value="3months">Last 3 Months</option>
-                      <option value="6months">Last 6 Months</option>
-                      <option value="1year">Last 1 Year</option>
-                    </select>
+                    <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
+                      Weekends: Saturday, Sunday
+                    </p>
                   </div>
                   
                   {(() => {
-                    // Get data based on selected time period
-                    let chartData: any[] = [];
-                    let aggregatedData: ReturnType<typeof aggregateWeekendWeekdayData>;
-                    
-                    if (weekendWeekdayTimePeriod === '1month') {
-                      chartData = weekendWeekdayPerformanceWeekly.map(week => ({
-                        period: week.week,
-                        weekend: week.weekend,
-                        weekday: week.weekday
-                      }));
-                      aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformanceWeekly);
-                    } else if (weekendWeekdayTimePeriod === '3months') {
-                      chartData = weekendWeekdayPerformanceMonthly.map(month => ({
-                        period: month.month,
-                        weekend: month.weekend,
-                        weekday: month.weekday
-                      }));
-                      aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformanceMonthly.map(m => ({ week: m.month, weekend: m.weekend, weekday: m.weekday })));
-                    } else if (weekendWeekdayTimePeriod === '6months') {
-                      chartData = weekendWeekdayPerformance6Months.map(period => ({
-                        period: period.period,
-                        weekend: period.weekend,
-                        weekday: period.weekday
-                      }));
-                      aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformance6Months.map(p => ({ week: p.period, weekend: p.weekend, weekday: p.weekday })));
-                    } else {
-                      chartData = weekendWeekdayPerformance1Year.map(period => ({
-                        period: period.period,
-                        weekend: period.weekend,
-                        weekday: period.weekday
-                      }));
-                      aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformance1Year.map(p => ({ week: p.period, weekend: p.weekend, weekday: p.weekday })));
-                    }
+                    // Use default 1 month period (no dropdown selection)
+                    const chartData = weekendWeekdayPerformanceWeekly.map(week => ({
+                      period: week.week,
+                      weekend: week.weekend,
+                      weekday: week.weekday
+                    }));
+                    const aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformanceWeekly);
 
                     return (
                       <>
@@ -3668,52 +3612,30 @@ const PartnerPerformanceDashboard = () => {
                           <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
                             {aggregatedData.weekend.clicks.toLocaleString()} / {aggregatedData.weekday.clicks.toLocaleString()}
                           </div>
-                          <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                            <span>Weekend</span>
-                            <span>Weekday</span>
-                          </div>
                         </div>
                         <div style={{ 
                           width: '100%', 
-                          height: '180px',
-                          padding: '0 12px 0 12px'
+                          height: '140px',
+                          padding: '0 24px 24px 24px'
                         }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData.map(d => ({ period: d.period, weekend: d.weekend.clicks, weekday: d.weekday.clicks }))} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                            <BarChart data={[{ name: 'Weekend', value: aggregatedData.weekend.clicks }, { name: 'Weekday', value: aggregatedData.weekday.clicks }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                               <XAxis 
-                                dataKey="period" 
-                                stroke="#6d7175" 
+                                dataKey="name" 
                                 tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
                               />
                               <YAxis 
-                                stroke="#6d7175" 
                                 tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
                                 width={40}
                                 tickFormatter={(value: number) => {
                                   if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
                                   return value.toString();
                                 }}
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey="weekend" 
-                                stroke="#0f62fe" 
-                                strokeWidth={2.5}
-                                dot={{ r: 3, fill: '#0f62fe', strokeWidth: 0 }}
-                                isAnimationActive={false}
-                                activeDot={{ r: 5, fill: '#0f62fe' }}
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey="weekday" 
-                                stroke="#8a3ffc" 
-                                strokeWidth={2.5}
-                                dot={{ r: 3, fill: '#8a3ffc', strokeWidth: 0 }}
-                                isAnimationActive={false}
-                                activeDot={{ r: 5, fill: '#8a3ffc' }}
                               />
                               <Tooltip 
                                 contentStyle={{ 
@@ -3725,7 +3647,14 @@ const PartnerPerformanceDashboard = () => {
                                 }}
                                 formatter={(value: number) => value.toLocaleString()}
                               />
-                            </LineChart>
+                              <Bar 
+                                dataKey="value" 
+                                radius={[4, 4, 0, 0]}
+                              >
+                                <Cell fill="#0f62fe" />
+                                <Cell fill="#6fa8ff" />
+                              </Bar>
+                            </BarChart>
                           </ResponsiveContainer>
                         </div>
                       </div>
@@ -3741,52 +3670,30 @@ const PartnerPerformanceDashboard = () => {
                           <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
                             {aggregatedData.weekend.conversions.toLocaleString()} / {aggregatedData.weekday.conversions.toLocaleString()}
                           </div>
-                          <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                            <span>Weekend</span>
-                            <span>Weekday</span>
-                          </div>
                         </div>
                         <div style={{ 
                           width: '100%', 
-                          height: '180px',
-                          padding: '0 12px 0 12px'
+                          height: '140px',
+                          padding: '0 24px 24px 24px'
                         }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData.map(d => ({ period: d.period, weekend: d.weekend.conversions, weekday: d.weekday.conversions }))} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                            <BarChart data={[{ name: 'Weekend', value: aggregatedData.weekend.conversions }, { name: 'Weekday', value: aggregatedData.weekday.conversions }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                               <XAxis 
-                                dataKey="period" 
-                                stroke="#6d7175" 
+                                dataKey="name" 
                                 tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
                               />
                               <YAxis 
-                                stroke="#6d7175" 
                                 tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
                                 width={40}
                                 tickFormatter={(value: number) => {
                                   if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
                                   return value.toString();
                                 }}
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey="weekend" 
-                                stroke="#0f62fe" 
-                                strokeWidth={2.5}
-                                dot={{ r: 3, fill: '#0f62fe', strokeWidth: 0 }}
-                                isAnimationActive={false}
-                                activeDot={{ r: 5, fill: '#0f62fe' }}
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey="weekday" 
-                                stroke="#8a3ffc" 
-                                strokeWidth={2.5}
-                                dot={{ r: 3, fill: '#8a3ffc', strokeWidth: 0 }}
-                                isAnimationActive={false}
-                                activeDot={{ r: 5, fill: '#8a3ffc' }}
                               />
                               <Tooltip 
                                 contentStyle={{ 
@@ -3798,7 +3705,14 @@ const PartnerPerformanceDashboard = () => {
                                 }}
                                 formatter={(value: number) => value.toLocaleString()}
                               />
-                            </LineChart>
+                              <Bar 
+                                dataKey="value" 
+                                radius={[4, 4, 0, 0]}
+                              >
+                                <Cell fill="#0f62fe" />
+                                <Cell fill="#6fa8ff" />
+                              </Bar>
+                            </BarChart>
                           </ResponsiveContainer>
                         </div>
                       </div>
@@ -3814,52 +3728,30 @@ const PartnerPerformanceDashboard = () => {
                           <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
                             ${(aggregatedData.weekend.revenue / 1000).toFixed(1)}K / ${(aggregatedData.weekday.revenue / 1000).toFixed(1)}K
                           </div>
-                          <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                            <span>Weekend</span>
-                            <span>Weekday</span>
-                          </div>
                         </div>
                         <div style={{ 
                           width: '100%', 
-                          height: '180px',
-                          padding: '0 12px 0 12px'
+                          height: '140px',
+                          padding: '0 24px 24px 24px'
                         }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData.map(d => ({ period: d.period, weekend: d.weekend.revenue, weekday: d.weekday.revenue }))} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                            <BarChart data={[{ name: 'Weekend', value: aggregatedData.weekend.revenue }, { name: 'Weekday', value: aggregatedData.weekday.revenue }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                               <XAxis 
-                                dataKey="period" 
-                                stroke="#6d7175" 
+                                dataKey="name" 
                                 tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
                               />
                               <YAxis 
-                                stroke="#6d7175" 
                                 tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
                                 width={40}
                                 tickFormatter={(value: number) => {
                                   if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
                                   return `$${value}`;
                                 }}
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey="weekend" 
-                                stroke="#0f62fe" 
-                                strokeWidth={2.5}
-                                dot={{ r: 3, fill: '#0f62fe', strokeWidth: 0 }}
-                                isAnimationActive={false}
-                                activeDot={{ r: 5, fill: '#0f62fe' }}
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey="weekday" 
-                                stroke="#8a3ffc" 
-                                strokeWidth={2.5}
-                                dot={{ r: 3, fill: '#8a3ffc', strokeWidth: 0 }}
-                                isAnimationActive={false}
-                                activeDot={{ r: 5, fill: '#8a3ffc' }}
                               />
                               <Tooltip 
                                 contentStyle={{ 
@@ -3871,7 +3763,14 @@ const PartnerPerformanceDashboard = () => {
                                 }}
                                 formatter={(value: number) => `$${value.toLocaleString()}`}
                               />
-                            </LineChart>
+                              <Bar 
+                                dataKey="value" 
+                                radius={[4, 4, 0, 0]}
+                              >
+                                <Cell fill="#0f62fe" />
+                                <Cell fill="#6fa8ff" />
+                              </Bar>
+                            </BarChart>
                           </ResponsiveContainer>
                         </div>
                       </div>
@@ -3894,42 +3793,24 @@ const PartnerPerformanceDashboard = () => {
                         </div>
                         <div style={{ 
                           width: '100%', 
-                          height: '180px',
-                          padding: '0 12px 0 12px'
+                          height: '140px',
+                          padding: '0 24px 24px 24px'
                         }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData.map(d => ({ period: d.period, weekend: d.weekend.cvr, weekday: d.weekday.cvr }))} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                            <BarChart data={[{ name: 'Weekend', value: aggregatedData.weekend.cvr }, { name: 'Weekday', value: aggregatedData.weekday.cvr }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                               <XAxis 
-                                dataKey="period" 
-                                stroke="#6d7175" 
+                                dataKey="name" 
                                 tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
                               />
                               <YAxis 
-                                stroke="#6d7175" 
                                 tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
                                 width={40}
                                 tickFormatter={(value: number) => `${value.toFixed(0)}%`}
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey="weekend" 
-                                stroke="#0f62fe" 
-                                strokeWidth={2.5}
-                                dot={{ r: 3, fill: '#0f62fe', strokeWidth: 0 }}
-                                isAnimationActive={false}
-                                activeDot={{ r: 5, fill: '#0f62fe' }}
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey="weekday" 
-                                stroke="#8a3ffc" 
-                                strokeWidth={2.5}
-                                dot={{ r: 3, fill: '#8a3ffc', strokeWidth: 0 }}
-                                isAnimationActive={false}
-                                activeDot={{ r: 5, fill: '#8a3ffc' }}
                               />
                               <Tooltip 
                                 contentStyle={{ 
@@ -3941,7 +3822,14 @@ const PartnerPerformanceDashboard = () => {
                                 }}
                                 formatter={(value: number) => `${value.toFixed(1)}%`}
                               />
-                            </LineChart>
+                              <Bar 
+                                dataKey="value" 
+                                radius={[4, 4, 0, 0]}
+                              >
+                                <Cell fill="#0f62fe" />
+                                <Cell fill="#6fa8ff" />
+                              </Bar>
+                            </BarChart>
                           </ResponsiveContainer>
                         </div>
                       </div>
@@ -6340,55 +6228,61 @@ const PartnerPerformanceDashboard = () => {
                   </p>
                 </div>
 
-                {/* Category Badge */}
-                <div style={{ marginBottom: '24px' }}>
-                  <Tag type="purple" size="md">
-                    Category: {partnerBenchmarking.category}
-                  </Tag>
-                </div>
-
                 {/* Comparison Charts - 4 separate charts */}
                 <Grid narrow style={{ marginBottom: '24px' }}>
                   {/* CVR Chart */}
-                  <Column lg={3} md={6} sm={12}>
+                  <Column lg={4} md={6} sm={12}>
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>
                         CVR (%)
                       </div>
-                      <ResponsiveContainer width="100%" height={140}>
-                        <BarChart 
-                          data={[
-                            { 
-                              name: 'You',
-                              value: partnerBenchmarking.metrics.cvr.partner,
-                              percentile: partnerBenchmarking.metrics.cvr.percentile
-                            },
-                            { 
-                              name: 'Average',
-                              value: partnerBenchmarking.metrics.cvr.categoryAvg
-                            },
-                            { 
-                              name: 'Top 5%',
-                              value: partnerBenchmarking.metrics.cvr.top5Percent
-                            }
-                          ]}
-                          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis 
-                            dataKey="name"
-                            tick={{ fill: '#6d7175', fontSize: 11 }}
-                          />
-                          <YAxis 
-                            tick={{ fill: '#6d7175', fontSize: 11 }}
-                            tickFormatter={(value: number) => `${value.toFixed(1)}%`}
-                          />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'white',
-                              border: '1px solid #e0e0e0',
-                              borderRadius: '6px'
-                            }}
+                      <div style={{ 
+                        width: '100%', 
+                        height: '220px',
+                        padding: '0 12px 0 12px'
+                      }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart 
+                            data={[
+                              { 
+                                name: 'You',
+                                value: partnerBenchmarking.metrics.cvr.partner,
+                                percentile: partnerBenchmarking.metrics.cvr.percentile
+                              },
+                              { 
+                                name: 'Average',
+                                value: partnerBenchmarking.metrics.cvr.categoryAvg
+                              },
+                              { 
+                                name: 'Top 5%',
+                                value: partnerBenchmarking.metrics.cvr.top5Percent
+                              }
+                            ]}
+                            margin={{ top: 5, right: 10, left: 3, bottom: 25 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                            <XAxis 
+                              dataKey="name"
+                              stroke="#6d7175" 
+                              tick={{ fontSize: 12, fill: '#6d7175' }}
+                              tickLine={{ stroke: '#6d7175' }}
+                            />
+                            <YAxis 
+                              stroke="#6d7175" 
+                              tick={{ fontSize: 12, fill: '#6d7175' }}
+                              tickLine={{ stroke: '#6d7175' }}
+                              width={40}
+                              tickFormatter={(value: number) => `${value.toFixed(1)}%`}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'white',
+                                border: '1px solid #e1e3e5',
+                                borderRadius: '6px',
+                                padding: '10px 14px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                fontSize: '13px'
+                              }}
                             formatter={(value: number, name: string, props: any) => {
                               const formattedValue = `${value.toFixed(2)}%`;
                               if (props.payload.name === 'You' && props.payload.percentile) {
@@ -6408,49 +6302,63 @@ const PartnerPerformanceDashboard = () => {
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
+                      </div>
                     </div>
                   </Column>
 
                   {/* AOV Chart */}
-                  <Column lg={3} md={6} sm={12}>
+                  <Column lg={4} md={6} sm={12}>
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>
                         AOV ($)
                       </div>
-                      <ResponsiveContainer width="100%" height={140}>
-                        <BarChart 
-                          data={[
-                            { 
-                              name: 'You',
-                              value: partnerBenchmarking.metrics.aov.partner,
-                              percentile: partnerBenchmarking.metrics.aov.percentile
-                            },
-                            { 
-                              name: 'Average',
-                              value: partnerBenchmarking.metrics.aov.categoryAvg
-                            },
-                            { 
-                              name: 'Top 5%',
-                              value: partnerBenchmarking.metrics.aov.top5Percent
-                            }
-                          ]}
-                          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis 
-                            dataKey="name"
-                            tick={{ fill: '#6d7175', fontSize: 11 }}
-                          />
-                          <YAxis 
-                            tick={{ fill: '#6d7175', fontSize: 11 }}
-                            tickFormatter={(value: number) => `$${value.toFixed(0)}`}
-                          />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'white',
-                              border: '1px solid #e0e0e0',
-                              borderRadius: '6px'
-                            }}
+                      <div style={{ 
+                        width: '100%', 
+                        height: '220px',
+                        padding: '0 12px 0 12px'
+                      }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart 
+                            data={[
+                              { 
+                                name: 'You',
+                                value: partnerBenchmarking.metrics.aov.partner,
+                                percentile: partnerBenchmarking.metrics.aov.percentile
+                              },
+                              { 
+                                name: 'Average',
+                                value: partnerBenchmarking.metrics.aov.categoryAvg
+                              },
+                              { 
+                                name: 'Top 5%',
+                                value: partnerBenchmarking.metrics.aov.top5Percent
+                              }
+                            ]}
+                            margin={{ top: 5, right: 10, left: 0, bottom: 25 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                            <XAxis 
+                              dataKey="name"
+                              stroke="#6d7175" 
+                              tick={{ fontSize: 12, fill: '#6d7175' }}
+                              tickLine={{ stroke: '#6d7175' }}
+                            />
+                            <YAxis 
+                              stroke="#6d7175" 
+                              tick={{ fontSize: 12, fill: '#6d7175' }}
+                              tickLine={{ stroke: '#6d7175' }}
+                              width={40}
+                              tickFormatter={(value: number) => `$${value.toFixed(0)}`}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'white',
+                                border: '1px solid #e1e3e5',
+                                borderRadius: '6px',
+                                padding: '10px 14px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                fontSize: '13px'
+                              }}
                             formatter={(value: number, name: string, props: any) => {
                               const formattedValue = `$${value.toFixed(2)}`;
                               if (props.payload.name === 'You' && props.payload.percentile) {
@@ -6470,49 +6378,63 @@ const PartnerPerformanceDashboard = () => {
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
+                      </div>
                     </div>
                   </Column>
 
                   {/* Revenue Per Click Chart */}
-                  <Column lg={3} md={6} sm={12}>
+                  <Column lg={4} md={6} sm={12}>
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>
                         Revenue Per Click ($)
                       </div>
-                      <ResponsiveContainer width="100%" height={140}>
-                        <BarChart 
-                          data={[
-                            { 
-                              name: 'You',
-                              value: partnerBenchmarking.metrics.rpc.partner,
-                              percentile: partnerBenchmarking.metrics.rpc.percentile
-                            },
-                            { 
-                              name: 'Average',
-                              value: partnerBenchmarking.metrics.rpc.categoryAvg
-                            },
-                            { 
-                              name: 'Top 5%',
-                              value: partnerBenchmarking.metrics.rpc.top5Percent
-                            }
-                          ]}
-                          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis 
-                            dataKey="name"
-                            tick={{ fill: '#6d7175', fontSize: 11 }}
-                          />
-                          <YAxis 
-                            tick={{ fill: '#6d7175', fontSize: 11 }}
-                            tickFormatter={(value: number) => `$${value.toFixed(2)}`}
-                          />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'white',
-                              border: '1px solid #e0e0e0',
-                              borderRadius: '6px'
-                            }}
+                      <div style={{ 
+                        width: '100%', 
+                        height: '220px',
+                        padding: '0 12px 0 12px'
+                      }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart 
+                            data={[
+                              { 
+                                name: 'You',
+                                value: partnerBenchmarking.metrics.rpc.partner,
+                                percentile: partnerBenchmarking.metrics.rpc.percentile
+                              },
+                              { 
+                                name: 'Average',
+                                value: partnerBenchmarking.metrics.rpc.categoryAvg
+                              },
+                              { 
+                                name: 'Top 5%',
+                                value: partnerBenchmarking.metrics.rpc.top5Percent
+                              }
+                            ]}
+                            margin={{ top: 5, right: 10, left: 0, bottom: 25 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                            <XAxis 
+                              dataKey="name"
+                              stroke="#6d7175" 
+                              tick={{ fontSize: 12, fill: '#6d7175' }}
+                              tickLine={{ stroke: '#6d7175' }}
+                            />
+                            <YAxis 
+                              stroke="#6d7175" 
+                              tick={{ fontSize: 12, fill: '#6d7175' }}
+                              tickLine={{ stroke: '#6d7175' }}
+                              width={40}
+                              tickFormatter={(value: number) => `$${value.toFixed(2)}`}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'white',
+                                border: '1px solid #e1e3e5',
+                                borderRadius: '6px',
+                                padding: '10px 14px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                fontSize: '13px'
+                              }}
                             formatter={(value: number, name: string, props: any) => {
                               const formattedValue = `$${value.toFixed(2)}`;
                               if (props.payload.name === 'You' && props.payload.percentile) {
@@ -6532,49 +6454,63 @@ const PartnerPerformanceDashboard = () => {
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
+                      </div>
                     </div>
                   </Column>
 
                   {/* Return Rate Chart */}
-                  <Column lg={3} md={6} sm={12}>
+                  <Column lg={4} md={6} sm={12}>
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>
                         Return Rate (%)
                       </div>
-                      <ResponsiveContainer width="100%" height={140}>
-                        <BarChart 
-                          data={[
-                            { 
-                              name: 'You',
-                              value: partnerBenchmarking.metrics.returnRate.partner,
-                              percentile: partnerBenchmarking.metrics.returnRate.percentile
-                            },
-                            { 
-                              name: 'Average',
-                              value: partnerBenchmarking.metrics.returnRate.categoryAvg
-                            },
-                            { 
-                              name: 'Top 5%',
-                              value: partnerBenchmarking.metrics.returnRate.top5Percent
-                            }
-                          ]}
-                          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis 
-                            dataKey="name"
-                            tick={{ fill: '#6d7175', fontSize: 11 }}
-                          />
-                          <YAxis 
-                            tick={{ fill: '#6d7175', fontSize: 11 }}
-                            tickFormatter={(value: number) => `${value.toFixed(1)}%`}
-                          />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'white',
-                              border: '1px solid #e0e0e0',
-                              borderRadius: '6px'
-                            }}
+                      <div style={{ 
+                        width: '100%', 
+                        height: '220px',
+                        padding: '0 12px 0 12px'
+                      }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart 
+                            data={[
+                              { 
+                                name: 'You',
+                                value: partnerBenchmarking.metrics.returnRate.partner,
+                                percentile: partnerBenchmarking.metrics.returnRate.percentile
+                              },
+                              { 
+                                name: 'Average',
+                                value: partnerBenchmarking.metrics.returnRate.categoryAvg
+                              },
+                              { 
+                                name: 'Top 5%',
+                                value: partnerBenchmarking.metrics.returnRate.top5Percent
+                              }
+                            ]}
+                            margin={{ top: 5, right: 10, left: 0, bottom: 25 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                            <XAxis 
+                              dataKey="name"
+                              stroke="#6d7175" 
+                              tick={{ fontSize: 12, fill: '#6d7175' }}
+                              tickLine={{ stroke: '#6d7175' }}
+                            />
+                            <YAxis 
+                              stroke="#6d7175" 
+                              tick={{ fontSize: 12, fill: '#6d7175' }}
+                              tickLine={{ stroke: '#6d7175' }}
+                              width={40}
+                              tickFormatter={(value: number) => `${value.toFixed(1)}%`}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'white',
+                                border: '1px solid #e1e3e5',
+                                borderRadius: '6px',
+                                padding: '10px 14px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                fontSize: '13px'
+                              }}
                             formatter={(value: number, name: string, props: any) => {
                               const formattedValue = `${value.toFixed(2)}%`;
                               if (props.payload.name === 'You' && props.payload.percentile) {
@@ -6594,6 +6530,7 @@ const PartnerPerformanceDashboard = () => {
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
+                      </div>
                     </div>
                   </Column>
                 </Grid>
@@ -6616,206 +6553,93 @@ const PartnerPerformanceDashboard = () => {
                 </div>
               </div>
 
-              {/* 7. Learn from Top Performers */}
+              {/* 7. Learn from Top Performers & 8. Recommended Actions - Side by Side */}
               <div style={{ 
                 marginTop: '24px',
                 marginLeft: '24px',
                 marginRight: '24px',
-                backgroundColor: 'white',
-                borderRadius: '8px',
-                border: '1px solid var(--shopify-border)',
-                padding: '24px'
+                marginBottom: '24px'
               }}>
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Trophy size={24} style={{ color: '#8a3ffc' }} />
-                    Learn from Top Performers
-                  </h3>
-                  <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                    Success patterns and best practices from high-earning sellers
-                  </p>
-                </div>
-                
-                <Grid narrow>
-                  <Column lg={8}>
+                <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
+                  {/* Learn from Top Performers */}
+                  <Column lg={8} md={4} sm={4}>
                     <div style={{ 
-                      padding: '20px', 
-                      backgroundColor: '#f0edff', 
-                      borderRadius: '8px', 
-                      border: '1px solid #e0d9ff',
-                      height: '100%'
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid var(--shopify-border)',
+                      padding: '20px',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column'
                     }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#7256F6', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Video size={20} />
-                        Video Content Advantage
+                      <div style={{ marginBottom: '16px' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Trophy size={20} style={{ color: '#8a3ffc' }} />
+                          Learn from Top Performers
+                        </h3>
+                        <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
+                          Success patterns and best practices from high-earning sellers
+                        </p>
                       </div>
-                      <div style={{ fontSize: '14px', color: '#6d7175', lineHeight: '1.6', marginBottom: '16px' }}>
-                        Sellers using video in their posts see <strong>25% higher conversion rates</strong> and <strong>40% more engagement</strong> compared to image-only content.
+                      
+                      <div style={{ 
+                        textAlign: 'center',
+                        padding: '20px',
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: '80px'
+                      }}>
+                        <Time size={24} style={{ color: 'var(--shopify-text-secondary)', marginBottom: '8px', opacity: 0.6 }} />
+                        <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '6px' }}>
+                          Coming Soon
+                        </div>
+
                       </div>
-                      <Button size="sm" kind="ghost" style={{ color: '#7256F6' }}>
-                        Try video content →
-                      </Button>
                     </div>
                   </Column>
-                  
-                  <Column lg={8}>
+
+                  {/* Recommended Actions */}
+                  <Column lg={8} md={4} sm={4}>
                     <div style={{ 
-                      padding: '20px', 
-                      backgroundColor: '#e8f4f8', 
-                      borderRadius: '8px', 
-                      border: '1px solid #d0e8f2',
-                      height: '100%'
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid var(--shopify-border)',
+                      padding: '20px',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column'
                     }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#0f62fe', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Camera size={20} />
-                        Image Best Practice
+                      <div style={{ marginBottom: '16px' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Idea size={20} style={{ color: '#f1c21b' }} />
+                          Recommended Actions
+                        </h3>
+                        <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
+                          AI-powered suggestions to maximize your earnings
+                        </p>
                       </div>
-                      <div style={{ fontSize: '14px', color: '#6d7175', lineHeight: '1.6', marginBottom: '16px' }}>
-                        Top performers use <strong>3-5 product images</strong> per post, including lifestyle shots and close-ups for higher trust and conversions.
+                      
+                      <div style={{ 
+                        textAlign: 'center',
+                        padding: '20px',
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: '80px'
+                      }}>
+                        <Time size={24} style={{ color: 'var(--shopify-text-secondary)', marginBottom: '8px', opacity: 0.6 }} />
+                        <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '6px' }}>
+                          Coming Soon
+                        </div>
                       </div>
-                      <Button size="sm" kind="ghost" style={{ color: '#0f62fe' }}>
-                        See examples →
-                      </Button>
                     </div>
                   </Column>
                 </Grid>
-
-                <Grid narrow style={{ marginTop: '16px' }}>
-                  <Column lg={8}>
-                    <div style={{ 
-                      padding: '20px', 
-                      backgroundColor: '#e6f4ea', 
-                      borderRadius: '8px', 
-                      border: '1px solid #c6e7d0',
-                      height: '100%'
-                    }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Time size={20} />
-                        Timing Optimization
-                      </div>
-                      <div style={{ fontSize: '14px', color: '#6d7175', lineHeight: '1.6', marginBottom: '16px' }}>
-                        Posts published on <strong>weekend evenings (7-9 PM)</strong> get <strong>2x more engagement</strong> and 35% better click-through rates.
-                      </div>
-                      <Button size="sm" kind="ghost" style={{ color: '#16a34a' }}>
-                        Optimize schedule →
-                      </Button>
-                    </div>
-                  </Column>
-                  
-                  <Column lg={8}>
-                    <div style={{ 
-                      padding: '20px', 
-                      backgroundColor: '#fef3e6', 
-                      borderRadius: '8px', 
-                      border: '1px solid #fde3c4',
-                      height: '100%'
-                    }}>
-                      <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#d97706', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Chat size={20} />
-                        Social Proof Works
-                      </div>
-                      <div style={{ fontSize: '14px', color: '#6d7175', lineHeight: '1.6', marginBottom: '16px' }}>
-                        Including <strong>customer reviews and ratings</strong> in product descriptions increases conversions by <strong>18%</strong> on average.
-                      </div>
-                      <Button size="sm" kind="ghost" style={{ color: '#d97706' }}>
-                        Add reviews →
-                      </Button>
-                    </div>
-                  </Column>
-                </Grid>
-              </div>
-
-              {/* 8. Recommended Actions */}
-              <div style={{ 
-                marginTop: '24px',
-                marginLeft: '24px',
-                marginRight: '24px',
-                marginBottom: '24px',
-                backgroundColor: 'white',
-                borderRadius: '8px',
-                border: '1px solid var(--shopify-border)',
-                padding: '24px'
-              }}>
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Idea size={24} style={{ color: '#f1c21b' }} />
-                    Recommended Actions
-                  </h3>
-                  <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                    AI-powered suggestions to maximize your earnings
-                  </p>
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ 
-                    padding: '20px', 
-                    backgroundColor: '#f6f6f7', 
-                    borderRadius: '8px',
-                    border: '1px solid #e0e0e0',
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center' 
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ marginBottom: '8px' }}>
-                        <Tag type="purple" size="sm">High Impact</Tag>
-                      </div>
-                      <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '6px', color: 'var(--shopify-text-primary)' }}>
-                        Promote "Wireless Earbuds Pro" - trending in your area
-                      </div>
-                      <div style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)' }}>
-                        Expected <strong>+$2,400 revenue</strong> this month based on current trends
-                      </div>
-                    </div>
-                    <Button size="sm">Start promoting</Button>
-                  </div>
-                  
-                  <div style={{ 
-                    padding: '20px', 
-                    backgroundColor: '#f6f6f7', 
-                    borderRadius: '8px',
-                    border: '1px solid #e0e0e0',
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center' 
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ marginBottom: '8px' }}>
-                        <Tag type="cyan" size="sm">Quick Win</Tag>
-                      </div>
-                      <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '6px', color: 'var(--shopify-text-primary)' }}>
-                        Post earlier in the day for better engagement
-                      </div>
-                      <div style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)' }}>
-                        Your CTR drops <strong>40% after 8pm</strong> - schedule posts for 6-8pm instead
-                      </div>
-                    </div>
-                    <Button size="sm" kind="secondary">Learn more</Button>
-                  </div>
-                  
-                  <div style={{ 
-                    padding: '20px', 
-                    backgroundColor: '#f6f6f7', 
-                    borderRadius: '8px',
-                    border: '1px solid #e0e0e0',
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center' 
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ marginBottom: '8px' }}>
-                        <Tag type="green" size="sm">New Opportunity</Tag>
-                      </div>
-                      <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '6px', color: 'var(--shopify-text-primary)' }}>
-                        Target customers in New York - high conversion potential
-                      </div>
-                      <div style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)' }}>
-                        NY customers have <strong>22% higher AOV</strong> and convert at 16.2%
-                      </div>
-                    </div>
-                    <Button size="sm" kind="secondary">Explore</Button>
-                  </div>
-                </div>
               </div>
             </div>
           )}
