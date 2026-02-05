@@ -2613,6 +2613,41 @@ const PartnerPerformanceDashboard = () => {
           overflowY: 'auto',
           backgroundColor: '#f6f6f7'
         }}>
+          {/* Detail Reports - Work in Progress */}
+          {activeSection === 'shop-detail-reports' && (
+            <div style={{ width: '100%' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 24px',
+                borderBottom: '1px solid var(--shopify-border)'
+              }}>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: '600',
+                  color: 'var(--shopify-text-primary)',
+                  margin: 0,
+                  letterSpacing: '-0.02em'
+                }}>
+                  Detail Reports
+                </h2>
+              </div>
+              <div style={{ 
+                padding: '24px',
+                minHeight: '400px'
+              }}>
+                <div style={{
+                  fontSize: '16px',
+                  color: 'var(--shopify-text-secondary)',
+                  fontStyle: 'italic'
+                }}>
+                  Work in Progress
+                </div>
+              </div>
+            </div>
+          )}
+
           <FeatureGate feature="shop-performance">
             {activeSection === 'shop-performance' && (
               <div style={{ width: '100%' }}>
@@ -3788,6 +3823,41 @@ const PartnerPerformanceDashboard = () => {
                   letterSpacing: '-0.02em'
                 }}>
                   APIs
+                </h2>
+              </div>
+              <div style={{ 
+                padding: '24px',
+                minHeight: '400px'
+              }}>
+                <div style={{
+                  fontSize: '16px',
+                  color: 'var(--shopify-text-secondary)',
+                  fontStyle: 'italic'
+                }}>
+                  Work in Progress
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Settings - Work in Progress */}
+          {activeSection === 'settings' && (
+            <div style={{ width: '100%' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 24px',
+                borderBottom: '1px solid var(--shopify-border)'
+              }}>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: '600',
+                  color: 'var(--shopify-text-primary)',
+                  margin: 0,
+                  letterSpacing: '-0.02em'
+                }}>
+                  Settings
                 </h2>
               </div>
               <div style={{ 
