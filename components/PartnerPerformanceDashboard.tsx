@@ -52,6 +52,8 @@ import {
   Application,
   Email,
   Image,
+  Locked,
+  Help,
 } from '@carbon/icons-react';
 import {
   LineChart,
@@ -559,6 +561,7 @@ const PartnerPerformanceDashboard = () => {
   const [timeRange, setTimeRange] = useState<'hourly' | '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ' | 'custom'>('7d');
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const [plans, setPlans] = useState<PartnerPlans>(mockPartnerPlans);
   const [mapRegion, setMapRegion] = useState('north-america'); // north-america, europe, asia, oceania, africa, global
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
@@ -591,6 +594,56 @@ const PartnerPerformanceDashboard = () => {
   const [customEndDate, setCustomEndDate] = useState('');
   const [isCustomRange, setIsCustomRange] = useState(false);
   
+  // Help menu dropdown state
+  const [showHelpMenu, setShowHelpMenu] = useState(false);
+  const helpMenuRef = useRef<HTMLDivElement>(null);
+  
+  // User menu dropdown state
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Notification state
+  const [showNotificationMenu, setShowNotificationMenu] = useState(false);
+  const notificationMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Mock notifications data
+  const mockNotifications = [
+    {
+      id: 1,
+      title: 'Revenue Alert',
+      message: 'Your revenue dropped 15% compared to last week',
+      time: '2 hours ago',
+      type: 'warning',
+      read: false
+    },
+    {
+      id: 2,
+      title: 'Campaign Status',
+      message: 'Campaign "Summer Sale" has reached 80% of budget',
+      time: '5 hours ago',
+      type: 'info',
+      read: false
+    },
+    {
+      id: 3,
+      title: 'New Feature Available',
+      message: 'Advanced analytics dashboard is now available for paid plans',
+      time: '1 day ago',
+      type: 'info',
+      read: true
+    },
+    {
+      id: 4,
+      title: 'Data Sync Complete',
+      message: 'Your latest performance data has been synced successfully',
+      time: '2 days ago',
+      type: 'success',
+      read: true
+    }
+  ];
+  
+  const unreadCount = mockNotifications.filter(n => !n.read).length;
+  
   // Filter states for detail tabs
   const [chartMetric, setChartMetric] = useState('revenue'); // revenue, clicks, conversions, roas
   const [campaignFilter, setCampaignFilter] = useState('all'); // all, active, completed
@@ -605,6 +658,114 @@ const PartnerPerformanceDashboard = () => {
   // Shop Performance and Creator Performance date filters
   const [shopPerformanceDateFilter, setShopPerformanceDateFilter] = useState<'7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ'>('7d');
   const [creatorPerformanceDateFilter, setCreatorPerformanceDateFilter] = useState<'7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ'>('7d');
+
+  // Table sorting hooks - must be called at top level (Rules of Hooks)
+  // These are called unconditionally to ensure hooks are always called in the same order
+  
+  // Compute filtered campaigns data
+  const filteredCampaigns = React.useMemo(() => {
+    return campaignFilter === 'all' 
+      ? mockWebsitePerformance.campaigns.campaignPerformance
+      : mockWebsitePerformance.campaigns.campaignPerformance.filter(c => c.status === campaignFilter);
+  }, [campaignFilter]);
+
+  // Compute "What's Working Best" items data
+  const allWorkingItems = React.useMemo(() => {
+    const allItems = [
+      ...topPerformingItemsByTrafficSource.realry,
+      ...topPerformingItemsByTrafficSource.css,
+      ...topPerformingItemsByTrafficSource.instagramStories,
+      ...topPerformingItemsByTrafficSource.edm
+    ].filter(item => item.itemType !== 'Banner');
+    
+    const itemsByType = {
+      'Product': allItems.filter(item => item.itemType === 'Product'),
+      'Content': allItems.filter(item => item.itemType === 'Content')
+    };
+    
+    return itemsByType;
+  }, []);
+
+  // Compute Product Optimization Opportunities data
+  const allOptimizationItems = React.useMemo(() => {
+    const allItems = [
+      ...topPerformingItemsByTrafficSource.realry,
+      ...topPerformingItemsByTrafficSource.css,
+      ...topPerformingItemsByTrafficSource.instagramStories,
+      ...topPerformingItemsByTrafficSource.edm
+    ];
+    
+    // Calculate CTR for all items
+    const itemsWithCTR = allItems.map(item => ({
+      ...item,
+      ctr: item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0
+    }));
+    
+    // Sort by CTR and CVR to find thresholds
+    const sortedByCTR = [...itemsWithCTR].sort((a, b) => b.ctr - a.ctr);
+    const sortedByCVR = [...itemsWithCTR].sort((a, b) => b.cvr - a.cvr);
+    
+    // Calculate 25th and 75th percentiles
+    const ctr75th = sortedByCTR[Math.floor(sortedByCTR.length * 0.25)]?.ctr || 0;
+    const ctr25th = sortedByCTR[Math.floor(sortedByCTR.length * 0.75)]?.ctr || 0;
+    const cvr75th = sortedByCVR[Math.floor(sortedByCVR.length * 0.25)]?.cvr || 0;
+    const cvr25th = sortedByCVR[Math.floor(sortedByCVR.length * 0.75)]?.cvr || 0;
+    
+    // High CTR but Low CVR (top 25% CTR, bottom 25% CVR)
+    const highCTRLowCVR = itemsWithCTR
+      .filter(item => item.ctr >= ctr75th && item.cvr <= cvr25th)
+      .sort((a, b) => b.ctr - a.ctr)
+      .slice(0, 3);
+    
+    // High CVR but Low CTR (top 25% CVR, bottom 25% CTR)
+    const highCVRLowCTR = itemsWithCTR
+      .filter(item => item.cvr >= cvr75th && item.ctr <= ctr25th)
+      .sort((a, b) => b.cvr - a.cvr)
+      .slice(0, 3);
+    
+    return { highCTRLowCVR, highCVRLowCTR };
+  }, []);
+
+  // Call all sorting hooks at top level
+  const revenueTableSort = useTableSort(mockRevenueData, 'date');
+  const campaignTableSort = useTableSort(filteredCampaigns, 'revenue');
+  
+  // For "What's Working Best" - we'll create separate hooks for each type
+  const productItemsSort = useTableSort(
+    allWorkingItems['Product']?.slice(0, 5) || [],
+    'clicks'
+  );
+  const contentItemsSort = useTableSort(
+    allWorkingItems['Content']?.slice(0, 5) || [],
+    'clicks'
+  );
+  
+  // For Product Optimization Opportunities
+  const highCTRLowCVRSort = useTableSort(allOptimizationItems.highCTRLowCVR, 'ctr' as any);
+  const highCVRLowCTRSort = useTableSort(allOptimizationItems.highCVRLowCTR, 'cvr');
+
+  // Dynamic performance rank based on time range
+  const performanceRankByTimeRange = React.useMemo(() => {
+    // Mock different percentile values for different time ranges
+    const rankMap: { [key: string]: number } = {
+      'hourly': 82, // Top 18%
+      '7d': 78,     // Top 22%
+      '14d': 75,    // Top 25%
+      '30d': 72,    // Top 28%
+      'thisMonth': 70, // Top 30%
+      'lastMonth': 68, // Top 32%
+      'thisQ': 65,     // Top 35%
+      'lastQ': 63,     // Top 37%
+      'custom': 78     // Default to 7d value
+    };
+    
+    return {
+      percentile: rankMap[timeRange] || 78,
+      rank: 234,
+      totalShops: 1050,
+      category: 'mid-size'
+    };
+  }, [timeRange]);
 
   // Country coordinates mapping for map zoom
   const countryCoordinates: { [key: string]: { center: [number, number], zoom: number } } = {
@@ -743,16 +904,25 @@ const PartnerPerformanceDashboard = () => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
         setShowCustomDatePicker(false);
       }
+      if (helpMenuRef.current && !helpMenuRef.current.contains(event.target as Node)) {
+        setShowHelpMenu(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+      if (notificationMenuRef.current && !notificationMenuRef.current.contains(event.target as Node)) {
+        setShowNotificationMenu(false);
+      }
     };
 
-    if (showCustomDatePicker) {
+    if (showCustomDatePicker || showHelpMenu || showUserMenu || showNotificationMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showCustomDatePicker]);
+  }, [showCustomDatePicker, showHelpMenu, showUserMenu, showNotificationMenu]);
 
   const revenueData = [
     { date: 'Jan 8', revenue: 4200, clicks: 890, conversions: 124, spend: 1200, roas: 3.5 },
@@ -866,42 +1036,69 @@ const PartnerPerformanceDashboard = () => {
       icon: Dashboard, 
       active: true,
       planBadge: null,
-      badge: null
+      badge: null,
+      locked: false,
+      subItems: null
     },
-    ...(hasShopPlan() ? [{
+    {
       id: 'shop-performance',
       label: 'Shop Performance',
       icon: ShoppingCart,
       active: true,
-      planBadge: plans.shop === 'paid' ? 'Paid' : 'Free',
-      badge: null
-    }] : []),
-    ...(hasCreatorPlan() ? [{
+      planBadge: null,
+      badge: null,
+      locked: false,
+      subItems: [
+        {
+          id: 'shop-detail-reports',
+          label: 'Detail Reports',
+          active: true,
+          locked: false
+        },
+        {
+          id: 'shop-bid-campaign',
+          label: 'Campaigns',
+          active: false,
+          locked: true
+        },
+        {
+          id: 'shop-update-images',
+          label: 'Content Management',
+          active: false,
+          locked: true
+        }
+      ]
+    },
+    {
       id: 'creator-performance',
       label: 'Creator Performance',
       icon: User,
-      active: true,
-      planBadge: plans.creator === 'paid' ? 'Paid' : 'Free',
-      badge: null
-    }] : []),
+      active: hasCreatorPlan(),
+      planBadge: hasCreatorPlan() ? (plans.creator === 'paid' ? 'Paid' : 'Free') : null,
+      badge: null,
+      locked: !hasCreatorPlan(),
+      subItems: null
+    },
   ];
 
   const toolsItems = [
     {
-      id: 'analytics',
-      label: 'Analytics',
-      icon: Analytics,
-      active: isShopPaid() || isCreatorPaid(),
-      planBadge: null,
-      badge: null
-    },
-    {
       id: 'documents',
-      label: 'Documents',
+      label: 'APIs',
       icon: Document,
       active: true,
       planBadge: null,
-      badge: null
+      badge: null,
+      locked: false
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: Analytics,
+      active: false,
+      planBadge: null,
+      badge: null,
+      locked: false
     },
   ];
 
@@ -1168,8 +1365,8 @@ const PartnerPerformanceDashboard = () => {
           height: '64px', 
           display: 'flex', 
           alignItems: 'center', 
-          justifyContent: 'space-between',
-          padding: '0 24px',
+          justifyContent: sidebarOpen ? 'space-between' : 'center',
+          padding: sidebarOpen ? '0 24px' : '0',
           borderBottom: '1px solid var(--shopify-border)'
         }}>
           {sidebarOpen && (
@@ -1190,7 +1387,20 @@ const PartnerPerformanceDashboard = () => {
             size="sm"
             hasIconOnly
             iconDescription={sidebarOpen ? 'Close menu' : 'Open menu'}
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={(e) => {
+              setSidebarOpen(!sidebarOpen);
+              // Blur the button to remove focus state
+              const target = e.currentTarget as HTMLElement;
+              if (target) {
+                setTimeout(() => {
+                  target.blur();
+                }, 0);
+              }
+            }}
+            onMouseDown={(e) => {
+              // Prevent focus on mouse down
+              e.preventDefault();
+            }}
             style={{ minWidth: '32px' }}
           >
             {sidebarOpen ? (
@@ -1227,68 +1437,175 @@ const PartnerPerformanceDashboard = () => {
           {generalItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
+            const isExpanded = expandedMenus.has(item.id);
+            const hasSubItems = item.subItems && item.subItems.length > 0;
             
             return (
-              <button
-                key={item.id}
-                onClick={() => item.active && setActiveSection(item.id)}
-                disabled={!item.active}
-                className={`shopify-nav-item ${isActive ? 'active' : ''}`}
-                style={{
-                  marginBottom: '2px',
-                }}
-              >
-                <Icon 
-                  size={20} 
-                  style={{ 
-                    marginRight: sidebarOpen ? '12px' : '0', 
-                    flexShrink: 0,
-                    width: '20px',
-                    height: '20px'
-                  }} 
-                />
-                {sidebarOpen && (
-                  <>
-                    <span style={{ 
-                      flex: 1, 
-                      textAlign: 'left',
-                      lineHeight: '20px'
-                    }}>
-                      {item.label}
-                    </span>
-                    {item.planBadge && (
-                      <Tag
-                        type={item.planBadge === 'Paid' ? 'green' : 'gray'}
-                        size="sm"
-                        style={{ 
-                          marginLeft: '8px',
-                          fontSize: '11px',
-                          padding: '2px 6px',
-                          height: '18px',
-                          lineHeight: '14px'
-                        }}
-                      >
-                        {item.planBadge}
-                      </Tag>
-                    )}
-                    {item.badge && (
-                      <Tag
-                        type={item.badge === 'New' ? 'blue' : 'gray'}
-                        size="sm"
-                        style={{ 
-                          marginLeft: '8px',
-                          fontSize: '11px',
-                          padding: '2px 6px',
-                          height: '18px',
-                          lineHeight: '14px'
-                        }}
-                      >
-                        {item.badge}
-                      </Tag>
-                    )}
-                  </>
+              <div key={item.id}>
+                <button
+                  onClick={(e) => {
+                    if (!item.active) {
+                      e.preventDefault();
+                      return;
+                    }
+                    if (hasSubItems) {
+                      // If sidebar is collapsed, expand it first
+                      if (!sidebarOpen) {
+                        setSidebarOpen(true);
+                        // Then expand the menu after a short delay to allow sidebar animation
+                        setTimeout(() => {
+                          const newExpanded = new Set(expandedMenus);
+                          newExpanded.add(item.id);
+                          setExpandedMenus(newExpanded);
+                        }, 150); // Wait for sidebar expansion animation
+                      } else {
+                        // Toggle sub-menu expansion when sidebar is already open
+                        const newExpanded = new Set(expandedMenus);
+                        if (isExpanded) {
+                          newExpanded.delete(item.id);
+                        } else {
+                          newExpanded.add(item.id);
+                        }
+                        setExpandedMenus(newExpanded);
+                      }
+                    } else {
+                      setActiveSection(item.id);
+                    }
+                  }}
+                  disabled={!item.active}
+                  className={`shopify-nav-item ${isActive && !hasSubItems ? 'active' : ''}`}
+                  style={{
+                    marginBottom: '2px',
+                    opacity: !item.active ? 0.6 : 1,
+                    cursor: !item.active ? 'not-allowed' : 'pointer',
+                    justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                    padding: sidebarOpen ? '10px 12px' : '10px 0'
+                  }}
+                >
+                  <Icon 
+                    size={20} 
+                    style={{ 
+                      marginRight: sidebarOpen ? '12px' : '0', 
+                      flexShrink: 0,
+                      width: '20px',
+                      height: '20px'
+                    }} 
+                  />
+                  {sidebarOpen && (
+                    <>
+                      <span style={{ 
+                        flex: 1, 
+                        textAlign: 'left',
+                        lineHeight: '20px'
+                      }}>
+                        {item.label}
+                      </span>
+                      {hasSubItems && (
+                        <ChevronRight 
+                          size={16} 
+                          style={{ 
+                            marginLeft: '8px',
+                            color: 'var(--shopify-text-secondary)',
+                            flexShrink: 0,
+                            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease'
+                          }} 
+                        />
+                      )}
+                      {item.locked && (
+                        <Locked 
+                          size={14} 
+                          style={{ 
+                            marginLeft: '8px',
+                            color: 'var(--shopify-text-secondary)',
+                            flexShrink: 0
+                          }} 
+                        />
+                      )}
+                      {item.planBadge && (
+                        <Tag
+                          type={item.planBadge === 'Paid' ? 'green' : 'gray'}
+                          size="sm"
+                          style={{ 
+                            marginLeft: '8px',
+                            fontSize: '11px',
+                            padding: '2px 6px',
+                            height: '18px',
+                            lineHeight: '14px'
+                          }}
+                        >
+                          {item.planBadge}
+                        </Tag>
+                      )}
+                      {item.badge && (
+                        <Tag
+                          type={item.badge === 'New' ? 'blue' : 'gray'}
+                          size="sm"
+                          style={{ 
+                            marginLeft: '8px',
+                            fontSize: '11px',
+                            padding: '2px 6px',
+                            height: '18px',
+                            lineHeight: '14px'
+                          }}
+                        >
+                          {item.badge}
+                        </Tag>
+                      )}
+                    </>
+                  )}
+                </button>
+                {sidebarOpen && hasSubItems && isExpanded && (
+                  <div style={{ 
+                    marginLeft: '32px',
+                    marginTop: '2px',
+                    marginBottom: '2px'
+                  }}>
+                    {item.subItems.map((subItem) => {
+                      const isSubActive = activeSection === subItem.id;
+                      return (
+                        <button
+                          key={subItem.id}
+                          onClick={(e) => {
+                            if (!subItem.active) {
+                              e.preventDefault();
+                              return;
+                            }
+                            setActiveSection(subItem.id);
+                          }}
+                          disabled={!subItem.active}
+                          className={`shopify-nav-item ${isSubActive ? 'active' : ''}`}
+                          style={{
+                            marginBottom: '2px',
+                            opacity: !subItem.active ? 0.6 : 1,
+                            cursor: !subItem.active ? 'not-allowed' : 'pointer',
+                            paddingLeft: '12px',
+                            fontSize: '13px'
+                          }}
+                        >
+                          <span style={{ 
+                            flex: 1, 
+                            textAlign: 'left',
+                            lineHeight: '20px'
+                          }}>
+                            {subItem.label}
+                          </span>
+                          {subItem.locked && (
+                            <Locked 
+                              size={14} 
+                              style={{ 
+                                marginLeft: '8px',
+                                color: 'var(--shopify-text-secondary)',
+                                flexShrink: 0
+                              }} 
+                            />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
 
@@ -1314,11 +1631,21 @@ const PartnerPerformanceDashboard = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => item.active && setActiveSection(item.id)}
+                onClick={(e) => {
+                  if (!item.active) {
+                    e.preventDefault();
+                    return;
+                  }
+                  setActiveSection(item.id);
+                }}
                 disabled={!item.active}
                 className={`shopify-nav-item ${isActive ? 'active' : ''}`}
                 style={{
                   marginBottom: '2px',
+                  opacity: !item.active ? 0.6 : 1,
+                  cursor: !item.active ? 'not-allowed' : 'pointer',
+                  justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                  padding: sidebarOpen ? '10px 12px' : '10px 0'
                 }}
               >
                 <Icon 
@@ -1339,6 +1666,16 @@ const PartnerPerformanceDashboard = () => {
                     }}>
                       {item.label}
                     </span>
+                    {item.locked && (
+                      <Locked 
+                        size={14} 
+                        style={{ 
+                          marginLeft: '8px',
+                          color: 'var(--shopify-text-secondary)',
+                          flexShrink: 0
+                        }} 
+                      />
+                    )}
                     {item.planBadge && (
                       <Tag
                         type={item.planBadge === 'Paid' ? 'green' : 'gray'}
@@ -1402,6 +1739,8 @@ const PartnerPerformanceDashboard = () => {
                 className={`shopify-nav-item ${isActive ? 'active' : ''}`}
                 style={{
                   marginBottom: '2px',
+                  justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                  padding: sidebarOpen ? '10px 12px' : '10px 0'
                 }}
               >
                 <Icon 
@@ -1534,94 +1873,455 @@ const PartnerPerformanceDashboard = () => {
 
           {/* Right: Icons and User Profile */}
           <div ref={datePickerRef} style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
-            {/* Refresh, Icons */}
-            <button
-              style={{
-                width: '36px',
-                height: '36px',
-                border: 'none',
-                background: 'transparent',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--shopify-text-secondary)',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
-                e.currentTarget.style.color = 'var(--shopify-text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--shopify-text-secondary)';
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 3v6h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                <path d="M9 15v-6H3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </button>
-            
-            <button
-              style={{
-                width: '36px',
-                height: '36px',
-                border: 'none',
-                background: 'transparent',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--shopify-text-secondary)',
-                transition: 'all 0.15s ease',
-                position: 'relative'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
-                e.currentTarget.style.color = 'var(--shopify-text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--shopify-text-secondary)';
-              }}
-            >
-              <Notification size={18} />
-            </button>
+            {/* Notification Button */}
+            <div ref={notificationMenuRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowNotificationMenu(!showNotificationMenu)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                }}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--shopify-text-secondary)',
+                  transition: 'all 0.15s ease',
+                  position: 'relative'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                  e.currentTarget.style.color = 'var(--shopify-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--shopify-text-secondary)';
+                }}
+              >
+                <Notification size={18} />
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '6px',
+                    right: '6px',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: '#d72c0d',
+                    border: '2px solid white',
+                    boxShadow: '0 0 0 1px var(--shopify-gray-50)'
+                  }} />
+                )}
+              </button>
+              
+              {/* Notification Dropdown Menu */}
+              {showNotificationMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '8px',
+                  backgroundColor: 'white',
+                  border: '1px solid var(--shopify-border)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                  minWidth: '320px',
+                  maxWidth: '400px',
+                  maxHeight: '500px',
+                  overflowY: 'auto',
+                  zIndex: 1000
+                }}>
+                  {/* Header */}
+                  <div style={{
+                    padding: '16px',
+                    borderBottom: '1px solid var(--shopify-border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: 'var(--shopify-text-primary)',
+                      margin: 0
+                    }}>
+                      Notifications
+                    </h3>
+                    {unreadCount > 0 && (
+                      <span style={{
+                        fontSize: '12px',
+                        color: 'var(--shopify-text-secondary)',
+                        fontWeight: '500'
+                      }}>
+                        {unreadCount} new
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Notifications List */}
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    {mockNotifications.length === 0 ? (
+                      <div style={{
+                        padding: '24px',
+                        textAlign: 'center',
+                        color: 'var(--shopify-text-secondary)',
+                        fontSize: '14px'
+                      }}>
+                        No notifications
+                      </div>
+                    ) : (
+                      mockNotifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          onClick={() => {
+                            // Mark as read when clicked
+                            // In real app, this would update the notification state
+                            setShowNotificationMenu(false);
+                          }}
+                          style={{
+                            padding: '12px 16px',
+                            borderBottom: '1px solid var(--shopify-border)',
+                            cursor: 'pointer',
+                            backgroundColor: notification.read ? 'transparent' : 'var(--shopify-gray-50)',
+                            transition: 'background-color 0.15s ease',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = notification.read ? 'var(--shopify-gray-50)' : '#f0f0f0';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = notification.read ? 'transparent' : 'var(--shopify-gray-50)';
+                          }}
+                        >
+                          <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: 
+                              notification.type === 'warning' ? '#f49342' :
+                              notification.type === 'success' ? '#008060' :
+                              '#0f62fe',
+                            marginTop: '6px',
+                            flexShrink: 0,
+                            opacity: notification.read ? 0.3 : 1
+                          }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: '14px',
+                              fontWeight: notification.read ? '400' : '600',
+                              color: 'var(--shopify-text-primary)',
+                              marginBottom: '4px',
+                              lineHeight: '1.4'
+                            }}>
+                              {notification.title}
+                            </div>
+                            <div style={{
+                              fontSize: '13px',
+                              color: 'var(--shopify-text-secondary)',
+                              marginBottom: '4px',
+                              lineHeight: '1.4'
+                            }}>
+                              {notification.message}
+                            </div>
+                            <div style={{
+                              fontSize: '11px',
+                              color: 'var(--shopify-text-secondary)',
+                              opacity: 0.7
+                            }}>
+                              {notification.time}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  {/* Footer */}
+                  {mockNotifications.length > 0 && (
+                    <div style={{
+                      padding: '12px 16px',
+                      borderTop: '1px solid var(--shopify-border)',
+                      textAlign: 'center'
+                    }}>
+                      <button
+                        onClick={() => {
+                          alert('View all notifications');
+                          setShowNotificationMenu(false);
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#7256F6',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          transition: 'background-color 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        View all notifications
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Help Menu Button */}
+            <div ref={helpMenuRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowHelpMenu(!showHelpMenu)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                }}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--shopify-text-secondary)',
+                  transition: 'all 0.15s ease',
+                  position: 'relative'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                  e.currentTarget.style.color = 'var(--shopify-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--shopify-text-secondary)';
+                }}
+              >
+                <Help size={18} />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {showHelpMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '8px',
+                  backgroundColor: 'white',
+                  border: '1px solid var(--shopify-border)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                  minWidth: '180px',
+                  zIndex: 1000,
+                  overflow: 'hidden'
+                }}>
+                  <button
+                    onClick={() => {
+                      alert('Get more help');
+                      setShowHelpMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: 'none',
+                      background: 'transparent',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: 'var(--shopify-text-primary)',
+                      transition: 'background-color 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    Get more help
+                  </button>
+                  <button
+                    onClick={() => {
+                      alert('Send feedback');
+                      setShowHelpMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: 'none',
+                      background: 'transparent',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: 'var(--shopify-text-primary)',
+                      transition: 'background-color 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      borderTop: '1px solid var(--shopify-border)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    Send feedback
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* User Profile */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'background-color 0.15s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <UserAvatar size={32} />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: 'var(--shopify-text-primary)',
-                  lineHeight: '1.2'
+            <div ref={userMenuRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                }}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '2px',
+                  transition: 'all 0.15s ease',
+                  position: 'relative'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!showUserMenu) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                <img 
+                  src="/avatar.png" 
+                  alt="User avatar"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    objectFit: 'cover'
+                  }}
+                />
+              </button>
+              
+              {/* User Dropdown Menu */}
+              {showUserMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '8px',
+                  backgroundColor: 'white',
+                  border: '1px solid var(--shopify-border)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                  minWidth: '220px',
+                  zIndex: 1000,
+                  overflow: 'hidden'
                 }}>
-                  Partner Demo
-                </span>
-                <span style={{
-                  fontSize: '12px',
-                  color: 'var(--shopify-text-secondary)',
-                  lineHeight: '1.2'
-                }}>
-                  Business
-                </span>
-              </div>
+                  {/* User Info Section */}
+                  <div style={{
+                    padding: '16px',
+                    borderBottom: '1px solid var(--shopify-border)'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      marginBottom: '8px'
+                    }}>
+                      <img 
+                        src="/avatar.png" 
+                        alt="User avatar"
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: 'var(--shopify-text-primary)',
+                          lineHeight: '1.4',
+                          marginBottom: '2px'
+                        }}>
+                          Partner Demo
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: 'var(--shopify-text-secondary)',
+                          lineHeight: '1.4'
+                        }}>
+                          Business
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Menu Items */}
+                  <div style={{ padding: '4px 0' }}>
+                    <button
+                      onClick={() => {
+                        alert('Sign out');
+                        setShowUserMenu(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: 'none',
+                        background: 'transparent',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        color: 'var(--shopify-text-primary)',
+                        transition: 'background-color 0.15s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Custom Date Range Picker Dropdown */}
@@ -2028,71 +2728,68 @@ const PartnerPerformanceDashboard = () => {
                       Source of truth: Daily revenue breakdown with detailed metrics
                     </p>
                   </div>
-                  {(() => {
-                    const { sortedData, sortConfig, handleSort } = useTableSort(mockRevenueData, 'date');
-                    return (
-                      <Table>
+                  <Table>
                         <TableHead>
                           <TableRow>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('date' as keyof typeof mockRevenueData[0])}
+                              onClick={() => revenueTableSort.handleSort('date' as keyof typeof mockRevenueData[0])}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 Date
-                                {sortConfig?.key === 'date' && (
-                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                {revenueTableSort.sortConfig?.key === 'date' && (
+                                  revenueTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                 )}
                               </div>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('revenue' as keyof typeof mockRevenueData[0])}
+                              onClick={() => revenueTableSort.handleSort('revenue' as keyof typeof mockRevenueData[0])}
                             >
                               <MetricTooltip metric="Revenue">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   Revenue
-                                  {sortConfig?.key === 'revenue' && (
-                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  {revenueTableSort.sortConfig?.key === 'revenue' && (
+                                    revenueTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                   )}
                                 </div>
                               </MetricTooltip>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('clicks' as keyof typeof mockRevenueData[0])}
+                              onClick={() => revenueTableSort.handleSort('clicks' as keyof typeof mockRevenueData[0])}
                             >
                               <MetricTooltip metric="Clicks">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   Clicks
-                                  {sortConfig?.key === 'clicks' && (
-                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  {revenueTableSort.sortConfig?.key === 'clicks' && (
+                                    revenueTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                   )}
                                 </div>
                               </MetricTooltip>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('conversions' as keyof typeof mockRevenueData[0])}
+                              onClick={() => revenueTableSort.handleSort('conversions' as keyof typeof mockRevenueData[0])}
                             >
                               <MetricTooltip metric="Conversions">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   Conversions
-                                  {sortConfig?.key === 'conversions' && (
-                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  {revenueTableSort.sortConfig?.key === 'conversions' && (
+                                    revenueTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                   )}
                                 </div>
                               </MetricTooltip>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('roas' as keyof typeof mockRevenueData[0])}
+                              onClick={() => revenueTableSort.handleSort('roas' as keyof typeof mockRevenueData[0])}
                             >
                               <MetricTooltip metric="ROAS">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   ROAS
-                                  {sortConfig?.key === 'roas' && (
-                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  {revenueTableSort.sortConfig?.key === 'roas' && (
+                                    revenueTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                   )}
                                 </div>
                               </MetricTooltip>
@@ -2107,7 +2804,7 @@ const PartnerPerformanceDashboard = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {sortedData.map((row, index) => (
+                          {revenueTableSort.sortedData.map((row, index) => (
                             <TableRow key={index}>
                               <TableCell>{row.date}</TableCell>
                               <TableCell>${row.revenue.toLocaleString()}</TableCell>
@@ -2119,8 +2816,6 @@ const PartnerPerformanceDashboard = () => {
                           ))}
                         </TableBody>
                       </Table>
-                    );
-                  })()}
                   </div>
                 </div>
 
@@ -2166,115 +2861,109 @@ const PartnerPerformanceDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  {(() => {
-                    const filteredCampaigns = campaignFilter === 'all' 
-                      ? mockWebsitePerformance.campaigns.campaignPerformance
-                      : mockWebsitePerformance.campaigns.campaignPerformance.filter(c => c.status === campaignFilter);
-                    const { sortedData, sortConfig, handleSort } = useTableSort(filteredCampaigns, 'revenue');
-                    return (
-                      <Table>
+                  <Table>
                         <TableHead>
                           <TableRow>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('name' as keyof typeof filteredCampaigns[0])}
+                              onClick={() => campaignTableSort.handleSort('name' as keyof typeof filteredCampaigns[0])}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 Campaign Name
-                                {sortConfig?.key === 'name' && (
-                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                {campaignTableSort.sortConfig?.key === 'name' && (
+                                  campaignTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                 )}
                               </div>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('type' as keyof typeof filteredCampaigns[0])}
+                              onClick={() => campaignTableSort.handleSort('type' as keyof typeof filteredCampaigns[0])}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 Type
-                                {sortConfig?.key === 'type' && (
-                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                {campaignTableSort.sortConfig?.key === 'type' && (
+                                  campaignTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                 )}
                               </div>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('status' as keyof typeof filteredCampaigns[0])}
+                              onClick={() => campaignTableSort.handleSort('status' as keyof typeof filteredCampaigns[0])}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 Status
-                                {sortConfig?.key === 'status' && (
-                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                {campaignTableSort.sortConfig?.key === 'status' && (
+                                  campaignTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                 )}
                               </div>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('clicks' as keyof typeof filteredCampaigns[0])}
+                              onClick={() => campaignTableSort.handleSort('clicks' as keyof typeof filteredCampaigns[0])}
                             >
                               <MetricTooltip metric="Clicks">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   Clicks
-                                  {sortConfig?.key === 'clicks' && (
-                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  {campaignTableSort.sortConfig?.key === 'clicks' && (
+                                    campaignTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                   )}
                                 </div>
                               </MetricTooltip>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('conversions' as keyof typeof filteredCampaigns[0])}
+                              onClick={() => campaignTableSort.handleSort('conversions' as keyof typeof filteredCampaigns[0])}
                             >
                               <MetricTooltip metric="Conversions">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   Conversions
-                                  {sortConfig?.key === 'conversions' && (
-                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  {campaignTableSort.sortConfig?.key === 'conversions' && (
+                                    campaignTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                   )}
                                 </div>
                               </MetricTooltip>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('revenue' as keyof typeof filteredCampaigns[0])}
+                              onClick={() => campaignTableSort.handleSort('revenue' as keyof typeof filteredCampaigns[0])}
                             >
                               <MetricTooltip metric="Revenue">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   Revenue
-                                  {sortConfig?.key === 'revenue' && (
-                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  {campaignTableSort.sortConfig?.key === 'revenue' && (
+                                    campaignTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                   )}
                                 </div>
                               </MetricTooltip>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('roas' as keyof typeof filteredCampaigns[0])}
+                              onClick={() => campaignTableSort.handleSort('roas' as keyof typeof filteredCampaigns[0])}
                             >
                               <MetricTooltip metric="ROAS">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   ROAS
-                                  {sortConfig?.key === 'roas' && (
-                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                  {campaignTableSort.sortConfig?.key === 'roas' && (
+                                    campaignTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                   )}
                                 </div>
                               </MetricTooltip>
                             </TableHeader>
                             <TableHeader 
                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                              onClick={() => handleSort('spend' as keyof typeof filteredCampaigns[0])}
+                              onClick={() => campaignTableSort.handleSort('spend' as keyof typeof filteredCampaigns[0])}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 Spend
-                                {sortConfig?.key === 'spend' && (
-                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                {campaignTableSort.sortConfig?.key === 'spend' && (
+                                  campaignTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                 )}
                               </div>
                             </TableHeader>
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {sortedData.map((campaign) => (
+                          {campaignTableSort.sortedData.map((campaign) => (
                             <TableRow key={campaign.id}>
                               <TableCell>{campaign.name}</TableCell>
                               <TableCell>{campaign.type}</TableCell>
@@ -2292,8 +2981,6 @@ const PartnerPerformanceDashboard = () => {
                           ))}
                         </TableBody>
                       </Table>
-                    );
-                  })()}
                   </div>
                 </div>
 
@@ -2912,9 +3599,9 @@ const PartnerPerformanceDashboard = () => {
             )}
           </FeatureGate>
 
-          {activeSection === 'dashboard' && (
+          {activeSection === 'documents' && (
             <div style={{ width: '100%' }}>
-              {/* Dashboard Title and Controls */}
+              {/* APIs Title and Controls */}
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -2929,8 +3616,81 @@ const PartnerPerformanceDashboard = () => {
                   margin: 0,
                   letterSpacing: '-0.02em'
                 }}>
-                  Dashboard
+                  APIs
                 </h2>
+              </div>
+              <div style={{ 
+                padding: '24px',
+                minHeight: '400px'
+              }}>
+                <div style={{
+                  fontSize: '16px',
+                  color: 'var(--shopify-text-secondary)',
+                  fontStyle: 'italic'
+                }}>
+                  Work in Progress
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'dashboard' && (
+            <div style={{ width: '100%' }}>
+              {/* Dashboard Title and Controls */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 24px',
+                borderBottom: '1px solid var(--shopify-border)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <h2 style={{
+                    fontSize: '24px',
+                    fontWeight: '600',
+                    color: 'var(--shopify-text-primary)',
+                    margin: 0,
+                    letterSpacing: '-0.02em'
+                  }}>
+                    Dashboard
+                  </h2>
+                  
+                  {/* Performance Rank Badge - Inline */}
+                  {performanceRankByTimeRange && (
+                    <div style={{ 
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 12px',
+                      backgroundColor: performanceRankByTimeRange.percentile >= 75 
+                        ? '#f0edff'
+                        : performanceRankByTimeRange.percentile >= 50
+                        ? '#e8f4f8'
+                        : '#f6f6f7',
+                      border: '1px solid var(--shopify-border)',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      color: 'var(--shopify-text-secondary)'
+                    }}>
+                      <span style={{ 
+                        fontWeight: '500',
+                        color: 'var(--shopify-text-primary)'
+                      }}>
+                        Performance rank:
+                      </span>
+                      <span style={{ 
+                        fontWeight: '600',
+                        color: performanceRankByTimeRange.percentile >= 75 
+                          ? '#7256F6'
+                          : performanceRankByTimeRange.percentile >= 50
+                          ? '#0072c3'
+                          : '#6d7175'
+                      }}>
+                        Top {100 - performanceRankByTimeRange.percentile}%
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                   {/* Date Range Dropdown */}
                   <select
@@ -3082,69 +3842,12 @@ const PartnerPerformanceDashboard = () => {
                 </div>
               </div>
 
-              {/* Performance Rank - Subtle */}
-              {mockWebsitePerformance.performanceRank && (
-                <div style={{ 
-                  margin: '24px',
-                  padding: '12px 24px',
-                  backgroundColor: mockWebsitePerformance.performanceRank.percentile >= 75 
-                    ? '#f0edff'
-                    : mockWebsitePerformance.performanceRank.percentile >= 50
-                    ? '#e8f4f8'
-                    : '#f6f6f7',
-                  border: '1px solid var(--shopify-border)',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  fontSize: '13px',
-                  color: 'var(--shopify-text-secondary)'
-                }}>
-                  <span style={{ 
-                    fontWeight: '500',
-                    color: 'var(--shopify-text-primary)'
-                  }}>
-                    Performance rank:
-                  </span>
-                  <span style={{ 
-                    fontWeight: '600',
-                    color: mockWebsitePerformance.performanceRank.percentile >= 75 
-                      ? '#7256F6'
-                      : mockWebsitePerformance.performanceRank.percentile >= 50
-                      ? '#0072c3'
-                      : '#6d7175'
-                  }}>
-                    {isShopPaid() 
-                      ? `#${mockWebsitePerformance.performanceRank.rank.toLocaleString()} of ${mockWebsitePerformance.performanceRank.totalShops.toLocaleString()}`
-                      : `Top ${100 - mockWebsitePerformance.performanceRank.percentile}%`
-                    }
-                  </span>
-                  {!isShopPaid() && (
-                    <span 
-                      style={{ 
-                        marginLeft: 'auto',
-                        fontSize: '12px',
-                        color: 'var(--shopify-text-secondary)',
-                        textDecoration: 'none',
-                        cursor: 'pointer',
-                        transition: 'color 0.15s ease'
-                      }} 
-                      onClick={() => alert('Navigate to upgrade page')}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#7256F6'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = 'var(--shopify-text-secondary)'}
-                    >
-                      View details →
-                    </span>
-                  )}
-                </div>
-              )}
-
               {/* 1. Recent Activity & Live Performance */}
               <div style={{ 
-                marginTop: '24px',
+                marginTop: '16px',
                 marginLeft: '24px',
                 marginRight: '24px',
-                marginBottom: '24px',
+                marginBottom: '16px',
               }}>
                 <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
                   {/* Left Panel - Historical Comparison */}
@@ -3153,10 +3856,10 @@ const PartnerPerformanceDashboard = () => {
                       backgroundColor: 'white',
                       borderRadius: '8px',
                       border: '1px solid var(--shopify-border)',
-                      padding: '24px',
+                      padding: '16px',
                       height: '100%'
                     }}>
-                      <h4 style={{ fontSize: '14px', fontWeight: '400', color: '#202124', marginBottom: '20px' }}>
+                      <h4 style={{ fontSize: '13px', fontWeight: '400', color: '#202124', marginBottom: '12px' }}>
                         {timeRange === 'hourly' ? 'Hourly' :
                          timeRange === '7d' ? 'Last 7 days' :
                          timeRange === '14d' ? 'Last 14 days' :
@@ -3239,7 +3942,7 @@ const PartnerPerformanceDashboard = () => {
                         return (
                           <>
                             {/* KPI Cards - Last 7 Days vs Previous */}
-                            <div style={{ display: 'flex', gap: '32px', marginBottom: '24px' }}>
+                            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                               {(['newUsers', 'totalUsers', 'impressions', 'returningUsers'] as const).map((metric) => {
                                 const isSelected = dashboardMetric === metric;
                                 const info = metricInfo[metric];
@@ -3251,8 +3954,8 @@ const PartnerPerformanceDashboard = () => {
                                     style={{ 
                                       flex: 1,
                                       cursor: 'pointer',
-                                      padding: '16px',
-                                      borderRadius: '8px',
+                                      padding: '12px',
+                                      borderRadius: '6px',
                                       border: isSelected ? '1px solid #e8f0fe' : '1px solid transparent',
                                       borderLeft: isSelected ? '3px solid #1a73e8' : '3px solid transparent',
                                       backgroundColor: isSelected ? '#f8f9ff' : 'transparent',
@@ -3276,36 +3979,36 @@ const PartnerPerformanceDashboard = () => {
                                     {isSelected && (
                                       <div style={{
                                         position: 'absolute',
-                                        top: '12px',
-                                        right: '12px',
-                                        width: '6px',
-                                        height: '6px',
+                                        top: '8px',
+                                        right: '8px',
+                                        width: '5px',
+                                        height: '5px',
                                         borderRadius: '50%',
                                         backgroundColor: '#1a73e8',
                                         boxShadow: '0 0 0 2px rgba(26, 115, 232, 0.2)'
                                       }} />
                                     )}
                                     <div style={{ 
-                                      fontSize: '13px', 
+                                      fontSize: '12px', 
                                       color: isSelected ? '#1a73e8' : '#5f6368', 
-                                      marginBottom: '6px', 
+                                      marginBottom: '4px', 
                                       fontWeight: isSelected ? '500' : '400',
                                       transition: 'all 0.2s ease'
                                     }}>
                                       {info.label}
                                     </div>
                                     <div style={{ 
-                                      fontSize: '28px', 
+                                      fontSize: '22px', 
                                       fontWeight: isSelected ? '500' : '400', 
                                       color: '#202124', 
                                       lineHeight: '1.2', 
-                                      marginBottom: '4px',
+                                      marginBottom: '2px',
                                       transition: 'all 0.2s ease'
                                     }}>
                                       {info.value}
                                     </div>
-                                    <div style={{ fontSize: '13px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '400' }}>
-                                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <div style={{ fontSize: '12px', color: '#d93025', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '400' }}>
+                                      <svg width="8" height="8" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M5 8L1 4H9L5 8Z" fill="#d93025"/>
                                       </svg>
                                       {info.change}
@@ -3316,8 +4019,8 @@ const PartnerPerformanceDashboard = () => {
                             </div>  
 
                             {/* Comparison Line Chart */}
-                            <div style={{ marginTop: '20px' }}>
-                              <ResponsiveContainer width="100%" height={280}>
+                            <div style={{ marginTop: '12px' }}>
+                              <ResponsiveContainer width="100%" height={200}>
                                 <LineChart 
                                   data={metricData[dashboardMetric].data}
                                   margin={{ top: 20, right: 10, left: 25, bottom: 5 }}
@@ -3414,10 +4117,10 @@ const PartnerPerformanceDashboard = () => {
                                   />
                                 </LineChart>
                               </ResponsiveContainer>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '12px' }}>
-                                <div style={{ fontSize: '13px', color: '#1a73e8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '8px' }}>
+                                <div style={{ fontSize: '12px', color: '#1a73e8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   View reports snapshot
-                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M6 3L11 8L6 13" stroke="#1a73e8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                   </svg>
                                 </div>
@@ -3435,27 +4138,27 @@ const PartnerPerformanceDashboard = () => {
                       backgroundColor: 'white',
                       borderRadius: '8px',
                       border: '1px solid var(--shopify-border)',
-                      padding: '24px',
+                      padding: '16px',
                       height: '100%'
                     }}>
                       {/* Live Metric */}
-                      <div style={{ marginBottom: '24px' }}>
-                        <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '8px', fontWeight: '400', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <div style={{ marginBottom: '16px' }}>
+                        <div style={{ fontSize: '12px', color: '#5f6368', marginBottom: '6px', fontWeight: '400', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" fill="#34a853"/>
                             <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" stroke="white" strokeWidth="2"/>
                           </svg>
                           ACTIVE USERS IN LAST 30 MINUTES
                         </div>
-                        <div style={{ fontSize: '40px', fontWeight: '400', color: '#202124', lineHeight: 1 }}>436</div>
+                        <div style={{ fontSize: '32px', fontWeight: '400', color: '#202124', lineHeight: 1 }}>436</div>
                       </div>
 
                       {/* Orders Per Minute Chart */}
-                      <div style={{ marginBottom: '24px' }}>
-                        <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '12px', fontWeight: '400' }}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <div style={{ fontSize: '12px', color: '#5f6368', marginBottom: '8px', fontWeight: '400' }}>
                           Active users per minute
                         </div>
-                        <ResponsiveContainer width="100%" height={80}>
+                        <ResponsiveContainer width="100%" height={60}>
                           <BarChart data={[
                             { time: '1', value: 12 },
                             { time: '2', value: 18 },
@@ -3507,11 +4210,11 @@ const PartnerPerformanceDashboard = () => {
                           justifyContent: 'space-between',
                           fontSize: '11px',
                           color: 'var(--shopify-text-secondary)',
-                          marginBottom: '12px',
+                          marginBottom: '8px',
                           fontWeight: '600',
                           textTransform: 'uppercase',
                           borderBottom: '1px solid var(--shopify-border)',
-                          paddingBottom: '8px'
+                          paddingBottom: '6px'
                         }}>
                           <span>Country</span>
                           <span>Active Users</span>
@@ -3528,7 +4231,7 @@ const PartnerPerformanceDashboard = () => {
                           const barWidth = (item.users / maxUsers) * 100;
                           
                           return (
-                            <div key={index} style={{ marginBottom: '12px' }}>
+                            <div key={index} style={{ marginBottom: '8px' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                 <span style={{ fontSize: '13px', color: 'var(--shopify-text-primary)', fontWeight: '500' }}>
                                   {item.country}
@@ -3556,9 +4259,9 @@ const PartnerPerformanceDashboard = () => {
                           );
                         })}
 
-                        <div style={{ fontSize: '13px', color: '#1a73e8', textAlign: 'right', marginTop: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                        <div style={{ fontSize: '12px', color: '#1a73e8', textAlign: 'right', marginTop: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
                           View realtime
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M6 3L11 8L6 13" stroke="#1a73e8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </div>
@@ -3599,125 +4302,15 @@ const PartnerPerformanceDashboard = () => {
                     }));
                     const aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformanceWeekly);
 
+                    // Calculate AOV and RPC for weekend and weekday
+                    const weekendAOV = aggregatedData.weekend.conversions > 0 ? aggregatedData.weekend.revenue / aggregatedData.weekend.conversions : 0;
+                    const weekdayAOV = aggregatedData.weekday.conversions > 0 ? aggregatedData.weekday.revenue / aggregatedData.weekday.conversions : 0;
+                    const weekendRPC = aggregatedData.weekend.clicks > 0 ? aggregatedData.weekend.revenue / aggregatedData.weekend.clicks : 0;
+                    const weekdayRPC = aggregatedData.weekday.clicks > 0 ? aggregatedData.weekday.revenue / aggregatedData.weekday.clicks : 0;
+
                     return (
                       <>
                         <Grid narrow style={{ paddingLeft: 0, paddingRight: 0 }}>
-                    {/* Clicks */}
-                    <Column lg={4} md={6} sm={12}>
-                      <div className="shopify-metric-card">
-                        <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
-                          <div className="shopify-metric-label" style={{ marginBottom: '6px' }}>
-                            Total Clicks
-                          </div>
-                          <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
-                            {aggregatedData.weekend.clicks.toLocaleString()} / {aggregatedData.weekday.clicks.toLocaleString()}
-                          </div>
-                        </div>
-                        <div style={{ 
-                          width: '100%', 
-                          height: '140px',
-                          padding: '0 24px 24px 24px'
-                        }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[{ name: 'Weekend', value: aggregatedData.weekend.clicks }, { name: 'Weekday', value: aggregatedData.weekday.clicks }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
-                              <XAxis 
-                                dataKey="name" 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                axisLine={false}
-                                tickLine={false}
-                              />
-                              <YAxis 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                axisLine={false}
-                                tickLine={false}
-                                width={40}
-                                tickFormatter={(value: number) => {
-                                  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
-                                  return value.toString();
-                                }}
-                              />
-                              <Tooltip 
-                                contentStyle={{ 
-                                  backgroundColor: 'white', 
-                                  border: '1px solid var(--shopify-border)',
-                                  borderRadius: '6px',
-                                  padding: '4px 8px',
-                                  fontSize: '12px'
-                                }}
-                                formatter={(value: number) => value.toLocaleString()}
-                              />
-                              <Bar 
-                                dataKey="value" 
-                                radius={[4, 4, 0, 0]}
-                              >
-                                <Cell fill="#0f62fe" />
-                                <Cell fill="#6fa8ff" />
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </Column>
-
-                    {/* Conversions */}
-                    <Column lg={4} md={6} sm={12}>
-                      <div className="shopify-metric-card">
-                        <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
-                          <div className="shopify-metric-label" style={{ marginBottom: '6px' }}>
-                            Conversions
-                          </div>
-                          <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
-                            {aggregatedData.weekend.conversions.toLocaleString()} / {aggregatedData.weekday.conversions.toLocaleString()}
-                          </div>
-                        </div>
-                        <div style={{ 
-                          width: '100%', 
-                          height: '140px',
-                          padding: '0 24px 24px 24px'
-                        }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[{ name: 'Weekend', value: aggregatedData.weekend.conversions }, { name: 'Weekday', value: aggregatedData.weekday.conversions }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
-                              <XAxis 
-                                dataKey="name" 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                axisLine={false}
-                                tickLine={false}
-                              />
-                              <YAxis 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                axisLine={false}
-                                tickLine={false}
-                                width={40}
-                                tickFormatter={(value: number) => {
-                                  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
-                                  return value.toString();
-                                }}
-                              />
-                              <Tooltip 
-                                contentStyle={{ 
-                                  backgroundColor: 'white', 
-                                  border: '1px solid var(--shopify-border)',
-                                  borderRadius: '6px',
-                                  padding: '4px 8px',
-                                  fontSize: '12px'
-                                }}
-                                formatter={(value: number) => value.toLocaleString()}
-                              />
-                              <Bar 
-                                dataKey="value" 
-                                radius={[4, 4, 0, 0]}
-                              >
-                                <Cell fill="#0f62fe" />
-                                <Cell fill="#6fa8ff" />
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </Column>
-
                     {/* Revenue */}
                     <Column lg={4} md={6} sm={12}>
                       <div className="shopify-metric-card">
@@ -3726,7 +4319,7 @@ const PartnerPerformanceDashboard = () => {
                             Revenue
                           </div>
                           <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
-                            ${(aggregatedData.weekend.revenue / 1000).toFixed(1)}K / ${(aggregatedData.weekday.revenue / 1000).toFixed(1)}K
+                            ${(aggregatedData.weekday.revenue / 1000).toFixed(1)}K / ${(aggregatedData.weekend.revenue / 1000).toFixed(1)}K
                           </div>
                         </div>
                         <div style={{ 
@@ -3735,7 +4328,7 @@ const PartnerPerformanceDashboard = () => {
                           padding: '0 24px 24px 24px'
                         }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[{ name: 'Weekend', value: aggregatedData.weekend.revenue }, { name: 'Weekday', value: aggregatedData.weekday.revenue }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                            <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.revenue }, { name: 'Weekend', value: aggregatedData.weekend.revenue }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                               <XAxis 
                                 dataKey="name" 
@@ -3767,8 +4360,8 @@ const PartnerPerformanceDashboard = () => {
                                 dataKey="value" 
                                 radius={[4, 4, 0, 0]}
                               >
-                                <Cell fill="#0f62fe" />
                                 <Cell fill="#6fa8ff" />
+                                <Cell fill="#0f62fe" />
                               </Bar>
                             </BarChart>
                           </ResponsiveContainer>
@@ -3776,19 +4369,15 @@ const PartnerPerformanceDashboard = () => {
                       </div>
                     </Column>
 
-                    {/* CVR */}
+                    {/* Conversions */}
                     <Column lg={4} md={6} sm={12}>
                       <div className="shopify-metric-card">
                         <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
                           <div className="shopify-metric-label" style={{ marginBottom: '6px' }}>
-                            CVR
+                            Conversions
                           </div>
                           <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
-                            {aggregatedData.weekend.cvr.toFixed(1)}% / {aggregatedData.weekday.cvr.toFixed(1)}%
-                          </div>
-                          <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                            <span>Weekend</span>
-                            <span>Weekday</span>
+                            {aggregatedData.weekday.conversions.toLocaleString()} / {aggregatedData.weekend.conversions.toLocaleString()}
                           </div>
                         </div>
                         <div style={{ 
@@ -3797,7 +4386,7 @@ const PartnerPerformanceDashboard = () => {
                           padding: '0 24px 24px 24px'
                         }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[{ name: 'Weekend', value: aggregatedData.weekend.cvr }, { name: 'Weekday', value: aggregatedData.weekday.cvr }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                            <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.conversions }, { name: 'Weekend', value: aggregatedData.weekend.conversions }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                               <XAxis 
                                 dataKey="name" 
@@ -3810,7 +4399,10 @@ const PartnerPerformanceDashboard = () => {
                                 axisLine={false}
                                 tickLine={false}
                                 width={40}
-                                tickFormatter={(value: number) => `${value.toFixed(0)}%`}
+                                tickFormatter={(value: number) => {
+                                  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                                  return value.toString();
+                                }}
                               />
                               <Tooltip 
                                 contentStyle={{ 
@@ -3820,14 +4412,124 @@ const PartnerPerformanceDashboard = () => {
                                   padding: '4px 8px',
                                   fontSize: '12px'
                                 }}
-                                formatter={(value: number) => `${value.toFixed(1)}%`}
+                                formatter={(value: number) => value.toLocaleString()}
                               />
                               <Bar 
                                 dataKey="value" 
                                 radius={[4, 4, 0, 0]}
                               >
-                                <Cell fill="#0f62fe" />
                                 <Cell fill="#6fa8ff" />
+                                <Cell fill="#0f62fe" />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </Column>
+
+                    {/* AOV */}
+                    <Column lg={4} md={6} sm={12}>
+                      <div className="shopify-metric-card">
+                        <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '6px' }}>
+                            AOV
+                          </div>
+                          <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
+                            ${weekdayAOV.toFixed(2)} / ${weekendAOV.toFixed(2)}
+                          </div>
+                        </div>
+                        <div style={{ 
+                          width: '100%', 
+                          height: '140px',
+                          padding: '0 24px 24px 24px'
+                        }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={[{ name: 'Weekday', value: weekdayAOV }, { name: 'Weekend', value: weekendAOV }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                              <XAxis 
+                                dataKey="name" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
+                              />
+                              <YAxis 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
+                                width={40}
+                                tickFormatter={(value: number) => `$${value.toFixed(0)}`}
+                              />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: 'white', 
+                                  border: '1px solid var(--shopify-border)',
+                                  borderRadius: '6px',
+                                  padding: '4px 8px',
+                                  fontSize: '12px'
+                                }}
+                                formatter={(value: number) => `$${value.toFixed(2)}`}
+                              />
+                              <Bar 
+                                dataKey="value" 
+                                radius={[4, 4, 0, 0]}
+                              >
+                                <Cell fill="#6fa8ff" />
+                                <Cell fill="#0f62fe" />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </Column>
+
+                    {/* RPC */}
+                    <Column lg={4} md={6} sm={12}>
+                      <div className="shopify-metric-card">
+                        <div style={{ padding: '24px 24px 0 24px', marginBottom: '24px' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '6px' }}>
+                            RPC
+                          </div>
+                          <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>
+                            ${weekdayRPC.toFixed(2)} / ${weekendRPC.toFixed(2)}
+                          </div>
+                        </div>
+                        <div style={{ 
+                          width: '100%', 
+                          height: '140px',
+                          padding: '0 24px 24px 24px'
+                        }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={[{ name: 'Weekday', value: weekdayRPC }, { name: 'Weekend', value: weekendRPC }]} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                              <XAxis 
+                                dataKey="name" 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
+                              />
+                              <YAxis 
+                                tick={{ fontSize: 12, fill: '#6d7175' }}
+                                axisLine={false}
+                                tickLine={false}
+                                width={40}
+                                tickFormatter={(value: number) => `$${value.toFixed(1)}`}
+                              />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: 'white', 
+                                  border: '1px solid var(--shopify-border)',
+                                  borderRadius: '6px',
+                                  padding: '4px 8px',
+                                  fontSize: '12px'
+                                }}
+                                formatter={(value: number) => `$${value.toFixed(2)}`}
+                              />
+                              <Bar 
+                                dataKey="value" 
+                                radius={[4, 4, 0, 0]}
+                              >
+                                <Cell fill="#6fa8ff" />
+                                <Cell fill="#0f62fe" />
                               </Bar>
                             </BarChart>
                           </ResponsiveContainer>
@@ -3902,9 +4604,9 @@ const PartnerPerformanceDashboard = () => {
                 <Grid narrow style={{ marginBottom: '24px' }}>
                   <Column lg={3} style={{ height: '100%' }}>
                     <div style={{ padding: '20px', backgroundColor: '#f0edff', borderRadius: '8px', border: '1px solid #e0d9ff', height: '100%', minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Total Revenue</div>
-                      <div style={{ fontSize: '32px', fontWeight: '600', color: '#7256F6' }}>$47,234</div>
-                      <div style={{ fontSize: '13px', color: '#16a34a', marginTop: '8px' }}>↑ $5,260 from last period</div>
+                      <div style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '8px' }}>Total Conversions</div>
+                      <div style={{ fontSize: '32px', fontWeight: '600', color: '#7256F6' }}>{mockWebsitePerformance.conversions.toLocaleString()}</div>
+                      <div style={{ fontSize: '13px', color: '#16a34a', marginTop: '8px' }}>↑ {Math.round(mockWebsitePerformance.conversions * 0.15).toLocaleString()} from last period</div>
                     </div>
                   </Column>
                   <Column lg={3} style={{ height: '100%' }}>
@@ -5287,58 +5989,55 @@ const PartnerPerformanceDashboard = () => {
                           border: '1px solid #e0e0e0',
                           overflow: 'hidden'
                         }}>
-                          {(() => {
-                            const { sortedData, sortConfig, handleSort } = useTableSort(sortedItems, 'clicks');
-                            return (
-                              <Table>
+                          <Table>
                                 <TableHead>
                                   <TableRow>
                                     <TableHeader 
                                       style={{ cursor: 'pointer', userSelect: 'none' }}
-                                      onClick={() => handleSort('name' as keyof typeof sortedItems[0])}
+                                      onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('name' as any)}
                                     >
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         Item Name
-                                        {sortConfig?.key === 'name' && (
-                                          sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                        {(itemType === 'Product' ? productItemsSort : contentItemsSort).sortConfig?.key === 'name' && (
+                                          (itemType === 'Product' ? productItemsSort : contentItemsSort).sortConfig?.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                         )}
                                       </div>
                                     </TableHeader>
                                     <TableHeader 
                                       style={{ cursor: 'pointer', userSelect: 'none' }}
-                                      onClick={() => handleSort('clicks' as keyof typeof sortedItems[0])}
+                                      onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('clicks' as any)}
                                     >
                                       <MetricTooltip metric="Clicks">
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                           Clicks
-                                          {sortConfig?.key === 'clicks' && (
-                                            sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                          {(itemType === 'Product' ? productItemsSort : contentItemsSort).sortConfig?.key === 'clicks' && (
+                                            (itemType === 'Product' ? productItemsSort : contentItemsSort).sortConfig?.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                           )}
                                         </div>
                                       </MetricTooltip>
                                     </TableHeader>
                                     <TableHeader 
                                       style={{ cursor: 'pointer', userSelect: 'none' }}
-                                      onClick={() => handleSort('cvr' as keyof typeof sortedItems[0])}
+                                      onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('cvr' as any)}
                                     >
                                       <MetricTooltip metric="CVR">
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                           CVR
-                                          {sortConfig?.key === 'cvr' && (
-                                            sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                          {(itemType === 'Product' ? productItemsSort : contentItemsSort).sortConfig?.key === 'cvr' && (
+                                            (itemType === 'Product' ? productItemsSort : contentItemsSort).sortConfig?.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                           )}
                                         </div>
                                       </MetricTooltip>
                                     </TableHeader>
                                     <TableHeader 
                                       style={{ cursor: 'pointer', userSelect: 'none' }}
-                                      onClick={() => handleSort('revenue' as keyof typeof sortedItems[0])}
+                                      onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('revenue' as any)}
                                     >
                                       <MetricTooltip metric="Revenue">
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                           Revenue
-                                          {sortConfig?.key === 'revenue' && (
-                                            sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                          {(itemType === 'Product' ? productItemsSort : contentItemsSort).sortConfig?.key === 'revenue' && (
+                                            (itemType === 'Product' ? productItemsSort : contentItemsSort).sortConfig?.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                           )}
                                         </div>
                                       </MetricTooltip>
@@ -5346,7 +6045,7 @@ const PartnerPerformanceDashboard = () => {
                                   </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                  {sortedData.map((item, index) => (
+                                  {(itemType === 'Product' ? productItemsSort : contentItemsSort).sortedData.map((item, index) => (
                                 <TableRow 
                                   key={index}
                                   style={{ 
@@ -5418,8 +6117,6 @@ const PartnerPerformanceDashboard = () => {
                                   ))}
                                 </TableBody>
                               </Table>
-                            );
-                          })()}
                         </div>
 
                         {/* Footer Summary */}
@@ -5537,7 +6234,7 @@ const PartnerPerformanceDashboard = () => {
                                 Top 25% CTR, Bottom 25% CVR - Optimize conversion funnel
                               </p>
                             </div>
-                            {highCTRLowCVR.length > 0 ? (
+                            {allOptimizationItems.highCTRLowCVR.length > 0 ? (
                               <>
                                 <div style={{ 
                                   backgroundColor: 'white', 
@@ -5545,58 +6242,55 @@ const PartnerPerformanceDashboard = () => {
                                   border: '1px solid #e0e0e0',
                                   overflow: 'hidden'
                                 }}>
-                                  {(() => {
-                                    const { sortedData, sortConfig, handleSort } = useTableSort(highCTRLowCVR, 'ctr');
-                                    return (
-                                      <Table>
+                                  <Table>
                                         <TableHead>
                                           <TableRow>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => handleSort('name' as keyof typeof highCTRLowCVR[0])}
+                                              onClick={() => highCTRLowCVRSort.handleSort('name' as any)}
                                             >
                                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 Item Name
-                                                {sortConfig?.key === 'name' && (
-                                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                {highCTRLowCVRSort.sortConfig?.key === 'name' && (
+                                                  highCTRLowCVRSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                                 )}
                                               </div>
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => handleSort('ctr' as keyof typeof highCTRLowCVR[0])}
+                                              onClick={() => highCTRLowCVRSort.handleSort('ctr' as any)}
                                             >
                                               <MetricTooltip metric="CTR">
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                   CTR
-                                                  {sortConfig?.key === 'ctr' && (
-                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  {highCTRLowCVRSort.sortConfig?.key === 'ctr' && (
+                                                    highCTRLowCVRSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                                   )}
                                                 </div>
                                               </MetricTooltip>
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => handleSort('cvr' as keyof typeof highCTRLowCVR[0])}
+                                              onClick={() => highCTRLowCVRSort.handleSort('cvr' as any)}
                                             >
                                               <MetricTooltip metric="CVR">
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                   CVR
-                                                  {sortConfig?.key === 'cvr' && (
-                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  {highCTRLowCVRSort.sortConfig?.key === 'cvr' && (
+                                                    highCTRLowCVRSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                                   )}
                                                 </div>
                                               </MetricTooltip>
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => handleSort('revenue' as keyof typeof highCTRLowCVR[0])}
+                                              onClick={() => highCTRLowCVRSort.handleSort('revenue' as any)}
                                             >
                                               <MetricTooltip metric="Revenue">
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                   Revenue
-                                                  {sortConfig?.key === 'revenue' && (
-                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  {highCTRLowCVRSort.sortConfig?.key === 'revenue' && (
+                                                    highCTRLowCVRSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                                   )}
                                                 </div>
                                               </MetricTooltip>
@@ -5604,7 +6298,7 @@ const PartnerPerformanceDashboard = () => {
                                           </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                          {sortedData.map((item, index) => (
+                                          {highCTRLowCVRSort.sortedData.map((item, index) => (
                                         <TableRow 
                                           key={index}
                                           style={{ 
@@ -5678,8 +6372,6 @@ const PartnerPerformanceDashboard = () => {
                                           ))}
                                         </TableBody>
                                       </Table>
-                                    );
-                                  })()}
                                 </div>
                                 <div style={{ marginTop: '12px', textAlign: 'center' }}>
                                   <a 
@@ -5733,7 +6425,7 @@ const PartnerPerformanceDashboard = () => {
                                 Top 25% CVR, Bottom 25% CTR - Increase visibility and traffic
                               </p>
                             </div>
-                            {highCVRLowCTR.length > 0 ? (
+                            {allOptimizationItems.highCVRLowCTR.length > 0 ? (
                               <>
                                 <div style={{ 
                                   backgroundColor: 'white', 
@@ -5741,58 +6433,55 @@ const PartnerPerformanceDashboard = () => {
                                   border: '1px solid #e0e0e0',
                                   overflow: 'hidden'
                                 }}>
-                                  {(() => {
-                                    const { sortedData, sortConfig, handleSort } = useTableSort(highCVRLowCTR, 'cvr');
-                                    return (
-                                      <Table>
+                                  <Table>
                                         <TableHead>
                                           <TableRow>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => handleSort('name' as keyof typeof highCVRLowCTR[0])}
+                                              onClick={() => highCVRLowCTRSort.handleSort('name' as any)}
                                             >
                                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 Item Name
-                                                {sortConfig?.key === 'name' && (
-                                                  sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                {highCVRLowCTRSort.sortConfig?.key === 'name' && (
+                                                  highCVRLowCTRSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                                 )}
                                               </div>
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => handleSort('ctr' as keyof typeof highCVRLowCTR[0])}
+                                              onClick={() => highCVRLowCTRSort.handleSort('ctr' as any)}
                                             >
                                               <MetricTooltip metric="CTR">
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                   CTR
-                                                  {sortConfig?.key === 'ctr' && (
-                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  {highCVRLowCTRSort.sortConfig?.key === 'ctr' && (
+                                                    highCVRLowCTRSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                                   )}
                                                 </div>
                                               </MetricTooltip>
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => handleSort('cvr' as keyof typeof highCVRLowCTR[0])}
+                                              onClick={() => highCVRLowCTRSort.handleSort('cvr' as any)}
                                             >
                                               <MetricTooltip metric="CVR">
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                   CVR
-                                                  {sortConfig?.key === 'cvr' && (
-                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  {highCVRLowCTRSort.sortConfig?.key === 'cvr' && (
+                                                    highCVRLowCTRSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                                   )}
                                                 </div>
                                               </MetricTooltip>
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => handleSort('revenue' as keyof typeof highCVRLowCTR[0])}
+                                              onClick={() => highCVRLowCTRSort.handleSort('revenue' as any)}
                                             >
                                               <MetricTooltip metric="Revenue">
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                   Revenue
-                                                  {sortConfig?.key === 'revenue' && (
-                                                    sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                                                  {highCVRLowCTRSort.sortConfig?.key === 'revenue' && (
+                                                    highCVRLowCTRSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                                   )}
                                                 </div>
                                               </MetricTooltip>
@@ -5800,7 +6489,7 @@ const PartnerPerformanceDashboard = () => {
                                           </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                          {sortedData.map((item, index) => (
+                                          {highCVRLowCTRSort.sortedData.map((item, index) => (
                                         <TableRow 
                                           key={index}
                                           style={{ 
@@ -5874,8 +6563,6 @@ const PartnerPerformanceDashboard = () => {
                                           ))}
                                         </TableBody>
                                       </Table>
-                                    );
-                                  })()}
                                 </div>
                                 <div style={{ marginTop: '12px', textAlign: 'center' }}>
                                   <a 

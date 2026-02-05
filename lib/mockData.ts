@@ -118,8 +118,8 @@ export interface CreatorPerformance {
 
 // Mock data for different plan combinations
 export const mockPartnerPlans: PartnerPlans = {
-  shop: null, // Change to 'paid' or null to test different scenarios
-  creator: 'paid', // Change to 'paid' or null to test different scenarios
+  shop: 'paid', // Change to 'paid' or null to test different scenarios
+  creator: null, // Change to 'paid' or null to test different scenarios
 };
 
 export const mockWebsitePerformance: WebsitePerformanceMetrics = {
