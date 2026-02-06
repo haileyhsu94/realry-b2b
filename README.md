@@ -238,12 +238,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 👥 Team
 
-Built with ❤️ by the Realry B2B Team
+Built with ❤️ by Hailey
 
 ## 📧 Contact
 
 For questions or support, please reach out to:
-- **Email**: hsuyuhsuan@example.com
+- **Email**: haileyhsu94@gmail.com
 - **GitHub**: [@haileyhsu94](https://github.com/haileyhsu94)
 
 ---
