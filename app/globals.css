@@ -386,3 +386,39 @@
 .cds--data-table tbody tr:last-child td {
   border-bottom: none !important;
 }
+
+/* Fixed table layout for "What's Working Best" tables */
+.whats-working-table-wrapper .cds--data-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.whats-working-table-wrapper .cds--data-table th:nth-child(1),
+.whats-working-table-wrapper .cds--data-table td:nth-child(1) {
+  width: 30%;
+}
+
+.whats-working-table-wrapper .cds--data-table th:nth-child(2),
+.whats-working-table-wrapper .cds--data-table td:nth-child(2) {
+  width: 12%;
+}
+
+.whats-working-table-wrapper .cds--data-table th:nth-child(3),
+.whats-working-table-wrapper .cds--data-table td:nth-child(3) {
+  width: 12%;
+}
+
+.whats-working-table-wrapper .cds--data-table th:nth-child(4),
+.whats-working-table-wrapper .cds--data-table td:nth-child(4) {
+  width: 15%;
+}
+
+.whats-working-table-wrapper .cds--data-table th:nth-child(5),
+.whats-working-table-wrapper .cds--data-table td:nth-child(5) {
+  width: 10%;
+}
+
+.whats-working-table-wrapper .cds--data-table th:nth-child(6),
+.whats-working-table-wrapper .cds--data-table td:nth-child(6) {
+  width: 10%;
+}

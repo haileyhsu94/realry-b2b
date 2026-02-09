@@ -45,7 +45,6 @@ import {
   Star,
   Trophy,
   Idea,
-  Video,
   Camera,
   Time,
   Chat,
@@ -68,11 +67,16 @@ import {
   Cell,
   XAxis,
   YAxis,
+  ZAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
   LabelList,
+  ScatterChart,
+  Scatter,
+  ReferenceLine,
+  ReferenceArea,
 } from 'recharts';
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
 import {
@@ -141,8 +145,66 @@ const customerDemographics = {
     { category: 'Cosmetics', value: 9, color: '#9F1853' },     // Magenta 70
     { category: 'Home', value: 5, color: '#B28600' },          // Yellow 50
     { category: 'Tech', value: 3, color: '#EE538B' },          // Magenta 50
-  ]
+  ],
+  // Active users by gender (for donut chart)
+  gender: [
+    { name: 'Female', value: 58, color: '#0f62fe' },
+    { name: 'Male', value: 42, color: '#78a9ff' },
+  ],
 };
+
+// Search → Click Efficiency by Keyword (scatter: search volume, CTR, clicks, intent)
+type KeywordIntent = 'Product' | 'Promotion';
+const KEYWORD_INTENT_COLORS: Record<KeywordIntent, string> = {
+  'Product': '#0f62fe',
+  'Promotion': '#bf5300',
+};
+const keywordEfficiencyData: Array<{ keyword: string; searchVolume: number; ctr: number; clicks: number; intent: KeywordIntent }> = [
+  { keyword: 'dress', searchVolume: 4200, ctr: 8.2, clicks: 1840, intent: 'Product' },
+  { keyword: 'shoes', searchVolume: 3800, ctr: 7.8, clicks: 1520, intent: 'Product' },
+  { keyword: 'bag', searchVolume: 2100, ctr: 6.1, clicks: 720, intent: 'Product' },
+  { keyword: 'sale', searchVolume: 5200, ctr: 4.2, clicks: 1100, intent: 'Promotion' },
+  { keyword: 'free shipping', searchVolume: 3400, ctr: 5.8, clicks: 980, intent: 'Promotion' },
+  { keyword: 'accessories', searchVolume: 2900, ctr: 7.1, clicks: 1020, intent: 'Product' },
+  { keyword: 'new arrival', searchVolume: 1600, ctr: 6.8, clicks: 540, intent: 'Promotion' },
+  { keyword: 'best seller', searchVolume: 2400, ctr: 8.5, clicks: 1020, intent: 'Product' },
+  { keyword: 'product', searchVolume: 3500, ctr: 7.4, clicks: 1290, intent: 'Product' },
+  { keyword: 'design', searchVolume: 1100, ctr: 6.2, clicks: 340, intent: 'Product' },
+  { keyword: 'winter coat', searchVolume: 1900, ctr: 9.2, clicks: 870, intent: 'Product' },
+  { keyword: 'discount', searchVolume: 4100, ctr: 3.9, clicks: 800, intent: 'Promotion' },
+  { keyword: 'sneakers', searchVolume: 2700, ctr: 8.1, clicks: 1090, intent: 'Product' },
+  { keyword: 'clearance', searchVolume: 2200, ctr: 4.5, clicks: 495, intent: 'Promotion' },
+  // More demo points across quadrants
+  { keyword: 'jacket', searchVolume: 3200, ctr: 7.6, clicks: 1210, intent: 'Product' },
+  { keyword: 'boots', searchVolume: 1800, ctr: 8.0, clicks: 720, intent: 'Product' },
+  { keyword: 'handbag', searchVolume: 2500, ctr: 6.5, clicks: 810, intent: 'Product' },
+  { keyword: 'deal', searchVolume: 4800, ctr: 3.8, clicks: 910, intent: 'Promotion' },
+  { keyword: 'coupon', searchVolume: 3900, ctr: 4.1, clicks: 800, intent: 'Promotion' },
+  { keyword: 'black friday', searchVolume: 6100, ctr: 5.2, clicks: 1580, intent: 'Promotion' },
+  { keyword: 'hoodie', searchVolume: 1400, ctr: 7.4, clicks: 520, intent: 'Product' },
+  { keyword: 'watch', searchVolume: 2600, ctr: 6.8, clicks: 880, intent: 'Product' },
+  { keyword: 'jewelry', searchVolume: 1700, ctr: 5.9, clicks: 500, intent: 'Product' },
+  { keyword: 'sunglasses', searchVolume: 1200, ctr: 8.3, clicks: 500, intent: 'Product' },
+  { keyword: 'running shoes', searchVolume: 2300, ctr: 9.0, clicks: 1030, intent: 'Product' },
+  { keyword: 'formal dress', searchVolume: 950, ctr: 7.8, clicks: 370, intent: 'Product' },
+  { keyword: 'flash sale', searchVolume: 4400, ctr: 4.6, clicks: 1010, intent: 'Promotion' },
+  { keyword: 'free delivery', searchVolume: 2800, ctr: 5.0, clicks: 700, intent: 'Promotion' },
+  { keyword: 'last chance', searchVolume: 1500, ctr: 4.2, clicks: 315, intent: 'Promotion' },
+  { keyword: 'summer sale', searchVolume: 3700, ctr: 4.8, clicks: 890, intent: 'Promotion' },
+  { keyword: 'leather bag', searchVolume: 800, ctr: 7.2, clicks: 290, intent: 'Product' },
+  { keyword: 'cotton t-shirt', searchVolume: 2100, ctr: 6.4, clicks: 670, intent: 'Product' },
+  { keyword: 'vintage style', searchVolume: 650, ctr: 8.5, clicks: 276, intent: 'Product' },
+  { keyword: 'limited offer', searchVolume: 1900, ctr: 3.5, clicks: 330, intent: 'Promotion' },
+];
+const keywordEfficiencyMidX = (() => { const s = [...keywordEfficiencyData].map(d => d.searchVolume).sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; })();
+const keywordEfficiencyMidY = (() => { const s = [...keywordEfficiencyData].map(d => d.ctr).sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; })();
+const keywordEfficiencyMinX = Math.min(...keywordEfficiencyData.map(d => d.searchVolume));
+
+// Standardized Item Name column width for Product/Content/Optimization tables
+const ITEM_NAME_COLUMN_STYLE: React.CSSProperties = { minWidth: '220px', maxWidth: '280px' };
+const keywordEfficiencyMaxX = Math.max(...keywordEfficiencyData.map(d => d.searchVolume));
+const keywordEfficiencyMinY = Math.min(...keywordEfficiencyData.map(d => d.ctr));
+const keywordEfficiencyMaxY = Math.max(...keywordEfficiencyData.map(d => d.ctr));
 
 // Realry Icon Component
 const RealryIcon = ({ size = 20, style }: { size?: number; style?: React.CSSProperties }) => (
@@ -260,33 +322,6 @@ const topPerformingItemsByTrafficSource = {
     { name: 'Product Spotlight Email', itemType: 'Product', clicks: 620, impressions: 4133, conversions: 92, cvr: 14.8, revenue: 3480, tag: null, imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=80&h=80&fit=crop', productUrl: '/products/product-spotlight' },
     { name: 'Thank You Email', itemType: 'Content', clicks: 580, impressions: 3867, conversions: 86, cvr: 14.8, revenue: 3252, tag: null },
   ],
-};
-
-// Banner Performance Data
-const bannerPerformance = {
-  totalBanners: 12,
-  bannerClicks: 3420,
-  bannerConversions: 456,
-  bannerCVR: 15.2,
-  bannerRevenue: 37000, // Adjusted to achieve 2.1x RPC improvement vs non-banner
-  nonBannerClicks: 5500,
-  nonBannerConversions: 787,
-  nonBannerCVR: 14.3,
-  nonBannerRevenue: 28320,
-  // Calculate performance multiplier dynamically: Banner RPC / Non-Banner RPC
-  get performanceMultiplier() {
-    const bannerRPC = this.bannerRevenue / this.bannerClicks;
-    const nonBannerRPC = this.nonBannerRevenue / this.nonBannerClicks;
-    return nonBannerRPC > 0 ? bannerRPC / nonBannerRPC : 1;
-  },
-  topPositions: [
-    { position: 'Homepage Hero', clicks: 890, conversions: 123, cvr: 13.8, revenue: 5234 },
-    { position: 'Product Page Top', clicks: 756, conversions: 98, cvr: 13.0, revenue: 4120 },
-    { position: 'Category Page Sidebar', clicks: 645, conversions: 85, cvr: 13.2, revenue: 3650 },
-    { position: 'Checkout Page', clicks: 523, conversions: 72, cvr: 13.8, revenue: 2980 },
-    { position: 'Cart Page', clicks: 456, conversions: 62, cvr: 13.6, revenue: 2560 },
-    { position: 'Search Results', clicks: 390, conversions: 51, cvr: 13.1, revenue: 2180 },
-  ]
 };
 
 // Partner Benchmarking Data
@@ -6007,6 +6042,191 @@ const PartnerPerformanceDashboard = () => {
                   </Grid>
                 </div>
 
+                {/* Active users by Gender + Popular keywords */}
+                <div style={{ 
+                  marginTop: '12px',
+                  padding: '0px',
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  border: '1px solid var(--shopify-border)'
+                }}>
+                  <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
+                    {/* Active users by Gender - Donut */}
+                    <Column lg={5} style={{ paddingLeft: 0, paddingRight: 0 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', alignSelf: 'flex-start' }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                            <g fill="none" stroke="#7256F6" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                              <path d="M12 6.569a6 6 0 1 1-7.165-.256M8.25 17.25v6" />
+                              <path d="M9.634 13.824a6 6 0 1 1 8.6-.9m-.491-7.932L21.75.75M18 .75h3.75V4.5M5.25 20.25h6" />
+                            </g>
+                          </svg>
+                          <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>Active users by Gender</span>
+                        </div>
+                        <ResponsiveContainer width="100%" height={280}>
+                          <PieChart>
+                            <Pie
+                              data={customerDemographics.gender}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={(props: any) => {
+                                const { cx, cy, midAngle, outerRadius, value } = props;
+                                const name = props.payload?.name ?? props.name ?? '';
+                                const RADIAN = Math.PI / 180;
+                                const radius = outerRadius + 10;
+                                const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                return (
+                                  <text
+                                    x={x}
+                                    y={y}
+                                    fill="#6d7175"
+                                    textAnchor={x > cx ? 'start' : 'end'}
+                                    dominantBaseline="central"
+                                    fontSize="11px"
+                                    fontWeight="500"
+                                  >
+                                    {`${name}: ${value}%`}
+                                  </text>
+                                );
+                              }}
+                              outerRadius={110}
+                              fill="#8884d8"
+                              dataKey="value"
+                              startAngle={90}
+                              endAngle={450}
+                            >
+                              {customerDemographics.gender.map((entry: { name: string; value: number; color: string }, index: number) => (
+                                <Cell key={`gender-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              formatter={(value: any, _name: any, props: any) => {
+                                const labelName = props?.payload?.name ?? 'Gender';
+                                return [`${value}%`, labelName];
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+
+                      </div>
+                    </Column>
+                    {/* Search → Click Efficiency by Keyword (scatter) */}
+                    <Column lg={11} style={{ paddingLeft: 0, paddingRight: 0 }}>
+                      <div style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', marginBottom: '4px', color: 'var(--shopify-text-primary)' }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 16 16" style={{ flexShrink: 0 }}>
+                            <path fill="#7256F6" fillRule="evenodd" d="M0 2.965C0 1.88.88 1 1.965 1h2.807c1.085 0 1.965.88 1.965 1.965v.561c0 1.086-.88 1.965-1.965 1.965H1.965A1.965 1.965 0 0 1 0 3.526v-.561Zm1.965-.28a.28.28 0 0 0-.28.28v.561a.28.28 0 0 0 .28.281h2.807a.28.28 0 0 0 .28-.28v-.562a.28.28 0 0 0-.28-.28H1.965Zm6.175.561c0-.465.377-.842.842-.842h6.176a.842.842 0 1 1 0 1.684H8.982a.842.842 0 0 1-.842-.842ZM.28 8.298c0-.465.378-.842.843-.842H11.79a.842.842 0 1 1 0 1.684H1.123a.842.842 0 0 1-.842-.842Zm0 5.052c0-.464.378-.841.843-.841h13.474a.842.842 0 1 1 0 1.684H1.123a.842.842 0 0 1-.842-.842Z" clipRule="evenodd" />
+                            <path fill="#7256F6" d="M14.877 9.14a.842.842 0 1 0 0-1.684a.842.842 0 0 0 0 1.684Z" />
+                          </svg>
+                          Search → Click Efficiency by Keyword
+                        </div>
+                        <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '12px' }}>
+                          Mapping user search demand against click performance
+                        </p>
+                        <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e5e5', overflow: 'hidden' }}>
+                          <div style={{ position: 'relative', width: '100%', height: 340 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ScatterChart margin={{ top: 36, right: 20, left: 12, bottom: 28 }}>
+                              {/* Quadrant zone fills (subtle) - render first so they sit behind grid */}
+                              <ReferenceArea x1={keywordEfficiencyMinX} x2={keywordEfficiencyMidX} y1={keywordEfficiencyMinY} y2={keywordEfficiencyMidY} fill="rgba(0, 0, 0, 0.03)" fillOpacity={1} />
+                              <ReferenceArea x1={keywordEfficiencyMinX} x2={keywordEfficiencyMidX} y1={keywordEfficiencyMidY} y2={keywordEfficiencyMaxY} fill="rgba(15, 98, 254, 0.05)" fillOpacity={1} />
+                              <ReferenceArea x1={keywordEfficiencyMidX} x2={keywordEfficiencyMaxX} y1={keywordEfficiencyMinY} y2={keywordEfficiencyMidY} fill="rgba(191, 83, 0, 0.06)" fillOpacity={1} />
+                              <ReferenceArea x1={keywordEfficiencyMidX} x2={keywordEfficiencyMaxX} y1={keywordEfficiencyMidY} y2={keywordEfficiencyMaxY} fill="rgba(22, 163, 74, 0.06)" fillOpacity={1} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e8e8e8" vertical={true} horizontal={true} />
+                              <XAxis
+                                type="number"
+                                dataKey="x"
+                                name="Search Volume"
+                                unit=""
+                                domain={['auto', 'auto']}
+                                tick={{ fontSize: 11, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#c6c6c6' }}
+                                axisLine={{ stroke: '#c6c6c6' }}
+                                label={{ value: 'Search Volume', position: 'insideBottom', offset: -8, fontSize: 11, fill: '#6d7175' }}
+                              />
+                              <YAxis
+                                type="number"
+                                dataKey="y"
+                                name="CTR"
+                                unit="%"
+                                domain={['auto', 'auto']}
+                                tick={{ fontSize: 11, fill: '#6d7175' }}
+                                tickLine={{ stroke: '#c6c6c6' }}
+                                axisLine={{ stroke: '#c6c6c6' }}
+                                label={{ value: 'CTR (%)', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#6d7175' }}
+                              />
+                              <ZAxis type="number" dataKey="z" range={[80, 420]} name="Clicks" />
+                              <Tooltip
+                                cursor={{ strokeDasharray: '3 3', stroke: '#6d7175' }}
+                                wrapperStyle={{ outline: 'none' }}
+                                contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', border: '1px solid rgba(0, 0, 0, 0.1)', borderRadius: '6px', fontSize: '11px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '10px 12px' }}
+                                content={({ active, payload }) => {
+                                  if (!active || !payload?.length) return null;
+                                  const p = payload[0].payload as { keyword?: string; x?: number; y?: number; z?: number; intent?: string };
+                                  return (
+                                    <div style={{ fontSize: '11px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: 8, backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: '8px' }}>
+                                      <div style={{ fontWeight: 600, marginBottom: 6 }}>{p.keyword}</div>
+                                      <div>Search volume: {p.x?.toLocaleString()}</div>
+                                      <div>CTR: {p.y?.toFixed(1)}%</div>
+                                      <div>Clicks: {p.z?.toLocaleString()}</div>
+                                      {p.intent && <div style={{ color: '#6d7175', marginTop: 4, fontSize: '11px' }}>{p.intent}</div>}
+                                    </div>
+                                  );
+                                }}
+                              />
+                              <ReferenceLine x={keywordEfficiencyMidX} stroke="#c6c6c6" strokeDasharray="3 3" />
+                              <ReferenceLine y={keywordEfficiencyMidY} stroke="#c6c6c6" strokeDasharray="3 3" />
+                              {(['Product', 'Promotion'] as const).map((intent) => (
+                                <Scatter
+                                  key={intent}
+                                  name={intent}
+                                  data={keywordEfficiencyData.filter(d => d.intent === intent).map(d => ({ x: d.searchVolume, y: d.ctr, z: d.clicks, keyword: d.keyword, intent: d.intent }))}
+                                  fill={KEYWORD_INTENT_COLORS[intent]}
+                                  shape="circle"
+                                />
+                              ))}
+                            </ScatterChart>
+                          </ResponsiveContainer>
+                          {/* Quadrant labels overlay */}
+                          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: '8px' }}>
+                            <div style={{ position: 'absolute', left: '72%', top: '12%', maxWidth: '24%', textAlign: 'center' }}>
+                              <div style={{ fontSize: '10px', fontWeight: '600', color: '#161616', marginBottom: 2 }}>Star Keywords</div>
+                              <div style={{ fontSize: '9px', color: '#6d7175', lineHeight: 1.2 }}>High demand and high efficiency. Scale and prioritize.</div>
+                            </div>
+                            <div style={{ position: 'absolute', left: '72%', top: '62%', maxWidth: '24%', textAlign: 'center' }}>
+                              <div style={{ fontSize: '10px', fontWeight: '600', color: '#161616', marginBottom: 2 }}>UX / Ranking Opportunity</div>
+                              <div style={{ fontSize: '9px', color: '#6d7175', lineHeight: 1.2 }}>High demand but underperforming. Needs optimization.</div>
+                            </div>
+                            <div style={{ position: 'absolute', left: '8%', top: '12%', maxWidth: '24%', textAlign: 'center' }}>
+                              <div style={{ fontSize: '10px', fontWeight: '600', color: '#161616', marginBottom: 2 }}>High-Intent Niche</div>
+                              <div style={{ fontSize: '9px', color: '#6d7175', lineHeight: 1.2 }}>Low volume but efficient keywords.</div>
+                            </div>
+                            <div style={{ position: 'absolute', left: '8%', top: '62%', maxWidth: '24%', textAlign: 'center' }}>
+                              <div style={{ fontSize: '10px', fontWeight: '600', color: '#161616', marginBottom: 2 }}>Low Priority</div>
+                              <div style={{ fontSize: '9px', color: '#6d7175', lineHeight: 1.2 }}>Low search volume and low CTR.</div>
+                            </div>
+                          </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px 16px', padding: '8px 12px 12px', fontSize: '11px', color: '#6d7175', borderTop: '1px solid #e5e5e5' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: KEYWORD_INTENT_COLORS['Product'], flexShrink: 0 }} />
+                              Product
+                            </span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: KEYWORD_INTENT_COLORS['Promotion'], flexShrink: 0 }} />
+                              Promotion
+                            </span>
+                            <span style={{ color: '#c6c6c6' }}>•</span>
+                            <span>Bubble size represents click volume.</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Column>
+                  </Grid>
+                </div>
+
                 {/* Customer Interests */}
                 <div style={{ 
                   marginTop: '12px',
@@ -6293,10 +6513,16 @@ const PartnerPerformanceDashboard = () => {
                                 <TableHead>
                                   <TableRow>
                                     <TableHeader 
-                                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                                      style={{ cursor: 'pointer', userSelect: 'none', ...ITEM_NAME_COLUMN_STYLE }}
                                       onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('name' as any)}
                                     >
                                       Item Name
+                                    </TableHeader>
+                                    <TableHeader 
+                                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                                      onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('impressions' as any)}
+                                    >
+                                      Impression
                                     </TableHeader>
                                     <TableHeader 
                                       style={{ cursor: 'pointer', userSelect: 'none' }}
@@ -6308,18 +6534,23 @@ const PartnerPerformanceDashboard = () => {
                                     </TableHeader>
                                     <TableHeader 
                                       style={{ cursor: 'pointer', userSelect: 'none' }}
-                                      onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('cvr' as any)}
-                                    >
-                                      <MetricTooltip metric="CVR">
-                                        CVR
-                                      </MetricTooltip>
-                                    </TableHeader>
-                                    <TableHeader 
-                                      style={{ cursor: 'pointer', userSelect: 'none' }}
                                       onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('revenue' as any)}
                                     >
                                       <MetricTooltip metric="Revenue">
                                         Revenue
+                                      </MetricTooltip>
+                                    </TableHeader>
+                                    <TableHeader>
+                                      <MetricTooltip metric="CTR">
+                                        CTR
+                                      </MetricTooltip>
+                                    </TableHeader>
+                                    <TableHeader 
+                                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                                      onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('cvr' as any)}
+                                    >
+                                      <MetricTooltip metric="CVR">
+                                        CVR
                                       </MetricTooltip>
                                     </TableHeader>
                                   </TableRow>
@@ -6334,7 +6565,7 @@ const PartnerPerformanceDashboard = () => {
                                     height: '48px'
                                   }}
                                 >
-                                  <TableCell style={{ verticalAlign: 'middle' }}>
+                                  <TableCell style={{ verticalAlign: 'middle', ...ITEM_NAME_COLUMN_STYLE }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                       {/* Show image for Product items */}
                                       {item.itemType === 'Product' && (item as any).imageUrl && (
@@ -6388,13 +6619,17 @@ const PartnerPerformanceDashboard = () => {
                                       </div>
                                     </div>
                                   </TableCell>
+                                  <TableCell style={{ verticalAlign: 'middle' }}>{item.impressions.toLocaleString()}</TableCell>
                                   <TableCell style={{ verticalAlign: 'middle' }}>{item.clicks.toLocaleString()}</TableCell>
+                                  <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>${item.revenue.toLocaleString()}</TableCell>
+                                  <TableCell style={{ verticalAlign: 'middle' }}>
+                                    {item.impressions > 0 ? `${((item.clicks / item.impressions) * 100).toFixed(2)}%` : '-'}
+                                  </TableCell>
                                   <TableCell style={{ verticalAlign: 'middle' }}>
                                     <span style={{ fontWeight: '600', color: item.cvr >= 14 ? '#16a34a' : 'inherit' }}>
                                       {item.cvr}%
                                     </span>
                                   </TableCell>
-                                  <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>${item.revenue.toLocaleString()}</TableCell>
                                 </TableRow>
                                   ))}
                                 </TableBody>
@@ -6489,13 +6724,13 @@ const PartnerPerformanceDashboard = () => {
 
                       <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
                         {/* High CTR, Low CVR */}
-                        <Column lg={8} md={6} sm={12}>
+                        <Column lg={16} md={12} sm={12}>
                           <div style={{ 
                             backgroundColor: '#f9f9f9',
                             borderRadius: '8px',
                             border: '1px solid #e0e0e0',
                             padding: '16px',
-                            height: '100%'
+                            marginBottom: '16px'
                           }}>
                             <div style={{ marginBottom: '16px' }}>
                               <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
@@ -6517,10 +6752,32 @@ const PartnerPerformanceDashboard = () => {
                                         <TableHead>
                                           <TableRow>
                                             <TableHeader 
-                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              style={{ cursor: 'pointer', userSelect: 'none', ...ITEM_NAME_COLUMN_STYLE }}
                                               onClick={() => highCTRLowCVRSort.handleSort('name' as any)}
                                             >
                                               Item Name
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => highCTRLowCVRSort.handleSort('impressions' as any)}
+                                            >
+                                              Impression
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => highCTRLowCVRSort.handleSort('clicks' as any)}
+                                            >
+                                              <MetricTooltip metric="Clicks">
+                                                Clicks
+                                              </MetricTooltip>
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => highCTRLowCVRSort.handleSort('revenue' as any)}
+                                            >
+                                              <MetricTooltip metric="Revenue">
+                                                Revenue
+                                              </MetricTooltip>
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
@@ -6538,14 +6795,6 @@ const PartnerPerformanceDashboard = () => {
                                                 CVR
                                               </MetricTooltip>
                                             </TableHeader>
-                                            <TableHeader 
-                                              style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => highCTRLowCVRSort.handleSort('revenue' as any)}
-                                            >
-                                              <MetricTooltip metric="Revenue">
-                                                Revenue
-                                              </MetricTooltip>
-                                            </TableHeader>
                                           </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -6556,7 +6805,7 @@ const PartnerPerformanceDashboard = () => {
                                             backgroundColor: index % 2 === 0 ? 'white' : '#f9f9f9' 
                                           }}
                                         >
-                                          <TableCell>
+                                          <TableCell style={ITEM_NAME_COLUMN_STYLE}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                               {/* Show image for Product items */}
                                               {item.itemType === 'Product' && (item as any).imageUrl && (
@@ -6606,6 +6855,9 @@ const PartnerPerformanceDashboard = () => {
                                               </div>
                                             </div>
                                           </TableCell>
+                                          <TableCell style={{ verticalAlign: 'middle' }}>{item.impressions.toLocaleString()}</TableCell>
+                                          <TableCell style={{ verticalAlign: 'middle' }}>{item.clicks.toLocaleString()}</TableCell>
+                                          <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>${item.revenue.toLocaleString()}</TableCell>
                                           <TableCell style={{ verticalAlign: 'middle' }}>
                                             <span style={{ fontWeight: '600', color: '#16a34a' }}>
                                               {item.ctr.toFixed(2)}%
@@ -6615,9 +6867,6 @@ const PartnerPerformanceDashboard = () => {
                                             <span style={{ fontWeight: '600', color: '#dc2626' }}>
                                               {item.cvr}%
                                             </span>
-                                          </TableCell>
-                                          <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>
-                                            ${item.revenue.toLocaleString()}
                                           </TableCell>
                                         </TableRow>
                                           ))}
@@ -6660,13 +6909,12 @@ const PartnerPerformanceDashboard = () => {
                         </Column>
 
                         {/* High CVR, Low CTR */}
-                        <Column lg={8} md={6} sm={12}>
+                        <Column lg={16} md={12} sm={12}>
                           <div style={{ 
                             backgroundColor: '#f9f9f9',
                             borderRadius: '8px',
                             border: '1px solid #e0e0e0',
-                            padding: '16px',
-                            height: '100%'
+                            padding: '16px'
                           }}>
                             <div style={{ marginBottom: '16px' }}>
                               <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
@@ -6688,10 +6936,32 @@ const PartnerPerformanceDashboard = () => {
                                         <TableHead>
                                           <TableRow>
                                             <TableHeader 
-                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              style={{ cursor: 'pointer', userSelect: 'none', ...ITEM_NAME_COLUMN_STYLE }}
                                               onClick={() => highCVRLowCTRSort.handleSort('name' as any)}
                                             >
                                               Item Name
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => highCVRLowCTRSort.handleSort('impressions' as any)}
+                                            >
+                                              Impression
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => highCVRLowCTRSort.handleSort('clicks' as any)}
+                                            >
+                                              <MetricTooltip metric="Clicks">
+                                                Clicks
+                                              </MetricTooltip>
+                                            </TableHeader>
+                                            <TableHeader 
+                                              style={{ cursor: 'pointer', userSelect: 'none' }}
+                                              onClick={() => highCVRLowCTRSort.handleSort('revenue' as any)}
+                                            >
+                                              <MetricTooltip metric="Revenue">
+                                                Revenue
+                                              </MetricTooltip>
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
@@ -6709,14 +6979,6 @@ const PartnerPerformanceDashboard = () => {
                                                 CVR
                                               </MetricTooltip>
                                             </TableHeader>
-                                            <TableHeader 
-                                              style={{ cursor: 'pointer', userSelect: 'none' }}
-                                              onClick={() => highCVRLowCTRSort.handleSort('revenue' as any)}
-                                            >
-                                              <MetricTooltip metric="Revenue">
-                                                Revenue
-                                              </MetricTooltip>
-                                            </TableHeader>
                                           </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -6729,7 +6991,7 @@ const PartnerPerformanceDashboard = () => {
                                             height: '48px'
                                           }}
                                         >
-                                          <TableCell style={{ verticalAlign: 'middle' }}>
+                                          <TableCell style={{ verticalAlign: 'middle', ...ITEM_NAME_COLUMN_STYLE }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                               {/* Show image for Product items */}
                                               {item.itemType === 'Product' && (item as any).imageUrl && (
@@ -6779,6 +7041,9 @@ const PartnerPerformanceDashboard = () => {
                                               </div>
                                             </div>
                                           </TableCell>
+                                          <TableCell style={{ verticalAlign: 'middle' }}>{item.impressions.toLocaleString()}</TableCell>
+                                          <TableCell style={{ verticalAlign: 'middle' }}>{item.clicks.toLocaleString()}</TableCell>
+                                          <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>${item.revenue.toLocaleString()}</TableCell>
                                           <TableCell style={{ verticalAlign: 'middle' }}>
                                             <span style={{ fontWeight: '600', color: '#dc2626' }}>
                                               {item.ctr.toFixed(2)}%
@@ -6788,9 +7053,6 @@ const PartnerPerformanceDashboard = () => {
                                             <span style={{ fontWeight: '600', color: '#16a34a' }}>
                                               {item.cvr}%
                                             </span>
-                                          </TableCell>
-                                          <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>
-                                            ${item.revenue.toLocaleString()}
                                           </TableCell>
                                         </TableRow>
                                           ))}
@@ -6835,332 +7097,6 @@ const PartnerPerformanceDashboard = () => {
                     </div>
                   );
                 })()}
-              </div>
-
-              {/* 5. Banner Performance */}
-              <div style={{ 
-                marginTop: '24px',
-                marginLeft: '24px',
-                marginRight: '24px',
-                backgroundColor: 'white',
-                borderRadius: '8px',
-                border: '1px solid var(--shopify-border)',
-                padding: '16px'
-              }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Video size={20} style={{ color: '#0f62fe' }} />
-                      Banner Performance
-                    </h3>
-                    <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                      Track performance of banner placements and optimize positioning
-                    </p>
-                  </div>
-                </div>
-
-                {/* Key Metrics */}
-                <Grid narrow style={{ marginBottom: '12px' }}>
-                  <Column lg={3}>
-                    <div style={{ padding: '12px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                      <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Total Banners</div>
-                      <div style={{ fontSize: '22px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>{bannerPerformance.totalBanners}</div>
-                    </div>
-                  </Column>
-                  <Column lg={3}>
-                    <div style={{ padding: '12px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                      <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Banner Clicks</div>
-                      <div style={{ fontSize: '22px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>{bannerPerformance.bannerClicks.toLocaleString()}</div>
-                    </div>
-                  </Column>
-                  <Column lg={3}>
-                    <div style={{ padding: '12px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                      <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Banner CVR</div>
-                      <div style={{ fontSize: '22px', fontWeight: '600', color: '#16a34a' }}>{bannerPerformance.bannerCVR}%</div>
-                    </div>
-                  </Column>
-                  <Column lg={3}>
-                    <div style={{ padding: '12px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                      <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Banner Revenue</div>
-                      <div style={{ fontSize: '22px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>${bannerPerformance.bannerRevenue.toLocaleString()}</div>
-                    </div>
-                  </Column>
-                </Grid>
-
-                {/* Comparison Charts */}
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '12px' }}>
-                    Banner vs Non-Banner Performance
-                  </div>
-                  
-                  <Grid narrow style={{ paddingLeft: 0, paddingRight: 0, marginLeft: 0, marginRight: 0 }}>
-                    {/* CVR Chart - using rates for fair comparison */}
-                    <Column lg={5} style={{ paddingLeft: 0, paddingRight: 0 }}>
-                      <div className="shopify-metric-card">
-                        <div style={{ padding: '12px 12px 0 12px', marginBottom: '12px' }}>
-                          <div className="shopify-metric-label" style={{ marginBottom: '4px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MetricTooltip metric="CVR">
-                              Conversion Rate (CVR)
-                            </MetricTooltip>
-                          </div>
-                          <div className="shopify-metric-value" style={{ marginBottom: '4px', fontSize: '22px' }}>
-                            {bannerPerformance.bannerCVR.toFixed(1)}% / {bannerPerformance.nonBannerCVR.toFixed(1)}%
-                          </div>
-                        </div>
-                        <div style={{ 
-                          width: '100%', 
-                          height: '180px',
-                          padding: '0 12px 0 12px'
-                        }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart 
-                              data={[
-                                { name: 'Banner', value: bannerPerformance.bannerCVR }, 
-                                { name: 'Non-Banner', value: bannerPerformance.nonBannerCVR }
-                              ]} 
-                              margin={{ top: 5, right: 10, left: 0, bottom: 25 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
-                              <XAxis 
-                                dataKey="name" 
-                                stroke="#6d7175" 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
-                              />
-                              <YAxis 
-                                stroke="#6d7175" 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
-                                width={40}
-                                tickFormatter={(value: number) => `${value}%`}
-                              />
-                              <Tooltip 
-                                contentStyle={{ 
-                                  backgroundColor: 'white',
-                                  border: '1px solid #e1e3e5',
-                                  borderRadius: '6px',
-                                  padding: '10px 14px',
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                  fontSize: '13px'
-                                }}
-                                formatter={(value: number) => `${value.toFixed(1)}%`}
-                              />
-                              <Bar 
-                                dataKey="value" 
-                                radius={[4, 4, 0, 0]}
-                              >
-                                <Cell fill="#0f62fe" />
-                                <Cell fill="#8d8d8d" />
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </Column>
-
-                    {/* Revenue Per Click (RPC) Chart */}
-                    <Column lg={5} style={{ paddingLeft: 0, paddingRight: 0 }}>
-                      <div className="shopify-metric-card">
-                        <div style={{ padding: '12px 12px 0 12px', marginBottom: '12px' }}>
-                          <div className="shopify-metric-label" style={{ marginBottom: '4px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MetricTooltip metric="RPC">
-                              Revenue Per Click (RPC)
-                            </MetricTooltip>
-                          </div>
-                          <div className="shopify-metric-value" style={{ marginBottom: '4px', fontSize: '22px' }}>
-                            ${(bannerPerformance.bannerRevenue / bannerPerformance.bannerClicks).toFixed(2)} / ${(bannerPerformance.nonBannerRevenue / bannerPerformance.nonBannerClicks).toFixed(2)}
-                          </div>
-                        </div>
-                        <div style={{ 
-                          width: '100%', 
-                          height: '180px',
-                          padding: '0 12px 0 12px'
-                        }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart 
-                              data={[
-                                { 
-                                  name: 'Banner', 
-                                  value: bannerPerformance.bannerRevenue / bannerPerformance.bannerClicks
-                                }, 
-                                { 
-                                  name: 'Non-Banner', 
-                                  value: bannerPerformance.nonBannerRevenue / bannerPerformance.nonBannerClicks
-                                }
-                              ]} 
-                              margin={{ top: 5, right: 10, left: 0, bottom: 25 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
-                              <XAxis 
-                                dataKey="name" 
-                                stroke="#6d7175" 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
-                              />
-                              <YAxis 
-                                stroke="#6d7175" 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
-                                width={40}
-                                tickFormatter={(value: number) => `$${value.toFixed(2)}`}
-                              />
-                              <Tooltip 
-                                contentStyle={{ 
-                                  backgroundColor: 'white',
-                                  border: '1px solid #e1e3e5',
-                                  borderRadius: '6px',
-                                  padding: '10px 14px',
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                  fontSize: '13px'
-                                }}
-                                formatter={(value: number) => `$${value.toFixed(2)}`}
-                              />
-                              <Bar 
-                                dataKey="value" 
-                                radius={[4, 4, 0, 0]}
-                              >
-                                <Cell fill="#0f62fe" />
-                                <Cell fill="#8d8d8d" />
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </Column>
-
-                    {/* Average Order Value (AOV) Chart */}
-                    <Column lg={5} style={{ paddingLeft: 0, paddingRight: 0 }}>
-                      <div className="shopify-metric-card">
-                        <div style={{ padding: '12px 12px 0 12px', marginBottom: '12px' }}>
-                          <div className="shopify-metric-label" style={{ marginBottom: '4px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MetricTooltip metric="AOV">
-                              Average Order Value (AOV)
-                            </MetricTooltip>
-                          </div>
-                          <div className="shopify-metric-value" style={{ marginBottom: '4px', fontSize: '22px' }}>
-                            ${(bannerPerformance.bannerRevenue / bannerPerformance.bannerConversions).toFixed(2)} / ${(bannerPerformance.nonBannerRevenue / bannerPerformance.nonBannerConversions).toFixed(2)}
-                          </div>
-                        </div>
-                        <div style={{ 
-                          width: '100%', 
-                          height: '180px',
-                          padding: '0 12px 0 12px'
-                        }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart 
-                              data={[
-                                { 
-                                  name: 'Banner', 
-                                  value: bannerPerformance.bannerRevenue / bannerPerformance.bannerConversions
-                                }, 
-                                { 
-                                  name: 'Non-Banner', 
-                                  value: bannerPerformance.nonBannerRevenue / bannerPerformance.nonBannerConversions
-                                }
-                              ]} 
-                              margin={{ top: 5, right: 10, left: 0, bottom: 25 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
-                              <XAxis 
-                                dataKey="name" 
-                                stroke="#6d7175" 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
-                              />
-                              <YAxis 
-                                stroke="#6d7175" 
-                                tick={{ fontSize: 12, fill: '#6d7175' }}
-                                tickLine={{ stroke: '#6d7175' }}
-                                width={40}
-                                tickFormatter={(value: number) => {
-                                  if (value >= 100) return `$${(value / 100).toFixed(0)}`;
-                                  return `$${value.toFixed(0)}`;
-                                }}
-                              />
-                              <Tooltip 
-                                contentStyle={{ 
-                                  backgroundColor: 'white',
-                                  border: '1px solid #e1e3e5',
-                                  borderRadius: '6px',
-                                  padding: '10px 14px',
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                  fontSize: '13px'
-                                }}
-                                formatter={(value: number) => `$${value.toFixed(2)}`}
-                              />
-                              <Bar 
-                                dataKey="value" 
-                                radius={[4, 4, 0, 0]}
-                              >
-                                <Cell fill="#0f62fe" />
-                                <Cell fill="#8d8d8d" />
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </Column>
-                  </Grid>
-                </div>
-
-                {/* Top Positions Table */}
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '12px' }}>
-                    Top Performing Banner Positions
-                  </div>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeader>Position</TableHeader>
-                        <TableHeader>Clicks</TableHeader>
-                        <TableHeader>Conversions</TableHeader>
-                        <TableHeader>CVR</TableHeader>
-                        <TableHeader>Revenue</TableHeader>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {bannerPerformance.topPositions.slice(0, 3).map((pos, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{pos.position}</TableCell>
-                          <TableCell>{pos.clicks.toLocaleString()}</TableCell>
-                          <TableCell>{pos.conversions}</TableCell>
-                          <TableCell>
-                            <span style={{ fontWeight: '600', color: pos.cvr >= 13.5 ? '#16a34a' : 'inherit' }}>
-                              {pos.cvr}%
-                            </span>
-                          </TableCell>
-                          <TableCell style={{ fontWeight: '600' }}>${pos.revenue.toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <div style={{ marginTop: '12px', textAlign: 'center' }}>
-                    <a 
-                      href="/reports" 
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ 
-                        fontSize: '12px',
-                        color: '#0f62fe',
-                        textDecoration: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.textDecoration = 'underline';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.textDecoration = 'none';
-                      }}
-                    >
-                      View full report
-                      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7 3L12 8L7 13" stroke="#0f62fe" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </a>
-                  </div>
-                </div>
               </div>
 
               {/* 6. Partner Benchmarking */}

@@ -16,10 +16,13 @@
     "@carbon/react": "^1.99.0",
     "@carbon/styles": "^1.98.0",
     "clsx": "^2.0.0",
+    "downshift": "^9.2.0",
+    "html2pdf.js": "^0.14.0",
     "next": "^14.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-simple-maps": "^3.0.0",
+    "react-wordcloud": "^1.2.7",
     "recharts": "^2.10.0",
     "tailwind-merge": "^2.0.0"
   },
