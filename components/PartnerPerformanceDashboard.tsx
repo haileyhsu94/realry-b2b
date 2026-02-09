@@ -1308,17 +1308,6 @@ const PartnerPerformanceDashboard = () => {
     },
   ];
 
-  const supportItems = [
-    { 
-      id: 'settings', 
-      label: 'Settings', 
-      icon: Settings, 
-      active: true,
-      planBadge: null,
-      badge: null
-    },
-  ];
-
   // FeatureGate component for conditional rendering
   const FeatureGate = ({ 
     feature, 
@@ -1918,90 +1907,6 @@ const PartnerPerformanceDashboard = () => {
             );
           })}
 
-          {/* Support Section */}
-          {sidebarOpen && (
-            <div style={{ 
-              padding: '24px 24px 4px 24px',
-              fontSize: '11px',
-              fontWeight: '600',
-              color: 'var(--shopify-text-secondary)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              marginTop: '8px',
-              marginBottom: '8px'
-            }}>
-              Support
-            </div>
-          )}
-          {supportItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id;
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => item.active && setActiveSection(item.id)}
-                disabled={!item.active}
-                className={`shopify-nav-item ${isActive ? 'active' : ''}`}
-                style={{
-                  marginBottom: '2px',
-                  justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                  padding: sidebarOpen ? '10px 12px' : '10px 0'
-                }}
-              >
-                <Icon 
-                  size={20} 
-                  style={{ 
-                    marginRight: sidebarOpen ? '12px' : '0', 
-                    flexShrink: 0,
-                    width: '20px',
-                    height: '20px'
-                  }} 
-                />
-                {sidebarOpen && (
-                  <>
-                    <span style={{ 
-                      flex: 1, 
-                      textAlign: 'left',
-                      lineHeight: '20px'
-                    }}>
-                      {item.label}
-                    </span>
-                    {item.planBadge && (
-                      <Tag
-                        type={item.planBadge === 'Paid' ? 'green' : 'gray'}
-                        size="sm"
-                        style={{ 
-                          marginLeft: '8px',
-                          fontSize: '11px',
-                          padding: '2px 6px',
-                          height: '18px',
-                          lineHeight: '14px'
-                        }}
-                      >
-                        {item.planBadge}
-                      </Tag>
-                    )}
-                    {item.badge && (
-                      <Tag
-                        type={item.badge === 'New' ? 'blue' : 'gray'}
-                        size="sm"
-                        style={{ 
-                          marginLeft: '8px',
-                          fontSize: '11px',
-                          padding: '2px 6px',
-                          height: '18px',
-                          lineHeight: '14px'
-                        }}
-                      >
-                        {item.badge}
-                      </Tag>
-                    )}
-                  </>
-                )}
-              </button>
-            );
-          })}
         </nav>
       </aside>
 
@@ -2395,6 +2300,34 @@ const PartnerPerformanceDashboard = () => {
                 </div>
               )}
             </div>
+
+            {/* Settings Button - between avatar and info (help) icon */}
+            <button
+              onClick={() => setActiveSection('settings')}
+              style={{
+                width: '36px',
+                height: '36px',
+                border: 'none',
+                background: 'transparent',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--shopify-text-secondary)',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                e.currentTarget.style.color = 'var(--shopify-text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--shopify-text-secondary)';
+              }}
+            >
+              <Settings size={18} />
+            </button>
 
             {/* User Profile */}
             <div ref={userMenuRef} style={{ position: 'relative' }}>
@@ -5155,6 +5088,69 @@ const PartnerPerformanceDashboard = () => {
                         justifyContent: 'center',
                         position: 'relative'
                       }}>
+                        {/* Zoom controls - only for world map */}
+                        {mapType !== 'usa-states' && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '12px',
+                            right: '12px',
+                            zIndex: 10,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '2px',
+                            backgroundColor: 'white',
+                            border: '1px solid var(--shopify-border)',
+                            borderRadius: '6px',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                            overflow: 'hidden'
+                          }}>
+                            <button
+                              type="button"
+                              onClick={() => setMapZoom((z) => Math.min(8, z + 1))}
+                              style={{
+                                width: '32px',
+                                height: '28px',
+                                border: 'none',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '18px',
+                                lineHeight: 1,
+                                color: 'var(--shopify-text-primary)',
+                                padding: 0
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                              +
+                            </button>
+                            <div style={{ height: '1px', backgroundColor: 'var(--shopify-border)' }} />
+                            <button
+                              type="button"
+                              onClick={() => setMapZoom((z) => Math.max(1, z - 1))}
+                              style={{
+                                width: '32px',
+                                height: '28px',
+                                border: 'none',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '18px',
+                                lineHeight: 1,
+                                color: 'var(--shopify-text-primary)',
+                                padding: 0
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                              −
+                            </button>
+                          </div>
+                        )}
                         <ComposableMap
                           projection={mapType === 'usa-states' ? "geoAlbersUsa" : "geoMercator"}
                           style={{ width: '100%', height: '100%' }}
@@ -5162,7 +5158,20 @@ const PartnerPerformanceDashboard = () => {
                           <ZoomableGroup
                             center={mapType === 'usa-states' ? [-95, 40] : mapCenter}
                             zoom={mapType === 'usa-states' ? 1 : mapZoom}
+                            minZoom={1}
+                            maxZoom={8}
+                            filterZoomEvent={(ev: any) => ev.type !== 'wheel'}
                           >
+                            {/* Full-area rect so drag-to-pan works on empty space (e.g. ocean) */}
+                            <rect
+                              x={-2000}
+                              y={-1000}
+                              width={4000}
+                              height={2000}
+                              fill="transparent"
+                              style={{ cursor: 'grab' }}
+                              pointerEvents="all"
+                            />
                             {/* World Map */}
                             {mapType === 'world' && (
                               <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
@@ -5559,7 +5568,7 @@ const PartnerPerformanceDashboard = () => {
                             boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                           }}>
                             <span style={{ fontSize: '14px' }}>🖱️</span>
-                            <span>Drag to pan, scroll to zoom</span>
+                            <span>Drag to pan, use +/− to zoom</span>
                           </div>
                         )}
                         
@@ -6042,27 +6051,28 @@ const PartnerPerformanceDashboard = () => {
                   </Grid>
                 </div>
 
-                {/* Active users by Gender + Popular keywords */}
-                <div style={{ 
-                  marginTop: '12px',
-                  padding: '0px',
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  border: '1px solid var(--shopify-border)'
-                }}>
-                  <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
-                    {/* Active users by Gender - Donut */}
-                    <Column lg={5} style={{ paddingLeft: 0, paddingRight: 0 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', alignSelf: 'flex-start' }}>
-                          <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                            <g fill="none" stroke="#7256F6" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
-                              <path d="M12 6.569a6 6 0 1 1-7.165-.256M8.25 17.25v6" />
-                              <path d="M9.634 13.824a6 6 0 1 1 8.6-.9m-.491-7.932L21.75.75M18 .75h3.75V4.5M5.25 20.25h6" />
-                            </g>
-                          </svg>
-                          <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>Active users by Gender</span>
-                        </div>
+                {/* Active users by Gender + Search → Click Efficiency by Keyword - horizontal row */}
+                <Grid narrow style={{ marginTop: '12px', marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
+                  <Column lg={5} style={{ paddingLeft: 0, paddingRight: '6px' }}>
+                    <div style={{ 
+                      padding: '16px',
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid var(--shopify-border)',
+                      minHeight: '440px',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                          <g fill="none" stroke="#7256F6" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                            <path d="M12 6.569a6 6 0 1 1-7.165-.256M8.25 17.25v6" />
+                            <path d="M9.634 13.824a6 6 0 1 1 8.6-.9m-.491-7.932L21.75.75M18 .75h3.75V4.5M5.25 20.25h6" />
+                          </g>
+                        </svg>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>Active users by Gender</span>
+                      </div>
+                      <div style={{ flex: 1, width: '100%', minHeight: 280 }}>
                         <ResponsiveContainer width="100%" height={280}>
                           <PieChart>
                             <Pie
@@ -6109,12 +6119,26 @@ const PartnerPerformanceDashboard = () => {
                             />
                           </PieChart>
                         </ResponsiveContainer>
-
                       </div>
-                    </Column>
-                    {/* Search → Click Efficiency by Keyword (scatter) */}
-                    <Column lg={11} style={{ paddingLeft: 0, paddingRight: 0 }}>
-                      <div style={{ padding: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px 16px', padding: '8px 0 0', fontSize: '11px', color: '#6d7175', borderTop: '1px solid #e5e5e5', marginTop: '8px' }}>
+                        {customerDemographics.gender.map((entry: { name: string; value: number; color: string }) => (
+                          <span key={entry.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: entry.color, flexShrink: 0 }} />
+                            {entry.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </Column>
+                  <Column lg={11} style={{ paddingLeft: '6px', paddingRight: 0 }}>
+                    <div style={{ 
+                      padding: '16px',
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid var(--shopify-border)',
+                      minHeight: '440px'
+                    }}>
+                      <div style={{ padding: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', marginBottom: '4px', color: 'var(--shopify-text-primary)' }}>
                           <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 16 16" style={{ flexShrink: 0 }}>
                             <path fill="#7256F6" fillRule="evenodd" d="M0 2.965C0 1.88.88 1 1.965 1h2.807c1.085 0 1.965.88 1.965 1.965v.561c0 1.086-.88 1.965-1.965 1.965H1.965A1.965 1.965 0 0 1 0 3.526v-.561Zm1.965-.28a.28.28 0 0 0-.28.28v.561a.28.28 0 0 0 .28.281h2.807a.28.28 0 0 0 .28-.28v-.562a.28.28 0 0 0-.28-.28H1.965Zm6.175.561c0-.465.377-.842.842-.842h6.176a.842.842 0 1 1 0 1.684H8.982a.842.842 0 0 1-.842-.842ZM.28 8.298c0-.465.378-.842.843-.842H11.79a.842.842 0 1 1 0 1.684H1.123a.842.842 0 0 1-.842-.842Zm0 5.052c0-.464.378-.841.843-.841h13.474a.842.842 0 1 1 0 1.684H1.123a.842.842 0 0 1-.842-.842Z" clipRule="evenodd" />
@@ -6223,9 +6247,9 @@ const PartnerPerformanceDashboard = () => {
                           </div>
                         </div>
                       </div>
-                    </Column>
-                  </Grid>
-                </div>
+                    </div>
+                  </Column>
+                </Grid>
 
                 {/* Customer Interests */}
                 <div style={{ 
