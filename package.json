@@ -2,6 +2,9 @@
   "name": "partner-dashboard",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -21,6 +24,7 @@
     "next": "^14.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-is": "^18.2.0",
     "react-simple-maps": "^3.0.0",
     "react-wordcloud": "^1.2.7",
     "recharts": "^2.10.0",
