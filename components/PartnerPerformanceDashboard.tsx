@@ -1,4 +1,5 @@
 'use client';
+/// <reference lib="dom" />
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -737,6 +738,41 @@ const PartnerPerformanceDashboard = () => {
   // Notification state
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
+
+  // Site-wide currency and timezone (persisted to localStorage)
+  const [currency, setCurrency] = useState<string>(() => {
+    if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return 'USD';
+    return (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.getItem('dashboard-currency') || 'USD';
+  });
+  const [timezone, setTimezone] = useState<string>(() => {
+    if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return 'America/New_York';
+    return (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.getItem('dashboard-timezone') || 'America/New_York';
+  });
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  useEffect(() => {
+    if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return;
+    const c = (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.getItem('dashboard-currency');
+    const t = (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.getItem('dashboard-timezone');
+    if (c) setCurrency(c);
+    if (t) setTimezone(t);
+  }, []);
+  const saveSettings = () => {
+    if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return;
+    (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.setItem('dashboard-currency', currency);
+    (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.setItem('dashboard-timezone', timezone);
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 2000);
+  };
+  const formatCurrency = (value: number, options?: { compact?: boolean }) => {
+    if (options?.compact && value >= 1000) {
+      const formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0, minimumFractionDigits: 0 });
+      return formatter.format(value / 1000) + 'k';
+    }
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value);
+  };
+  const formatInTimeZone = (date: Date, options?: Intl.DateTimeFormatOptions) => {
+    return new Intl.DateTimeFormat(undefined, { timeZone: timezone, ...options }).format(date);
+  };
   
   // Mock notifications data
   const mockNotifications = [
@@ -1064,7 +1100,7 @@ const PartnerPerformanceDashboard = () => {
   const metrics = React.useMemo(() => [
     {
       title: 'Total Revenue',
-      value: `$${aggregatedMetrics.revenue.toLocaleString()}`,
+      value: formatCurrency(aggregatedMetrics.revenue),
       change: `${aggregatedMetrics.change >= 0 ? '+' : ''}${aggregatedMetrics.change.toFixed(1)}%`,
       trend: aggregatedMetrics.trend,
       description: getDateRangeDescription(timeRange),
@@ -1098,7 +1134,7 @@ const PartnerPerformanceDashboard = () => {
       trendData: cvrTrend,
       color: '#00539a'
     },
-  ], [timeRange, revenueTrend, cvrTrend, aggregatedMetrics, filteredRevenueData]);
+  ], [timeRange, revenueTrend, cvrTrend, aggregatedMetrics, filteredRevenueData, currency]);
 
   // Call all sorting hooks at top level
   const revenueTableSort = useTableSort(revenueData, 'date');
@@ -1262,10 +1298,10 @@ const PartnerPerformanceDashboard = () => {
         setTimeRange('custom');
         setShowCustomDatePicker(false);
       } else {
-        alert('Start date must be before or equal to end date');
+        (globalThis as unknown as { alert?(m: string): void }).alert?.('Start date must be before or equal to end date');
       }
     } else {
-      alert('Please select both start and end dates');
+      (globalThis as unknown as { alert?(m: string): void }).alert?.('Please select both start and end dates');
     }
   };
 
@@ -1282,26 +1318,28 @@ const PartnerPerformanceDashboard = () => {
   
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+      if (datePickerRef.current && !(datePickerRef.current as unknown as { contains(node: EventTarget | null): boolean }).contains(event.target)) {
         setShowCustomDatePicker(false);
       }
-      if (helpMenuRef.current && !helpMenuRef.current.contains(event.target as Node)) {
+      if (helpMenuRef.current && !(helpMenuRef.current as unknown as { contains(node: EventTarget | null): boolean }).contains(event.target)) {
         setShowHelpMenu(false);
       }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      if (userMenuRef.current && !(userMenuRef.current as unknown as { contains(node: EventTarget | null): boolean }).contains(event.target)) {
         setShowUserMenu(false);
       }
-      if (notificationMenuRef.current && !notificationMenuRef.current.contains(event.target as Node)) {
+      if (notificationMenuRef.current && !(notificationMenuRef.current as unknown as { contains(node: EventTarget | null): boolean }).contains(event.target)) {
         setShowNotificationMenu(false);
       }
     };
 
+    type Doc = { addEventListener(type: string, listener: (e: MouseEvent) => void): void; removeEventListener(type: string, listener: (e: MouseEvent) => void): void };
+    const doc = (globalThis as unknown as { document?: Doc }).document;
     if (showCustomDatePicker || showHelpMenu || showUserMenu || showNotificationMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
+      doc?.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      doc?.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showCustomDatePicker, showHelpMenu, showUserMenu, showNotificationMenu]);
 
@@ -1518,10 +1556,7 @@ const PartnerPerformanceDashboard = () => {
                   tick={{ fontSize: 12, fill: '#6d7175' }}
                   tickLine={{ stroke: '#6d7175' }}
                   width={40}
-                  tickFormatter={(value: number) => {
-                    if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
-                    return `$${value}`;
-                  }}
+                  tickFormatter={(value: number) => formatCurrency(value, { compact: true })}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -1551,18 +1586,18 @@ const PartnerPerformanceDashboard = () => {
                             {data.date}
                           </div>
                           <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '10px', color: '#202124' }}>
-                            Total: ${total.toLocaleString()}
+                            Total: {formatCurrency(total)}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                             <div style={{ width: '12px', height: '12px', backgroundColor: '#0f62fe', borderRadius: '2px' }}></div>
                             <span style={{ color: '#5f6368', fontSize: '13px' }}>New Users:</span>
-                            <span style={{ fontWeight: '600', color: '#202124', marginLeft: 'auto' }}>${data.revenueNew.toLocaleString()}</span>
+                            <span style={{ fontWeight: '600', color: '#202124', marginLeft: 'auto' }}>{formatCurrency(data.revenueNew)}</span>
                             <span style={{ color: '#5f6368', fontSize: '12px' }}>({newPercent}%)</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ width: '12px', height: '12px', backgroundColor: '#a6c8ff', borderRadius: '2px' }}></div>
                             <span style={{ color: '#5f6368', fontSize: '13px' }}>Returning:</span>
-                            <span style={{ fontWeight: '600', color: '#202124', marginLeft: 'auto' }}>${data.revenueReturning.toLocaleString()}</span>
+                            <span style={{ fontWeight: '600', color: '#202124', marginLeft: 'auto' }}>{formatCurrency(data.revenueReturning)}</span>
                             <span style={{ color: '#5f6368', fontSize: '12px' }}>({returningPercent}%)</span>
                           </div>
                         </div>
@@ -1625,10 +1660,7 @@ const PartnerPerformanceDashboard = () => {
                   tickLine={{ stroke: '#6d7175' }}
                   width={40}
                   tickFormatter={(value: number) => {
-                    if (metric.title.includes('Revenue')) {
-                      if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
-                      return `$${value}`;
-                    }
+                    if (metric.title.includes('Revenue')) return formatCurrency(value, { compact: true });
                     if (metric.title.includes('Rate')) return `${value.toFixed(0)}%`;
                     if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
                     return value.toString();
@@ -1652,7 +1684,7 @@ const PartnerPerformanceDashboard = () => {
                   fontSize: '12px'
                 }}
                 formatter={(value: number) => {
-                  if (metric.title.includes('Revenue')) return `$${value.toLocaleString()}`;
+                  if (metric.title.includes('Revenue')) return formatCurrency(value);
                   if (metric.title.includes('Rate')) return `${value.toFixed(1)}%`;
                   return value.toLocaleString();
                 }}
@@ -1708,11 +1740,9 @@ const PartnerPerformanceDashboard = () => {
             onClick={(e) => {
               setSidebarOpen(!sidebarOpen);
               // Blur the button to remove focus state
-              const target = e.currentTarget as HTMLElement;
+              const target = e.currentTarget as unknown as { blur(): void };
               if (target) {
-                setTimeout(() => {
-                  target.blur();
-                }, 0);
+                setTimeout(() => target.blur(), 0);
               }
             }}
             onMouseDown={(e) => {
@@ -2065,12 +2095,12 @@ const PartnerPerformanceDashboard = () => {
               transition: 'all 0.15s ease'
             }}
             onFocus={(e) => {
-              e.currentTarget.style.backgroundColor = 'white';
-              e.currentTarget.style.borderColor = '#7256F6';
+              (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'white';
+              (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
-              e.currentTarget.style.borderColor = 'var(--shopify-border)';
+              (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)';
+              (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
             }}
             >
               <Search size={16} style={{ color: 'var(--shopify-text-secondary)', flexShrink: 0 }} />
@@ -2129,12 +2159,12 @@ const PartnerPerformanceDashboard = () => {
                   position: 'relative'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
-                  e.currentTarget.style.color = 'var(--shopify-text-primary)';
+                  (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)';
+                  (e.currentTarget as unknown as { style: Record<string, string> }).style.color = 'var(--shopify-text-primary)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = 'var(--shopify-text-secondary)';
+                  (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
+                  (e.currentTarget as unknown as { style: Record<string, string> }).style.color = 'var(--shopify-text-secondary)';
                 }}
               >
                 <Notification size={18} />
@@ -2228,10 +2258,10 @@ const PartnerPerformanceDashboard = () => {
                             alignItems: 'flex-start'
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = notification.read ? 'var(--shopify-gray-50)' : '#f0f0f0';
+                            (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = notification.read ? 'var(--shopify-gray-50)' : '#f0f0f0';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = notification.read ? 'transparent' : 'var(--shopify-gray-50)';
+                            (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = notification.read ? 'transparent' : 'var(--shopify-gray-50)';
                           }}
                         >
                           <div style={{
@@ -2286,7 +2316,7 @@ const PartnerPerformanceDashboard = () => {
                     }}>
                       <button
                         onClick={() => {
-                          alert('View all notifications');
+                          (globalThis as unknown as { alert?(m: string): void }).alert?.('View all notifications');
                           setShowNotificationMenu(false);
                         }}
                         style={{
@@ -2301,10 +2331,10 @@ const PartnerPerformanceDashboard = () => {
                           transition: 'background-color 0.15s ease'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                          (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
+                          (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
                         }}
                       >
                         View all notifications
@@ -2337,12 +2367,12 @@ const PartnerPerformanceDashboard = () => {
                   position: 'relative'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
-                  e.currentTarget.style.color = 'var(--shopify-text-primary)';
+                  (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)';
+                  (e.currentTarget as unknown as { style: Record<string, string> }).style.color = 'var(--shopify-text-primary)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = 'var(--shopify-text-secondary)';
+                  (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
+                  (e.currentTarget as unknown as { style: Record<string, string> }).style.color = 'var(--shopify-text-secondary)';
                 }}
               >
                 <Help size={18} />
@@ -2365,7 +2395,7 @@ const PartnerPerformanceDashboard = () => {
                 }}>
                   <button
                     onClick={() => {
-                      alert('Get more help');
+                      (globalThis as unknown as { alert?(m: string): void }).alert?.('Get more help');
                       setShowHelpMenu(false);
                     }}
                     style={{
@@ -2383,17 +2413,17 @@ const PartnerPerformanceDashboard = () => {
                       gap: '8px'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                      (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
+                      (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
                     }}
                   >
                     Get more help
                   </button>
                   <button
                     onClick={() => {
-                      alert('Send feedback');
+                      (globalThis as unknown as { alert?(m: string): void }).alert?.('Send feedback');
                       setShowHelpMenu(false);
                     }}
                     style={{
@@ -2412,10 +2442,10 @@ const PartnerPerformanceDashboard = () => {
                       borderTop: '1px solid var(--shopify-border)'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                      (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
+                      (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
                     }}
                   >
                     Send feedback
@@ -2441,12 +2471,12 @@ const PartnerPerformanceDashboard = () => {
                 transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
-                e.currentTarget.style.color = 'var(--shopify-text-primary)';
+                (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)';
+                (e.currentTarget as unknown as { style: Record<string, string> }).style.color = 'var(--shopify-text-primary)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--shopify-text-secondary)';
+                (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
+                (e.currentTarget as unknown as { style: Record<string, string> }).style.color = 'var(--shopify-text-secondary)';
               }}
             >
               <Settings size={18} />
@@ -2474,11 +2504,11 @@ const PartnerPerformanceDashboard = () => {
                   position: 'relative'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                  (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)';
                 }}
                 onMouseLeave={(e) => {
                   if (!showUserMenu) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
+                    (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
                   }
                 }}
               >
@@ -2555,7 +2585,7 @@ const PartnerPerformanceDashboard = () => {
                   <div style={{ padding: '4px 0' }}>
                     <button
                       onClick={() => {
-                        alert('Sign out');
+                        (globalThis as unknown as { alert?(m: string): void }).alert?.('Sign out');
                         setShowUserMenu(false);
                       }}
                       style={{
@@ -2573,10 +2603,10 @@ const PartnerPerformanceDashboard = () => {
                         gap: '8px'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)';
+                        (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
+                        (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
                       }}
                     >
                       Sign out
@@ -2624,7 +2654,7 @@ const PartnerPerformanceDashboard = () => {
                       <input
                         type="date"
                         value={customStartDate}
-                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        onChange={(e) => setCustomStartDate((e.target as unknown as { value: string }).value)}
                         max={customEndDate || undefined}
                         style={{
                           width: '100%',
@@ -2637,8 +2667,8 @@ const PartnerPerformanceDashboard = () => {
                           outline: 'none',
                           transition: 'border-color 0.15s ease'
                         }}
-                        onFocus={(e) => e.target.style.borderColor = '#7256F6'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                        onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
+                        onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
                       />
                     </div>
                     <div>
@@ -2654,7 +2684,7 @@ const PartnerPerformanceDashboard = () => {
                       <input
                         type="date"
                         value={customEndDate}
-                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        onChange={(e) => setCustomEndDate((e.target as unknown as { value: string }).value)}
                         min={customStartDate || undefined}
                         style={{
                           width: '100%',
@@ -2667,8 +2697,8 @@ const PartnerPerformanceDashboard = () => {
                           outline: 'none',
                           transition: 'border-color 0.15s ease'
                         }}
-                        onFocus={(e) => e.target.style.borderColor = '#7256F6'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                        onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
+                        onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
                       />
                     </div>
                   </div>
@@ -2733,7 +2763,7 @@ const PartnerPerformanceDashboard = () => {
                 </div>
                 <select
                   value={detailReportDateFilter}
-                  onChange={(e) => setDetailReportDateFilter(e.target.value as typeof detailReportDateFilter)}
+                  onChange={(e) => setDetailReportDateFilter((e.target as unknown as { value: string }).value as typeof detailReportDateFilter)}
                   style={{
                     padding: '8px 32px 8px 12px',
                     border: '1px solid var(--shopify-border)',
@@ -2809,14 +2839,14 @@ const PartnerPerformanceDashboard = () => {
                         <Column lg={4} md={4} sm={2}>
                           <div className="shopify-metric-card" style={{ padding: '16px' }}>
                             <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>Revenue (Weekday / Weekend)</div>
-                            <div className="shopify-metric-value" style={{ fontSize: '20px' }}>${(aggregatedData.weekday.revenue / 1000).toFixed(1)}K / ${(aggregatedData.weekend.revenue / 1000).toFixed(1)}K</div>
+                            <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{formatCurrency(aggregatedData.weekday.revenue, { compact: true })} / {formatCurrency(aggregatedData.weekend.revenue, { compact: true })}</div>
                             <div style={{ height: '160px', marginTop: '12px' }}>
                               <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.revenue }, { name: 'Weekend', value: aggregatedData.weekend.revenue }]} margin={{ top: 5, right: 10, left: 10, bottom: 25 }}>
                                   <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                                   <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
-                                  <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`} />
-                                  <Tooltip formatter={(v: number) => [`$${Number(v).toLocaleString()}`, '']} />
+                                  <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => formatCurrency(v, { compact: true })} />
+                                  <Tooltip formatter={(v: number) => [formatCurrency(Number(v)), '']} />
                                   <Bar dataKey="value" radius={[4,4,0,0]}><Cell fill="#6fa8ff" /><Cell fill="#0f62fe" /></Bar>
                                 </BarChart>
                               </ResponsiveContainer>
@@ -2843,14 +2873,14 @@ const PartnerPerformanceDashboard = () => {
                         <Column lg={4} md={4} sm={2}>
                           <div className="shopify-metric-card" style={{ padding: '16px' }}>
                             <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>RPC (Weekday / Weekend)</div>
-                            <div className="shopify-metric-value" style={{ fontSize: '20px' }}>${weekdayRPC.toFixed(2)} / ${weekendRPC.toFixed(2)}</div>
+                            <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{formatCurrency(weekdayRPC)} / {formatCurrency(weekendRPC)}</div>
                             <div style={{ height: '160px', marginTop: '12px' }}>
                               <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={[{ name: 'Weekday', value: weekdayRPC }, { name: 'Weekend', value: weekendRPC }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
                                   <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                                   <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
-                                  <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => `$${v.toFixed(1)}`} />
-                                  <Tooltip formatter={(v: number) => [`$${Number(v).toFixed(2)}`, '']} />
+                                  <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => formatCurrency(v)} />
+                                  <Tooltip formatter={(v: number) => [formatCurrency(Number(v)), '']} />
                                   <Bar dataKey="value" radius={[4,4,0,0]}><Cell fill="#6fa8ff" /><Cell fill="#0f62fe" /></Bar>
                                 </BarChart>
                               </ResponsiveContainer>
@@ -2880,11 +2910,11 @@ const PartnerPerformanceDashboard = () => {
                                 <TableCell>{row.dateLabel}</TableCell>
                                 <TableCell>{row.dayOfWeek}</TableCell>
                                 <TableCell>{row.dayOfWeek === 'Saturday' || row.dayOfWeek === 'Sunday' ? 'Weekend' : 'Weekday'}</TableCell>
-                                <TableCell>${row.revenue.toLocaleString()}</TableCell>
+                                <TableCell>{formatCurrency(row.revenue)}</TableCell>
                                 <TableCell>{row.conversions.toLocaleString()}</TableCell>
                                 <TableCell>{row.cvr.toFixed(1)}%</TableCell>
-                                <TableCell>${row.aov.toFixed(2)}</TableCell>
-                                <TableCell>${row.rpc.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(row.aov)}</TableCell>
+                                <TableCell>{formatCurrency(row.rpc)}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -2982,7 +3012,7 @@ const PartnerPerformanceDashboard = () => {
                                     <TableCell style={ITEM_NAME_COLUMN_STYLE}>{item.name}</TableCell>
                                     <TableCell>{item.impressions.toLocaleString()}</TableCell>
                                     <TableCell>{item.clicks.toLocaleString()}</TableCell>
-                                    <TableCell style={{ fontWeight: '600' }}>${item.revenue.toLocaleString()}</TableCell>
+                                    <TableCell style={{ fontWeight: '600' }}>{formatCurrency(item.revenue)}</TableCell>
                                     <TableCell>{item.impressions > 0 ? `${((item.clicks / item.impressions) * 100).toFixed(2)}%` : '-'}</TableCell>
                                     <TableCell style={{ fontWeight: '600', color: item.cvr >= 14 ? '#16a34a' : 'inherit' }}>{item.cvr}%</TableCell>
                                   </TableRow>
@@ -3019,7 +3049,7 @@ const PartnerPerformanceDashboard = () => {
                               <TableCell style={ITEM_NAME_COLUMN_STYLE}>{item.name}</TableCell>
                               <TableCell>{item.impressions.toLocaleString()}</TableCell>
                               <TableCell>{item.clicks.toLocaleString()}</TableCell>
-                              <TableCell style={{ fontWeight: '600' }}>${item.revenue.toLocaleString()}</TableCell>
+                              <TableCell style={{ fontWeight: '600' }}>{formatCurrency(item.revenue)}</TableCell>
                               <TableCell style={{ fontWeight: '600', color: '#16a34a' }}>{(item as any).ctr?.toFixed(2) ?? ((item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0).toFixed(2))}%</TableCell>
                               <TableCell style={{ fontWeight: '600', color: '#dc2626' }}>{item.cvr}%</TableCell>
                             </TableRow>
@@ -3053,7 +3083,7 @@ const PartnerPerformanceDashboard = () => {
                               <TableCell style={ITEM_NAME_COLUMN_STYLE}>{item.name}</TableCell>
                               <TableCell>{item.impressions.toLocaleString()}</TableCell>
                               <TableCell>{item.clicks.toLocaleString()}</TableCell>
-                              <TableCell style={{ fontWeight: '600' }}>${item.revenue.toLocaleString()}</TableCell>
+                              <TableCell style={{ fontWeight: '600' }}>{formatCurrency(item.revenue)}</TableCell>
                               <TableCell style={{ fontWeight: '600', color: '#dc2626' }}>{(item as any).ctr?.toFixed(2) ?? ((item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0).toFixed(2))}%</TableCell>
                               <TableCell style={{ fontWeight: '600', color: '#16a34a' }}>{item.cvr}%</TableCell>
                             </TableRow>
@@ -3096,7 +3126,7 @@ const PartnerPerformanceDashboard = () => {
                                 <TableCell style={ITEM_NAME_COLUMN_STYLE}>{item.name}</TableCell>
                                 <TableCell>{item.impressions.toLocaleString()}</TableCell>
                                 <TableCell>{item.clicks.toLocaleString()}</TableCell>
-                                <TableCell style={{ fontWeight: '600' }}>${item.revenue.toLocaleString()}</TableCell>
+                                <TableCell style={{ fontWeight: '600' }}>{formatCurrency(item.revenue)}</TableCell>
                                 <TableCell>{item.impressions > 0 ? `${((item.clicks / item.impressions) * 100).toFixed(2)}%` : '-'}</TableCell>
                                 <TableCell style={{ fontWeight: '600' }}>{item.cvr}%</TableCell>
                               </TableRow>
@@ -3127,7 +3157,7 @@ const PartnerPerformanceDashboard = () => {
                     </h1>
                     <select
                       value={shopPerformanceDateFilter}
-                      onChange={(e) => setShopPerformanceDateFilter(e.target.value as '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ')}
+                      onChange={(e) => setShopPerformanceDateFilter((e.target as unknown as { value: string }).value as '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ')}
                       style={{
                         padding: '8px 32px 8px 12px',
                         border: '1px solid var(--shopify-border)',
@@ -3143,14 +3173,14 @@ const PartnerPerformanceDashboard = () => {
                         backgroundPosition: 'right 12px center',
                         transition: 'border-color 0.15s ease'
                       }}
-                      onFocus={(e) => e.target.style.borderColor = '#7256F6'}
-                      onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                      onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
+                      onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#7256F6';
+                        (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
                       }}
                       onMouseLeave={(e) => {
-                        if (document.activeElement !== e.currentTarget) {
-                          e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                        if ((globalThis as unknown as { document?: { addEventListener(type: string, listener: EventListener): void; removeEventListener(type: string, listener: EventListener): void; activeElement?: EventTarget | null } }).document?.activeElement !== e.currentTarget) {
+                          (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
                         }
                       }}
                     >
@@ -3811,7 +3841,7 @@ const PartnerPerformanceDashboard = () => {
                     </h1>
                     <select
                       value={creatorPerformanceDateFilter}
-                      onChange={(e) => setCreatorPerformanceDateFilter(e.target.value as '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ')}
+                      onChange={(e) => setCreatorPerformanceDateFilter((e.target as unknown as { value: string }).value as '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ')}
                       style={{
                         padding: '8px 32px 8px 12px',
                         border: '1px solid var(--shopify-border)',
@@ -3827,14 +3857,14 @@ const PartnerPerformanceDashboard = () => {
                         backgroundPosition: 'right 12px center',
                         transition: 'border-color 0.15s ease'
                       }}
-                      onFocus={(e) => e.target.style.borderColor = '#7256F6'}
-                      onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                      onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
+                      onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#7256F6';
+                        (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
                       }}
                       onMouseLeave={(e) => {
-                        if (document.activeElement !== e.currentTarget) {
-                          e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                        if ((globalThis as unknown as { document?: { addEventListener(type: string, listener: EventListener): void; removeEventListener(type: string, listener: EventListener): void; activeElement?: EventTarget | null } }).document?.activeElement !== e.currentTarget) {
+                          (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
                         }
                       }}
                     >
@@ -4180,12 +4210,12 @@ const PartnerPerformanceDashboard = () => {
                             border: '1px solid var(--shopify-border)'
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = '#7256F6';
-                            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                            (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
+                            (e.currentTarget as unknown as { style: Record<string, string> }).style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--shopify-border)';
-                            e.currentTarget.style.boxShadow = 'none';
+                            (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
+                            (e.currentTarget as unknown as { style: Record<string, string> }).style.boxShadow = 'none';
                           }}
                         >
                           <div style={{ 
@@ -4303,7 +4333,7 @@ const PartnerPerformanceDashboard = () => {
             </div>
           )}
 
-          {/* Settings - Work in Progress */}
+          {/* Settings - Currency & Timezone (site-wide) */}
           {activeSection === 'settings' && (
             <div style={{ width: '100%' }}>
               <div style={{
@@ -4323,16 +4353,70 @@ const PartnerPerformanceDashboard = () => {
                   Settings
                 </h2>
               </div>
-              <div style={{ 
-                padding: '24px',
-                minHeight: '400px'
-              }}>
-                <div style={{
-                  fontSize: '16px',
-                  color: 'var(--shopify-text-secondary)',
-                  fontStyle: 'italic'
-                }}>
-                  Work in Progress
+              <div style={{ padding: '24px', minHeight: '400px' }}>
+                <div style={{ maxWidth: '480px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '16px' }}>Site-wide configuration</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '24px' }}>Currency and timezone apply to the entire dashboard.</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>Currency</label>
+                      <select
+                        value={currency}
+                        onChange={(e) => setCurrency((e.target as unknown as { value: string }).value)}
+                        style={{
+                          width: '100%',
+                          maxWidth: '280px',
+                          padding: '10px 12px',
+                          fontSize: '14px',
+                          border: '1px solid var(--shopify-border)',
+                          borderRadius: '6px',
+                          backgroundColor: 'white',
+                          color: 'var(--shopify-text-primary)'
+                        }}
+                      >
+                        <option value="USD">USD (US Dollar)</option>
+                        <option value="EUR">EUR (Euro)</option>
+                        <option value="GBP">GBP (British Pound)</option>
+                        <option value="JPY">JPY (Japanese Yen)</option>
+                        <option value="CAD">CAD (Canadian Dollar)</option>
+                        <option value="AUD">AUD (Australian Dollar)</option>
+                        <option value="CHF">CHF (Swiss Franc)</option>
+                        <option value="KRW">KRW (Korean Won)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>Timezone</label>
+                      <select
+                        value={timezone}
+                        onChange={(e) => setTimezone((e.target as unknown as { value: string }).value)}
+                        style={{
+                          width: '100%',
+                          maxWidth: '280px',
+                          padding: '10px 12px',
+                          fontSize: '14px',
+                          border: '1px solid var(--shopify-border)',
+                          borderRadius: '6px',
+                          backgroundColor: 'white',
+                          color: 'var(--shopify-text-primary)'
+                        }}
+                      >
+                        <option value="America/New_York">Eastern (America/New_York)</option>
+                        <option value="America/Los_Angeles">Pacific (America/Los_Angeles)</option>
+                        <option value="America/Chicago">Central (America/Chicago)</option>
+                        <option value="Europe/London">London (Europe/London)</option>
+                        <option value="Europe/Paris">Paris (Europe/Paris)</option>
+                        <option value="Asia/Tokyo">Tokyo (Asia/Tokyo)</option>
+                        <option value="Asia/Singapore">Singapore (Asia/Singapore)</option>
+                        <option value="UTC">UTC</option>
+                      </select>
+                    </div>
+                  </div>
+                  <Button kind="primary" size="md" onClick={saveSettings}>
+                    Save settings
+                  </Button>
+                  {settingsSaved && (
+                    <span style={{ marginLeft: '12px', fontSize: '13px', color: '#16a34a' }}>Saved. Applied site-wide.</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -4399,7 +4483,7 @@ const PartnerPerformanceDashboard = () => {
                   {/* Date Range Dropdown */}
                   <select
                     value={timeRange}
-                    onChange={(e) => handleTimeRangeChange(e.target.value as 'hourly' | '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ' | 'custom')}
+                    onChange={(e) => handleTimeRangeChange((e.target as unknown as { value: string }).value as 'hourly' | '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ' | 'custom')}
                     style={{
                       padding: '8px 32px 8px 12px',
                       border: '1px solid var(--shopify-border)',
@@ -4415,14 +4499,14 @@ const PartnerPerformanceDashboard = () => {
                       backgroundPosition: 'right 12px center',
                       transition: 'border-color 0.15s ease'
                     }}
-                    onFocus={(e) => e.target.style.borderColor = '#7256F6'}
-                    onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                    onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
+                    onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#7256F6';
+                      (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
                     }}
                     onMouseLeave={(e) => {
-                      if (document.activeElement !== e.currentTarget) {
-                        e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                      if ((globalThis as unknown as { document?: { addEventListener(type: string, listener: EventListener): void; removeEventListener(type: string, listener: EventListener): void; activeElement?: EventTarget | null } }).document?.activeElement !== e.currentTarget) {
+                        (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
                       }
                     }}
                   >
@@ -4443,7 +4527,7 @@ const PartnerPerformanceDashboard = () => {
                       <input
                         type="date"
                         value={customStartDate}
-                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        onChange={(e) => setCustomStartDate((e.target as unknown as { value: string }).value)}
                         style={{
                           padding: '8px 12px',
                           border: '1px solid var(--shopify-border)',
@@ -4453,14 +4537,14 @@ const PartnerPerformanceDashboard = () => {
                           outline: 'none',
                           transition: 'border-color 0.15s ease'
                         }}
-                        onFocus={(e) => e.target.style.borderColor = '#7256F6'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                        onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
+                        onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = '#7256F6';
+                          (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
                         }}
                         onMouseLeave={(e) => {
-                          if (document.activeElement !== e.currentTarget) {
-                            e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                          if ((globalThis as unknown as { document?: { addEventListener(type: string, listener: EventListener): void; removeEventListener(type: string, listener: EventListener): void; activeElement?: EventTarget | null } }).document?.activeElement !== e.currentTarget) {
+                            (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
                           }
                         }}
                       />
@@ -4468,7 +4552,7 @@ const PartnerPerformanceDashboard = () => {
                       <input
                         type="date"
                         value={customEndDate}
-                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        onChange={(e) => setCustomEndDate((e.target as unknown as { value: string }).value)}
                         style={{
                           padding: '8px 12px',
                           border: '1px solid var(--shopify-border)',
@@ -4478,14 +4562,14 @@ const PartnerPerformanceDashboard = () => {
                           outline: 'none',
                           transition: 'border-color 0.15s ease'
                         }}
-                        onFocus={(e) => e.target.style.borderColor = '#7256F6'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--shopify-border)'}
+                        onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
+                        onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = '#7256F6';
+                          (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
                         }}
                         onMouseLeave={(e) => {
-                          if (document.activeElement !== e.currentTarget) {
-                            e.currentTarget.style.borderColor = 'var(--shopify-border)';
+                          if ((globalThis as unknown as { document?: { addEventListener(type: string, listener: EventListener): void; removeEventListener(type: string, listener: EventListener): void; activeElement?: EventTarget | null } }).document?.activeElement !== e.currentTarget) {
+                            (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
                           }
                         }}
                       />
@@ -4503,10 +4587,10 @@ const PartnerPerformanceDashboard = () => {
                           transition: 'all 0.15s ease'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#5a3fd4';
+                          (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = '#5a3fd4';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#7256F6';
+                          (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = '#7256F6';
                         }}
                       >
                         Apply
@@ -4687,14 +4771,14 @@ const PartnerPerformanceDashboard = () => {
                                     }}
                                     onMouseEnter={(e) => {
                                       if (!isSelected) {
-                                        e.currentTarget.style.backgroundColor = '#fafbfc';
-                                        e.currentTarget.style.borderColor = '#e8eaed';
+                                        (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = '#fafbfc';
+                                        (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#e8eaed';
                                       }
                                     }}
                                     onMouseLeave={(e) => {
                                       if (!isSelected) {
-                                        e.currentTarget.style.backgroundColor = 'transparent';
-                                        e.currentTarget.style.borderColor = 'transparent';
+                                        (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
+                                        (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'transparent';
                                       }
                                     }}
                                   >
@@ -5059,7 +5143,7 @@ const PartnerPerformanceDashboard = () => {
                             </MetricTooltip>
                           </div>
                           <div className="shopify-metric-value" style={{ marginBottom: '4px', fontSize: '22px' }}>
-                            ${(aggregatedData.weekday.revenue / 1000).toFixed(1)}K / ${(aggregatedData.weekend.revenue / 1000).toFixed(1)}K
+                            {formatCurrency(aggregatedData.weekday.revenue, { compact: true })} / {formatCurrency(aggregatedData.weekend.revenue, { compact: true })}
                           </div>
                         </div>
                         <div style={{ 
@@ -5081,10 +5165,7 @@ const PartnerPerformanceDashboard = () => {
                                 tick={{ fontSize: 12, fill: '#6d7175' }}
                                 tickLine={{ stroke: '#6d7175' }}
                                 width={40}
-                                tickFormatter={(value: number) => {
-                                  if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
-                                  return `$${value}`;
-                                }}
+                                tickFormatter={(value: number) => formatCurrency(value, { compact: true })}
                               />
                               <Tooltip 
                                 contentStyle={{ 
@@ -5095,7 +5176,7 @@ const PartnerPerformanceDashboard = () => {
                                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                                   fontSize: '13px'
                                 }}
-                                formatter={(value: number) => `$${value.toLocaleString()}`}
+                                formatter={(value: number) => formatCurrency(Number(value))}
                               />
                               <Bar 
                                 dataKey="value" 
@@ -5334,10 +5415,10 @@ const PartnerPerformanceDashboard = () => {
                         padding: 0
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.textDecoration = 'underline';
+                        (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'underline';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.textDecoration = 'none';
+                        (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'none';
                       }}
                     >
                       View full report
@@ -5493,7 +5574,7 @@ const PartnerPerformanceDashboard = () => {
                         <span style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>View by:</span>
                         <select
                           value={selectedMetric}
-                          onChange={(e) => setSelectedMetric(e.target.value as 'orders' | 'customers' | 'revenue' | 'cvr')}
+                          onChange={(e) => setSelectedMetric((e.target as unknown as { value: string }).value as 'orders' | 'customers' | 'revenue' | 'cvr')}
                           style={{
                             padding: '6px 24px 6px 12px',
                             border: '1px solid var(--shopify-border)',
@@ -5523,7 +5604,7 @@ const PartnerPerformanceDashboard = () => {
                         <select
                         value={mapRegion}
                         onChange={(e) => {
-                          const region = e.target.value;
+                          const region = (e.target as unknown as { value: string }).value;
                           setMapRegion(region);
                           setSelectedCountry(null);
                           setSelectedCity(null);
@@ -5622,8 +5703,8 @@ const PartnerPerformanceDashboard = () => {
                                 color: 'var(--shopify-text-primary)',
                                 padding: 0
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              onMouseEnter={(e) => { (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)'; }}
+                              onMouseLeave={(e) => { (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent'; }}
                             >
                               +
                             </button>
@@ -5645,8 +5726,8 @@ const PartnerPerformanceDashboard = () => {
                                 color: 'var(--shopify-text-primary)',
                                 padding: 0
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--shopify-gray-50)'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              onMouseEnter={(e) => { (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'var(--shopify-gray-50)'; }}
+                              onMouseLeave={(e) => { (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent'; }}
                             >
                               −
                             </button>
@@ -6027,10 +6108,10 @@ const PartnerPerformanceDashboard = () => {
                               transition: 'all 0.15s ease'
                             }}
                             onMouseEnter={(e) => {
-                              (e.currentTarget as HTMLElement).style.backgroundColor = '#f6f6f7';
+                              (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = '#f6f6f7';
                             }}
                             onMouseLeave={(e) => {
-                              (e.currentTarget as HTMLElement).style.backgroundColor = 'white';
+                              (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'white';
                             }}
                           >
                             ← Back to World Map
@@ -6166,12 +6247,12 @@ const PartnerPerformanceDashboard = () => {
                               onClick={() => handleCountryClick(country.country)}
                               onMouseEnter={(e) => {
                                 if (selectedCountry !== country.country) {
-                                  e.currentTarget.style.backgroundColor = '#f9f9f9';
+                                  (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = '#f9f9f9';
                                 }
                               }}
                               onMouseLeave={(e) => {
                                 if (selectedCountry !== country.country) {
-                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                  (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
                                 }
                               }}
                             >
@@ -6333,12 +6414,12 @@ const PartnerPerformanceDashboard = () => {
                               }}
                               onMouseEnter={(e) => {
                                 if (selectedCountry !== country.country) {
-                                  (e.currentTarget as HTMLElement).style.backgroundColor = '#f6f6f7';
+                                  (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = '#f6f6f7';
                                 }
                               }}
                               onMouseLeave={(e) => {
                                 if (selectedCountry !== country.country) {
-                                  (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                  (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = 'transparent';
                                 }
                               }}
                             >
@@ -6940,10 +7021,10 @@ const PartnerPerformanceDashboard = () => {
                         padding: 0
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.textDecoration = 'underline';
+                        (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'underline';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.textDecoration = 'none';
+                        (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'none';
                       }}
                     >
                       View full report
@@ -7117,7 +7198,7 @@ const PartnerPerformanceDashboard = () => {
                                           }}
                                           onError={(e) => {
                                             // Fallback if image fails to load
-                                            (e.target as HTMLImageElement).style.display = 'none';
+                                            (e.target as unknown as { style: Record<string, string> }).style.display = 'none';
                                           }}
                                         />
                                       )}
@@ -7137,10 +7218,10 @@ const PartnerPerformanceDashboard = () => {
                                               whiteSpace: 'nowrap'
                                             }}
                                             onMouseEnter={(e) => {
-                                              e.currentTarget.style.textDecoration = 'underline';
+                                              (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'underline';
                                             }}
                                             onMouseLeave={(e) => {
-                                              e.currentTarget.style.textDecoration = 'none';
+                                              (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'none';
                                             }}
                                           >
                                             {item.name}
@@ -7156,7 +7237,7 @@ const PartnerPerformanceDashboard = () => {
                                   </TableCell>
                                   <TableCell style={{ verticalAlign: 'middle' }}>{item.impressions.toLocaleString()}</TableCell>
                                   <TableCell style={{ verticalAlign: 'middle' }}>{item.clicks.toLocaleString()}</TableCell>
-                                  <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>${item.revenue.toLocaleString()}</TableCell>
+                                  <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>{formatCurrency(item.revenue)}</TableCell>
                                   <TableCell style={{ verticalAlign: 'middle' }}>
                                     {item.impressions > 0 ? `${((item.clicks / item.impressions) * 100).toFixed(2)}%` : '-'}
                                   </TableCell>
@@ -7196,10 +7277,10 @@ const PartnerPerformanceDashboard = () => {
                               padding: 0
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.textDecoration = 'underline';
+                              (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'underline';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.textDecoration = 'none';
+                              (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'none';
                             }}
                           >
                             View full report
@@ -7362,7 +7443,7 @@ const PartnerPerformanceDashboard = () => {
                                                     flexShrink: 0
                                                   }}
                                                   onError={(e) => {
-                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                    (e.target as unknown as { style: Record<string, string> }).style.display = 'none';
                                                   }}
                                                 />
                                               )}
@@ -7382,10 +7463,10 @@ const PartnerPerformanceDashboard = () => {
                                                       whiteSpace: 'nowrap'
                                                     }}
                                                     onMouseEnter={(e) => {
-                                                      e.currentTarget.style.textDecoration = 'underline';
+                                                      (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'underline';
                                                     }}
                                                     onMouseLeave={(e) => {
-                                                      e.currentTarget.style.textDecoration = 'none';
+                                                      (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'none';
                                                     }}
                                                   >
                                                     {item.name}
@@ -7398,7 +7479,7 @@ const PartnerPerformanceDashboard = () => {
                                           </TableCell>
                                           <TableCell style={{ verticalAlign: 'middle' }}>{item.impressions.toLocaleString()}</TableCell>
                                           <TableCell style={{ verticalAlign: 'middle' }}>{item.clicks.toLocaleString()}</TableCell>
-                                          <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>${item.revenue.toLocaleString()}</TableCell>
+                                          <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>{formatCurrency(item.revenue)}</TableCell>
                                           <TableCell style={{ verticalAlign: 'middle' }}>
                                             <span style={{ fontWeight: '600', color: '#16a34a' }}>
                                               {item.ctr.toFixed(2)}%
@@ -7434,10 +7515,10 @@ const PartnerPerformanceDashboard = () => {
                                       padding: 0
                                     }}
                                     onMouseEnter={(e) => {
-                                      e.currentTarget.style.textDecoration = 'underline';
+                                      (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'underline';
                                     }}
                                     onMouseLeave={(e) => {
-                                      e.currentTarget.style.textDecoration = 'none';
+                                      (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'none';
                                     }}
                                   >
                                     View full report
@@ -7554,7 +7635,7 @@ const PartnerPerformanceDashboard = () => {
                                                     flexShrink: 0
                                                   }}
                                                   onError={(e) => {
-                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                    (e.target as unknown as { style: Record<string, string> }).style.display = 'none';
                                                   }}
                                                 />
                                               )}
@@ -7574,10 +7655,10 @@ const PartnerPerformanceDashboard = () => {
                                                       whiteSpace: 'nowrap'
                                                     }}
                                                     onMouseEnter={(e) => {
-                                                      e.currentTarget.style.textDecoration = 'underline';
+                                                      (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'underline';
                                                     }}
                                                     onMouseLeave={(e) => {
-                                                      e.currentTarget.style.textDecoration = 'none';
+                                                      (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'none';
                                                     }}
                                                   >
                                                     {item.name}
@@ -7590,7 +7671,7 @@ const PartnerPerformanceDashboard = () => {
                                           </TableCell>
                                           <TableCell style={{ verticalAlign: 'middle' }}>{item.impressions.toLocaleString()}</TableCell>
                                           <TableCell style={{ verticalAlign: 'middle' }}>{item.clicks.toLocaleString()}</TableCell>
-                                          <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>${item.revenue.toLocaleString()}</TableCell>
+                                          <TableCell style={{ fontWeight: '600', verticalAlign: 'middle' }}>{formatCurrency(item.revenue)}</TableCell>
                                           <TableCell style={{ verticalAlign: 'middle' }}>
                                             <span style={{ fontWeight: '600', color: '#dc2626' }}>
                                               {item.ctr.toFixed(2)}%
@@ -7626,10 +7707,10 @@ const PartnerPerformanceDashboard = () => {
                                       padding: 0
                                     }}
                                     onMouseEnter={(e) => {
-                                      e.currentTarget.style.textDecoration = 'underline';
+                                      (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'underline';
                                     }}
                                     onMouseLeave={(e) => {
-                                      e.currentTarget.style.textDecoration = 'none';
+                                      (e.currentTarget as unknown as { style: Record<string, string> }).style.textDecoration = 'none';
                                     }}
                                   >
                                     View full report
