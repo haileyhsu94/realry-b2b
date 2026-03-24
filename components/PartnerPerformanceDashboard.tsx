@@ -1,7 +1,7 @@
 'use client';
 /// <reference lib="dom" />
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Tabs,
   TabList,
@@ -89,6 +89,24 @@ import {
   mockPreviousPeriodData,
   type PartnerPlans,
 } from '@/lib/mockData';
+import {
+  STANDARD_TIMEZONE_OPTIONS,
+  getTimezoneTypeaheadString,
+  isStandardTimezoneId,
+  type StandardTimezoneOption,
+} from '@/lib/standardTimezones';
+
+/** Settings currency options — same `{ value, label }` shape as timezone Dropdown items */
+const CURRENCY_COMBO_ITEMS: readonly StandardTimezoneOption[] = [
+  { value: 'USD', label: 'USD (US Dollar)' },
+  { value: 'EUR', label: 'EUR (Euro)' },
+  { value: 'GBP', label: 'GBP (British Pound)' },
+  { value: 'JPY', label: 'JPY (Japanese Yen)' },
+  { value: 'CAD', label: 'CAD (Canadian Dollar)' },
+  { value: 'AUD', label: 'AUD (Australian Dollar)' },
+  { value: 'CHF', label: 'CHF (Swiss Franc)' },
+  { value: 'KRW', label: 'KRW (Korean Won)' },
+];
 
 // Mock data for seller-focused dashboard
 const mockPartnerPerformance = [
@@ -251,6 +269,46 @@ const keywordEfficiencyMinX = Math.min(...keywordEfficiencyData.map(d => d.searc
 
 // Standardized Item Name column width for Product/Content/Optimization tables
 const ITEM_NAME_COLUMN_STYLE: React.CSSProperties = { minWidth: '220px', maxWidth: '280px' };
+
+/** Period / date-range selects (Last 7 days, etc.) — shared with Settings currency & timezone */
+const DASHBOARD_PERIOD_SELECT_CHEVRON = `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236d7175' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`;
+
+const DASHBOARD_PERIOD_SELECT_STYLE: React.CSSProperties = {
+  padding: '8px 32px 8px 12px',
+  border: '1px solid var(--shopify-border)',
+  borderRadius: '6px',
+  backgroundColor: 'white',
+  fontSize: '14px',
+  color: 'var(--shopify-text-primary)',
+  cursor: 'pointer',
+  outline: 'none',
+  appearance: 'none',
+  backgroundImage: DASHBOARD_PERIOD_SELECT_CHEVRON,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  transition: 'border-color 0.15s ease',
+};
+
+const dashboardPeriodSelectInteractionProps: Pick<
+  React.SelectHTMLAttributes<HTMLSelectElement>,
+  'onFocus' | 'onBlur' | 'onMouseEnter' | 'onMouseLeave'
+> = {
+  onFocus: (e) => {
+    (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
+  },
+  onBlur: (e) => {
+    (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
+  },
+  onMouseEnter: (e) => {
+    (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
+  },
+  onMouseLeave: (e) => {
+    const doc = (globalThis as unknown as { document?: { activeElement?: EventTarget | null } }).document;
+    if (doc?.activeElement !== e.currentTarget) {
+      (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
+    }
+  },
+};
 const keywordEfficiencyMaxX = Math.max(...keywordEfficiencyData.map(d => d.searchVolume));
 const keywordEfficiencyMinY = Math.min(...keywordEfficiencyData.map(d => d.ctr));
 const keywordEfficiencyMaxY = Math.max(...keywordEfficiencyData.map(d => d.ctr));
@@ -773,7 +831,26 @@ const PartnerPerformanceDashboard = () => {
   const formatInTimeZone = (date: Date, options?: Intl.DateTimeFormatOptions) => {
     return new Intl.DateTimeFormat(undefined, { timeZone: timezone, ...options }).format(date);
   };
-  
+
+  const timezoneComboItems = useMemo((): StandardTimezoneOption[] => {
+    const base = [...STANDARD_TIMEZONE_OPTIONS];
+    if (!isStandardTimezoneId(timezone)) {
+      const exists = base.some((o) => o.value === timezone);
+      if (!exists) {
+        return [{ value: timezone, label: `${timezone} (current)` }, ...base];
+      }
+    }
+    return base;
+  }, [timezone]);
+
+  const selectedTimezoneItem = useMemo(() => {
+    return timezoneComboItems.find((o) => o.value === timezone) ?? null;
+  }, [timezoneComboItems, timezone]);
+
+  const selectedCurrencyItem = useMemo(() => {
+    return CURRENCY_COMBO_ITEMS.find((o) => o.value === currency) ?? null;
+  }, [currency]);
+
   // Mock notifications data
   const mockNotifications = [
     {
@@ -2764,20 +2841,8 @@ const PartnerPerformanceDashboard = () => {
                 <select
                   value={detailReportDateFilter}
                   onChange={(e) => setDetailReportDateFilter((e.target as unknown as { value: string }).value as typeof detailReportDateFilter)}
-                  style={{
-                    padding: '8px 32px 8px 12px',
-                    border: '1px solid var(--shopify-border)',
-                    borderRadius: '6px',
-                    backgroundColor: 'white',
-                    fontSize: '14px',
-                    color: 'var(--shopify-text-primary)',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    appearance: 'none',
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236d7175' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 12px center'
-                  }}
+                  style={DASHBOARD_PERIOD_SELECT_STYLE}
+                  {...dashboardPeriodSelectInteractionProps}
                 >
                   <option value="7d">Last 7 days</option>
                   <option value="14d">Last 14 days</option>
@@ -3158,31 +3223,8 @@ const PartnerPerformanceDashboard = () => {
                     <select
                       value={shopPerformanceDateFilter}
                       onChange={(e) => setShopPerformanceDateFilter((e.target as unknown as { value: string }).value as '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ')}
-                      style={{
-                        padding: '8px 32px 8px 12px',
-                        border: '1px solid var(--shopify-border)',
-                        borderRadius: '6px',
-                        backgroundColor: 'white',
-                        fontSize: '14px',
-                        color: 'var(--shopify-text-primary)',
-                        cursor: 'pointer',
-                        outline: 'none',
-                        appearance: 'none',
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236d7175' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 12px center',
-                        transition: 'border-color 0.15s ease'
-                      }}
-                      onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
-                      onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
-                      }}
-                      onMouseLeave={(e) => {
-                        if ((globalThis as unknown as { document?: { addEventListener(type: string, listener: EventListener): void; removeEventListener(type: string, listener: EventListener): void; activeElement?: EventTarget | null } }).document?.activeElement !== e.currentTarget) {
-                          (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
-                        }
-                      }}
+                      style={DASHBOARD_PERIOD_SELECT_STYLE}
+                      {...dashboardPeriodSelectInteractionProps}
                     >
                       <option value="7d">Last 7 days</option>
                       <option value="14d">Last 14 days</option>
@@ -3842,31 +3884,8 @@ const PartnerPerformanceDashboard = () => {
                     <select
                       value={creatorPerformanceDateFilter}
                       onChange={(e) => setCreatorPerformanceDateFilter((e.target as unknown as { value: string }).value as '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ')}
-                      style={{
-                        padding: '8px 32px 8px 12px',
-                        border: '1px solid var(--shopify-border)',
-                        borderRadius: '6px',
-                        backgroundColor: 'white',
-                        fontSize: '14px',
-                        color: 'var(--shopify-text-primary)',
-                        cursor: 'pointer',
-                        outline: 'none',
-                        appearance: 'none',
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236d7175' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 12px center',
-                        transition: 'border-color 0.15s ease'
-                      }}
-                      onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
-                      onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
-                      }}
-                      onMouseLeave={(e) => {
-                        if ((globalThis as unknown as { document?: { addEventListener(type: string, listener: EventListener): void; removeEventListener(type: string, listener: EventListener): void; activeElement?: EventTarget | null } }).document?.activeElement !== e.currentTarget) {
-                          (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
-                        }
-                      }}
+                      style={DASHBOARD_PERIOD_SELECT_STYLE}
+                      {...dashboardPeriodSelectInteractionProps}
                     >
                       <option value="7d">Last 7 days</option>
                       <option value="14d">Last 14 days</option>
@@ -4333,89 +4352,127 @@ const PartnerPerformanceDashboard = () => {
             </div>
           )}
 
-          {/* Settings - Currency & Timezone (site-wide) */}
+          {/* Settings - Currency & Timezone (site-wide) — layout aligned with Figma node 111:52943 */}
           {activeSection === 'settings' && (
-            <div style={{ width: '100%' }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px 24px',
-                borderBottom: '1px solid var(--shopify-border)'
-              }}>
-                <h2 style={{
-                  fontSize: '24px',
-                  fontWeight: '600',
-                  color: 'var(--shopify-text-primary)',
-                  margin: 0,
-                  letterSpacing: '-0.02em'
-                }}>
-                  Settings
-                </h2>
+            <div style={{ width: '100%', minHeight: '100%', backgroundColor: '#f4f4f4' }}>
+              <div
+                style={{
+                  backgroundColor: 'var(--shopify-white)',
+                  borderBottom: '1px solid #e0e0e0',
+                  padding: '12px 24px',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                  <h2
+                    style={{
+                      fontFamily: "'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif",
+                      fontSize: '25.375px',
+                      fontWeight: 600,
+                      lineHeight: '25.375px',
+                      letterSpacing: '0.32px',
+                      color: '#161616',
+                      margin: 0,
+                    }}
+                  >
+                    Settings
+                  </h2>
+                  <p
+                    style={{
+                      fontFamily: "'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif",
+                      fontSize: '14px',
+                      lineHeight: '14px',
+                      letterSpacing: '0.32px',
+                      color: '#525252',
+                      margin: 0,
+                      maxWidth: '736px',
+                    }}
+                  >
+                    Manage site-wide currency and timezone for the dashboard.
+                  </p>
+                </div>
               </div>
               <div style={{ padding: '24px', minHeight: '400px' }}>
-                <div style={{ maxWidth: '480px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '16px' }}>Site-wide configuration</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', marginBottom: '24px' }}>Currency and timezone apply to the entire dashboard.</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>Currency</label>
-                      <select
-                        value={currency}
-                        onChange={(e) => setCurrency((e.target as unknown as { value: string }).value)}
-                        style={{
-                          width: '100%',
-                          maxWidth: '280px',
-                          padding: '10px 12px',
-                          fontSize: '14px',
-                          border: '1px solid var(--shopify-border)',
-                          borderRadius: '6px',
-                          backgroundColor: 'white',
-                          color: 'var(--shopify-text-primary)'
-                        }}
-                      >
-                        <option value="USD">USD (US Dollar)</option>
-                        <option value="EUR">EUR (Euro)</option>
-                        <option value="GBP">GBP (British Pound)</option>
-                        <option value="JPY">JPY (Japanese Yen)</option>
-                        <option value="CAD">CAD (Canadian Dollar)</option>
-                        <option value="AUD">AUD (Australian Dollar)</option>
-                        <option value="CHF">CHF (Swiss Franc)</option>
-                        <option value="KRW">KRW (Korean Won)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>Timezone</label>
-                      <select
-                        value={timezone}
-                        onChange={(e) => setTimezone((e.target as unknown as { value: string }).value)}
-                        style={{
-                          width: '100%',
-                          maxWidth: '280px',
-                          padding: '10px 12px',
-                          fontSize: '14px',
-                          border: '1px solid var(--shopify-border)',
-                          borderRadius: '6px',
-                          backgroundColor: 'white',
-                          color: 'var(--shopify-text-primary)'
-                        }}
-                      >
-                        <option value="America/New_York">Eastern (America/New_York)</option>
-                        <option value="America/Los_Angeles">Pacific (America/Los_Angeles)</option>
-                        <option value="America/Chicago">Central (America/Chicago)</option>
-                        <option value="Europe/London">London (Europe/London)</option>
-                        <option value="Europe/Paris">Paris (Europe/Paris)</option>
-                        <option value="Asia/Tokyo">Tokyo (Asia/Tokyo)</option>
-                        <option value="Asia/Singapore">Singapore (Asia/Singapore)</option>
-                        <option value="UTC">UTC</option>
-                      </select>
-                    </div>
+                <div
+                  style={{
+                    backgroundColor: 'var(--shopify-white)',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px',
+                    maxWidth: '100%',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <p
+                      style={{
+                        fontFamily: "'IBM Plex Sans', sans-serif",
+                        fontSize: '16px',
+                        fontWeight: 600,
+                        lineHeight: '24px',
+                        color: '#161616',
+                        margin: 0,
+                      }}
+                    >
+                      Site-wide configuration
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif",
+                        fontSize: '14px',
+                        lineHeight: '14px',
+                        letterSpacing: '0.32px',
+                        color: '#525252',
+                        margin: 0,
+                      }}
+                    >
+                      Currency and timezone apply to the entire dashboard.
+                    </p>
                   </div>
+                  <div style={{ width: '100%', maxWidth: '560px' }}>
+                    <Dropdown<StandardTimezoneOption>
+                      id="dashboard-settings-currency"
+                      titleText="Currency"
+                      label="Select currency"
+                      items={[...CURRENCY_COMBO_ITEMS]}
+                      itemToString={(item) => (item ? item.label : '')}
+                      selectedItem={selectedCurrencyItem ?? undefined}
+                      onChange={({ selectedItem }) => {
+                        if (selectedItem) setCurrency(selectedItem.value);
+                      }}
+                      
+                      size="md"
+                    />
+                  </div>
+                  <div style={{ width: '100%', maxWidth: '560px' }}>
+                    <Dropdown<StandardTimezoneOption>
+                      id="dashboard-settings-timezone"
+                      titleText="Timezone"
+                      label="Select timezone"
+                      items={timezoneComboItems}
+                      itemToString={(item) =>
+                        item ? getTimezoneTypeaheadString(item.label, item.value) : ''
+                      }
+                      itemToElement={(item) => (
+                        <span title={item.label}>{item.label}</span>
+                      )}
+                      renderSelectedItem={(item) => <span>{item.label}</span>}
+                      selectedItem={selectedTimezoneItem ?? undefined}
+                      onChange={({ selectedItem }) => {
+                        if (selectedItem) setTimezone(selectedItem.value);
+                      }}
+                      
+                      size="md"
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                   <Button kind="primary" size="md" onClick={saveSettings}>
                     Save settings
                   </Button>
                   {settingsSaved && (
-                    <span style={{ marginLeft: '12px', fontSize: '13px', color: '#16a34a' }}>Saved. Applied site-wide.</span>
+                    <span style={{ fontSize: '13px', color: '#16a34a' }}>Saved. Applied site-wide.</span>
                   )}
                 </div>
               </div>
@@ -4484,31 +4541,8 @@ const PartnerPerformanceDashboard = () => {
                   <select
                     value={timeRange}
                     onChange={(e) => handleTimeRangeChange((e.target as unknown as { value: string }).value as 'hourly' | '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ' | 'custom')}
-                    style={{
-                      padding: '8px 32px 8px 12px',
-                      border: '1px solid var(--shopify-border)',
-                      borderRadius: '6px',
-                      backgroundColor: 'white',
-                      fontSize: '14px',
-                      color: 'var(--shopify-text-primary)',
-                      cursor: 'pointer',
-                      outline: 'none',
-                      appearance: 'none',
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236d7175' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 12px center',
-                      transition: 'border-color 0.15s ease'
-                    }}
-                    onFocus={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6'}
-                    onBlur={(e) => (e.target as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)'}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = '#7256F6';
-                    }}
-                    onMouseLeave={(e) => {
-                      if ((globalThis as unknown as { document?: { addEventListener(type: string, listener: EventListener): void; removeEventListener(type: string, listener: EventListener): void; activeElement?: EventTarget | null } }).document?.activeElement !== e.currentTarget) {
-                        (e.currentTarget as unknown as { style: Record<string, string> }).style.borderColor = 'var(--shopify-border)';
-                      }
-                    }}
+                    style={DASHBOARD_PERIOD_SELECT_STYLE}
+                    {...dashboardPeriodSelectInteractionProps}
                   >
                     <option value="hourly">Hourly</option>
                     <option value="7d">Last 7 days</option>
