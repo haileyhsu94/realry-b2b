@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Information, ArrowUp, ArrowDown } from '@carbon/icons-react';
 import {
   LineChart,
@@ -64,6 +64,7 @@ export const KPICard: React.FC<KPICardProps> = ({
   showRevenueBreakdown = false,
   onInfoClick,
 }) => {
+  const [infoHovered, setInfoHovered] = useState(false);
   return (
     <div className="shopify-metric-card">
       {/* Header with title, info icon, and value */}
@@ -73,27 +74,21 @@ export const KPICard: React.FC<KPICardProps> = ({
           <Information 
             size={16} 
             style={{ 
-              color: 'var(--shopify-text-secondary)', 
-              opacity: 0.6,
+              color: infoHovered ? '#7256F6' : 'var(--shopify-text-secondary)', 
+              opacity: infoHovered ? 1 : 0.6,
               cursor: 'pointer',
               flexShrink: 0,
               transition: 'opacity 0.15s ease'
             }}
-            onMouseEnter={(e) => {
-              const target = e.currentTarget as unknown as HTMLElement;
-              if (target && target.style) {
-                target.style.opacity = '1';
-                target.style.color = '#7256F6';
-              }
-            }}
-            onMouseLeave={(e) => {
-              const target = e.currentTarget as unknown as HTMLElement;
-              if (target && target.style) {
-                target.style.opacity = '0.6';
-                target.style.color = 'var(--shopify-text-secondary)';
-              }
-            }}
-            onClick={onInfoClick || (() => alert(`Information about ${title}`))}
+            onMouseEnter={() => setInfoHovered(true)}
+            onMouseLeave={() => setInfoHovered(false)}
+            onClick={
+              onInfoClick ||
+              (() =>
+                (globalThis as unknown as { alert: (message?: string) => void }).alert(
+                  `Information about ${title}`
+                ))
+            }
           />
         </div>
         <div className="shopify-metric-value" style={{ marginBottom: '8px' }}>{value}</div>

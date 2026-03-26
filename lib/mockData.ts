@@ -119,7 +119,30 @@ export interface CreatorPerformance {
 // Mock data for different plan combinations
 export const mockPartnerPlans: PartnerPlans = {
   shop: 'paid', // Change to 'paid' or null to test different scenarios
-  creator: null, // Change to 'paid' or null to test different scenarios
+  creator: 'paid', // Change to 'paid' or null to test different scenarios
+};
+
+/** Settings → Organization tab (mock until API exists) */
+export interface OrganizationAssociatedEntity {
+  id: string;
+  shopName: string;
+  email: string;
+  displayName: string;
+}
+
+export const mockOrganizationSettings: {
+  organizationName: string;
+  associatedEntities: OrganizationAssociatedEntity[];
+} = {
+  organizationName: 'Style Mall',
+  associatedEntities: [
+    {
+      id: '1',
+      shopName: 'Uniqlo KR',
+      email: 'uniqlo_kr@realry.com',
+      displayName: 'Admin',
+    },
+  ],
 };
 
 export const mockWebsitePerformance: WebsitePerformanceMetrics = {
@@ -329,6 +352,53 @@ export const mockCreatorPerformance: CreatorPerformance = {
 };
 
 // Time series data for charts
+/** StylMatch-style creator dashboard snapshot (aligned with partner.stylmatch.com/creator-dashboard) */
+export interface CreatorDashboardOverview {
+  summary: {
+    revenue: number;
+    /** Revenue-producing creators count */
+    rpc: number;
+    clicks: number;
+    purchases: number;
+    conversionRate: number;
+    epc: number;
+  };
+  revenueByDay: { date: string; revenue: number }[];
+  influencerRanking: { id: string; name: string; revenue: number }[];
+}
+
+export const mockCreatorDashboardOverview: CreatorDashboardOverview = {
+  summary: {
+    revenue: 28450,
+    rpc: 28,
+    clicks: 12500,
+    purchases: 456,
+    conversionRate: 3.65,
+    epc: 2.28,
+  },
+  revenueByDay: [
+    { date: 'Jan 8', revenue: 4200 },
+    { date: 'Jan 9', revenue: 5800 },
+    { date: 'Jan 10', revenue: 4900 },
+    { date: 'Jan 11', revenue: 7100 },
+    { date: 'Jan 12', revenue: 6400 },
+    { date: 'Jan 13', revenue: 8200 },
+    { date: 'Jan 14', revenue: 7800 },
+  ],
+  influencerRanking: [
+    { id: '1', name: 'Lifestyle Influencer', revenue: 8500 },
+    { id: '2', name: 'Fashion Blogger', revenue: 7200 },
+    { id: '3', name: 'Tech Reviewer', revenue: 6500 },
+    { id: '4', name: 'Beauty Expert', revenue: 6250 },
+    { id: '5', name: 'Fitness Coach', revenue: 5800 },
+    { id: '6', name: 'Home & Living', revenue: 5100 },
+    { id: '7', name: 'Food & Dining', revenue: 4600 },
+    { id: '8', name: 'Travel Creator', revenue: 4200 },
+    { id: '9', name: 'Parenting Channel', revenue: 3800 },
+    { id: '10', name: 'Gaming Streamer', revenue: 3400 },
+  ],
+};
+
 export const mockRevenueData = [
   { date: 'Jan 8', revenue: 4200, revenueNew: 1680, revenueReturning: 2520, clicks: 890, conversions: 124, roas: 3.1 },
   { date: 'Jan 9', revenue: 5800, revenueNew: 2320, revenueReturning: 3480, clicks: 1200, conversions: 165, roas: 3.3 },
@@ -347,4 +417,26 @@ export const mockPreviousPeriodData = [
   { date: 'Dec 5', revenue: 5800, clicks: 1200, conversions: 165, roas: 3.1 },
   { date: 'Dec 6', revenue: 7500, clicks: 1550, conversions: 210, roas: 3.4 },
   { date: 'Dec 7', revenue: 7000, clicks: 1450, conversions: 195, roas: 3.3 },
+];
+
+export type TeamMemberRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: TeamMemberRole;
+  joined: string;
+  isCurrentUser: boolean;
+}
+
+export const mockTeamMembers: TeamMember[] = [
+  {
+    id: '1',
+    name: 'Admin (You)',
+    email: 'uniqlo_manager@realry.com',
+    role: 'OWNER',
+    joined: '2/12/2026',
+    isCurrentUser: true,
+  },
 ];

@@ -1,7 +1,6 @@
-/* Import Carbon styles first */
-@import '@carbon/styles/css/styles.css';
+/* Carbon is loaded via app/carbon.scss (Sass + v12 feature flags) before this file in layout.tsx */
 
-/* Then Tailwind utilities */
+/* Tailwind utilities */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,12 +46,71 @@
   --cds-button-primary-hover: var(--brand-primary-hover);
 }
 
+/*
+ * Dashboard Sales / Creators — content switcher (Carbon sm layout, softer palette).
+ * Inspired by Carbon Figma ref, tuned to match Shopify-style tokens in this app.
+ */
+.dashboard-view-tabs {
+  display: inline-flex;
+  align-items: stretch;
+  width: 176px;
+  max-width: 176px;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 2px;
+  margin: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--shopify-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--shopify-gray-50);
+}
+
+.dashboard-view-tabs > button {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  background: transparent;
+  color: var(--shopify-text-secondary);
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dashboard-view-tabs > button.dashboard-view-tabs__segment--selected {
+  background: var(--shopify-white);
+  color: var(--shopify-text-primary);
+  box-shadow: 0 1px 2px rgba(32, 34, 35, 0.08);
+}
+
+.dashboard-view-tabs > button:not(.dashboard-view-tabs__segment--selected):hover {
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--shopify-text-primary);
+}
+
+.dashboard-view-tabs > button:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+  position: relative;
+  z-index: 1;
+}
+
 /* Shopify-style sidebar */
 .shopify-sidebar {
   background: var(--shopify-white);
   border-right: 1px solid var(--shopify-border);
-  width: 240px;
   min-height: 100vh;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 /* Shopify-style card */
@@ -115,6 +173,14 @@
 .shopify-time-button.active:hover {
   background: var(--brand-primary-hover);
   border-color: var(--brand-primary-hover);
+}
+
+/* StylMatch-inspired creator dashboard title (partner.stylmatch.com/creator-dashboard) */
+.creator-dashboard-gradient-text {
+  background: linear-gradient(135deg, #6366f1 0%, var(--brand-primary) 50%, #4f46e5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Shopify-style navigation item - Modern & Clean */
@@ -421,4 +487,248 @@
 .whats-working-table-wrapper .cds--data-table th:nth-child(6),
 .whats-working-table-wrapper .cds--data-table td:nth-child(6) {
   width: 10%;
+}
+
+/* Invite Member modal — match app card radius */
+#invite-member-modal .cds--modal-container {
+  width: 400px;
+  border-radius: 12px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+  border-bottom-left-radius: 12px;
+  overflow: hidden;
+}
+
+/* Invite Member modal — match "Invite Member" CTA button style */
+#invite-member-modal .cds--modal-footer {
+  height: fit-content !important;
+  display: grid !important;
+  justify-content: center !important;
+  align-items: center !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  grid-template-rows: repeat(1, 1fr) !important;
+  gap: 16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 16px;
+}
+
+#invite-member-modal .cds--modal-footer .cds--btn {
+  width: auto !important;
+  min-width: auto !important;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+#invite-member-modal .cds--modal-footer .cds--btn--primary {
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  background-color: #7256F6;
+  font-weight: 400;
+  box-shadow: 0 1px 2px rgba(114, 86, 246, 0.25);
+  padding-right: 15px !important;
+  padding-bottom: 14px !important;
+  height: fit-content !important;
+  min-height: fit-content !important;
+}
+
+#invite-member-modal .cds--modal-footer .cds--btn--secondary {
+  font-weight: 400;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: fit-content !important;
+  min-height: fit-content !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+  padding-bottom: 14px !important;
+  background-color: var(--cds-layer-02) !important;
+  border-width: 0px !important;
+  border-style: none !important;
+  border-color: rgba(0, 0, 0, 0) !important;
+  border-image: none !important;
+  color: var(--cds-button-secondary) !important;
+}
+
+/* Contact Support modal — match app card radius */
+#contact-support-modal .cds--modal-container {
+  border-radius: 12px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+  border-bottom-left-radius: 12px;
+  overflow: hidden;
+}
+
+/* Contact Support modal — match Invite Member CTA button style */
+#contact-support-modal .cds--modal-footer {
+  height: fit-content !important;
+  display: grid !important;
+  justify-content: center !important;
+  align-items: center !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  grid-template-rows: repeat(1, 1fr) !important;
+  gap: 16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 16px;
+}
+
+#contact-support-modal .cds--modal-footer .cds--btn {
+  width: auto !important;
+  min-width: auto !important;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+#contact-support-modal .cds--modal-footer .cds--btn--primary {
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  background-color: #7256F6;
+  font-weight: 400;
+  box-shadow: 0 1px 2px rgba(114, 86, 246, 0.25);
+  padding-right: 15px !important;
+  padding-bottom: 14px !important;
+  height: fit-content !important;
+  min-height: fit-content !important;
+}
+
+#contact-support-modal .cds--modal-footer .cds--btn--secondary {
+  font-weight: 400;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: fit-content !important;
+  min-height: fit-content !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+  padding-bottom: 14px !important;
+  background-color: var(--cds-layer-02) !important;
+  border-width: 0px !important;
+  border-style: none !important;
+  border-color: rgba(0, 0, 0, 0) !important;
+  border-image: none !important;
+  color: var(--cds-button-secondary) !important;
+}
+
+/* Settings: Carbon TabsVertical + vertical tab list (replaces custom nav) */
+.settings-page-tabs-vertical {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-page-tabs-vertical > .cds--grid,
+.settings-page-tabs-vertical > .cds--css-grid {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+/* Override Carbon GridSettings padding for the css-grid layout inside settings.
+   This matches the browser-preview change: 16px left/right -> 0px. */
+.settings-page-tabs-vertical .cds--css-grid {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+.settings-sections-tablist.cds--tabs--vertical {
+  width: 240px;
+  flex-shrink: 0;
+  align-self: stretch;
+  min-height: 100%;
+  box-sizing: border-box;
+  background-color: var(--cds-layer);
+  border-right: 1px solid #e0e0e0;
+  padding: 16px 12px;
+}
+
+/* Settings: vertical tabs should be compact.
+   The browser preview reduced the button padding/height (was ~64px tall). */
+.settings-sections-tablist.cds--tabs--vertical .cds--tabs__nav-item,
+.settings-sections-tablist.cds--tabs--vertical .cds--tabs__nav-link {
+  height: 40px;
+  min-height: 40px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* Settings: match browser-preview span padding-left (0px -> 40px) */
+.settings-sections-tablist.cds--tabs--vertical .cds--tabs__nav-item span,
+.settings-sections-tablist.cds--tabs--vertical .cds--tabs__nav-link span {
+  padding-left: 40px;
+}
+
+/* Settings filterable select: search row matches list-box menu item height; no blue focus ring */
+.settings-filterable-select__search .cds--form-item,
+.settings-filterable-select__search .cds--text-input-wrapper {
+  margin-bottom: 0;
+}
+
+.settings-filterable-select__search .cds--text-input__field-outer-wrapper {
+  margin-bottom: 0;
+}
+
+/* Match Carbon list-box menu row heights (sm / md / lg) */
+.settings-filterable-select__search .cds--text-input__field-wrapper:has(.cds--text-input--sm) {
+  min-block-size: 2rem;
+}
+
+.settings-filterable-select__search .cds--text-input__field-wrapper:has(.cds--text-input--md) {
+  min-block-size: 2.5rem;
+}
+
+.settings-filterable-select__search .cds--text-input__field-wrapper:has(.cds--text-input--lg) {
+  min-block-size: 3rem;
+}
+
+.settings-filterable-select__search .cds--text-input.cds--text-input--sm {
+  block-size: 2rem;
+  min-block-size: 2rem;
+  padding-block: 0;
+}
+
+.settings-filterable-select__search .cds--text-input.cds--text-input--md {
+  block-size: 2.5rem;
+  min-block-size: 2.5rem;
+  padding-block: 0;
+}
+
+.settings-filterable-select__search .cds--text-input.cds--text-input--lg {
+  block-size: 3rem;
+  min-block-size: 3rem;
+  padding-block: 0;
+}
+
+.settings-filterable-select__search .cds--text-input:focus,
+.settings-filterable-select__search .cds--text-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.settings-filterable-select__search .cds--text-input__field-wrapper:has(.cds--text-input:focus),
+.settings-filterable-select__search .cds--text-input__field-wrapper:has(.cds--text-input:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+.settings-filterable-select__search .cds--text-input__field-outer-wrapper:focus-within {
+  outline: none;
+  box-shadow: none;
 }

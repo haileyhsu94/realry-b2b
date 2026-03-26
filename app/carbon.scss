@@ -1,0 +1,18 @@
+// Carbon Sass feature flags — opt in to v12 styling (compiled into component CSS).
+// See: https://carbondesignsystem.com/components/overview/feature-flags/
+@use '@carbon/styles/scss/feature-flags' with (
+  $feature-flags: (
+    'enable-css-custom-properties': true,
+    'enable-css-grid': true,
+    'enable-v11-release': true,
+    'enable-experimental-tile-contrast': false,
+    'enable-tile-contrast': false,
+    'enable-v12-tile-radio-icons': true,
+    'enable-v12-structured-list-visible-icons': true,
+    'enable-dialog-element': false,
+    'enable-v12-toggle-reduced-label-spacing': true,
+    'enable-presence': false,
+  )
+);
+
+@use '@carbon/styles';
