@@ -102,6 +102,13 @@ import {
   isStandardTimezoneId,
   type StandardTimezoneOption,
 } from '@/lib/standardTimezones';
+import {
+  DISPLAY_LANGUAGE_OPTIONS,
+  SETTINGS_I18N,
+  isSupportedLocale,
+  type DisplayLanguageOption,
+  type SupportedLocale,
+} from '@/lib/i18n/settings';
 import { CreatorDashboardView } from '@/components/CreatorDashboardView';
 import { SettingsFilterableSelect } from '@/components/SettingsFilterableSelect';
 import { cn } from '@/lib/utils';
@@ -117,6 +124,33 @@ const CURRENCY_COMBO_ITEMS: readonly StandardTimezoneOption[] = [
   { value: 'CHF', label: 'CHF (Swiss Franc)' },
   { value: 'KRW', label: 'KRW (Korean Won)' },
 ];
+
+const NON_COUNTRY_REGION_CODES = new Set(['EU', 'EZ', 'UN', 'XA', 'XB', 'ZZ']);
+
+const toFlagEmoji = (countryCode: string): string => {
+  const upperCode = countryCode.toUpperCase();
+  return String.fromCodePoint(
+    ...upperCode.split('').map((char) => 127397 + char.charCodeAt(0))
+  );
+};
+
+const buildCountryOfBusinessItems = (): StandardTimezoneOption[] => {
+  const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+  const items: StandardTimezoneOption[] = [];
+
+  for (let i = 65; i <= 90; i += 1) {
+    for (let j = 65; j <= 90; j += 1) {
+      const code = String.fromCharCode(i, j);
+      if (NON_COUNTRY_REGION_CODES.has(code)) continue;
+      const displayName = displayNames.of(code);
+      if (!displayName || displayName === code || displayName.startsWith('Unknown Region')) continue;
+      items.push({ value: code, label: `${toFlagEmoji(code)} ${displayName}` });
+    }
+  }
+
+  return items.sort((a, b) => a.label.localeCompare(b.label));
+};
+
 
 // Mock data for seller-focused dashboard
 const mockPartnerPerformance = [
@@ -666,7 +700,15 @@ const metricDefinitions: { [key: string]: { name: string; formula: string; descr
 };
 
 // Custom Tooltip Component for Metric Definitions
-const MetricTooltip = ({ metric, children }: { metric: string; children: React.ReactNode }) => {
+const MetricTooltip = ({
+  metric,
+  children,
+  formulaLabel = 'Formula',
+}: {
+  metric: string;
+  children: React.ReactNode;
+  formulaLabel?: string;
+}) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const definition = metricDefinitions[metric];
@@ -706,7 +748,7 @@ const MetricTooltip = ({ metric, children }: { metric: string; children: React.R
           }}
         >
           <div style={{ fontWeight: '600', marginBottom: '6px', fontSize: '13px' }}>{definition.name}</div>
-          <div style={{ marginBottom: '4px', opacity: 0.9 }}><strong>Formula:</strong> {definition.formula}</div>
+          <div style={{ marginBottom: '4px', opacity: 0.9 }}><strong>{formulaLabel}:</strong> {definition.formula}</div>
           <div style={{ opacity: 0.8, lineHeight: '1.4' }}>{definition.description}</div>
         </div>
       )}
@@ -837,18 +879,27 @@ const PartnerPerformanceDashboard = () => {
     if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return 'America/New_York';
     return (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.getItem('dashboard-timezone') || 'America/New_York';
   });
-  type SettingsNavTab = 'general' | 'organization' | 'team' | 'support';
-  const SETTINGS_NAV_ITEMS: { id: SettingsNavTab; label: string }[] = [
-    { id: 'general', label: 'General' },
-    { id: 'organization', label: 'Organization' },
-    { id: 'team', label: 'Team' },
-    { id: 'support', label: 'Support' },
+  type SettingsNavTab = 'account' | 'general' | 'organization' | 'team' | 'support';
+  const SETTINGS_NAV_ITEMS: readonly SettingsNavTab[] = [
+    'account',
+    'general',
+    'organization',
+    'team',
+    'support',
   ];
   const [settingsNavTab, setSettingsNavTab] = useState<SettingsNavTab>('general');
   /** Shared settings modal shell (same as Invite Member): invite vs contact support */
   type SettingsModalMode = 'invite' | 'contact' | null;
   const [settingsModal, setSettingsModal] = useState<SettingsModalMode>(null);
   const [inviteMemberEmail, setInviteMemberEmail] = useState('');
+  const [displayLanguage, setDisplayLanguage] = useState<SupportedLocale>(() => {
+    if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return 'en';
+    const stored = (globalThis as unknown as { localStorage?: { getItem(key: string): string | null } }).localStorage?.getItem('dashboard-display-language');
+    if (isSupportedLocale(stored)) {
+      return stored;
+    }
+    return 'en';
+  });
 
   type SupportInquiryStatus = 'Open' | 'Resolved';
   type SupportInquiry = {
@@ -928,6 +979,8 @@ const PartnerPerformanceDashboard = () => {
       mockOrganizationSettings.associatedEntities.map((e) => [e.id, e.displayName])
     )
   );
+  const countryOfBusinessItems = useMemo(() => buildCountryOfBusinessItems(), []);
+  const [countryOfBusiness, setCountryOfBusiness] = useState<string>('US');
   useEffect(() => {
     if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return;
     const c = (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.getItem('dashboard-currency');
@@ -975,6 +1028,186 @@ const PartnerPerformanceDashboard = () => {
   const selectedCurrencyItem = useMemo(() => {
     return CURRENCY_COMBO_ITEMS.find((o) => o.value === currency) ?? null;
   }, [currency]);
+
+  const selectedCountryOfBusinessItem = useMemo(() => {
+    return countryOfBusinessItems.find((o) => o.value === countryOfBusiness) ?? null;
+  }, [countryOfBusiness, countryOfBusinessItems]);
+
+  const selectedDisplayLanguageItem = useMemo(() => {
+    return DISPLAY_LANGUAGE_OPTIONS.find((o) => o.value === displayLanguage) ?? null;
+  }, [displayLanguage]);
+  const settingsCopy = SETTINGS_I18N[displayLanguage];
+  const extraCopy =
+    displayLanguage === 'ko'
+      ? {
+          export: '내보내기',
+          globalCustomerDistribution: '글로벌 고객 분포',
+          viewBy: '보기 기준:',
+          region: '지역:',
+          orders: '주문',
+          customers: '고객',
+          northAmerica: '북미',
+          europe: '유럽',
+          asia: '아시아',
+          oceania: '오세아니아',
+          africa: '아프리카',
+          globalView: '전체 보기',
+          regionalPerformanceInsights: '지역별 성과 인사이트',
+          highestConversionRate: '최고 전환율',
+          mostCustomers: '최다 고객',
+          highestRevenue: '최고 매출',
+          fastestGrowing: '가장 빠른 성장',
+          activeUsersByGender: '성별 활성 사용자',
+          searchClickEfficiency: '키워드별 검색 -> 클릭 효율',
+          searchClickEfficiencyDesc: '사용자 검색 수요와 클릭 성과 매핑',
+          customerInterests: '고객 관심사',
+          newUsers: '신규 사용자',
+          totalUsers: '전체 사용자',
+          returningUsers: '재방문 사용자',
+          users: '사용자',
+          impressions: '노출',
+          itemName: '항목명',
+          product: '제품',
+          content: '콘텐츠',
+          revenueWord: '매출',
+          topPerformingItems: '상위 {count}개 {type} 성과 항목',
+          highCtrLowCvr: '높은 CTR, 낮은 CVR',
+          highCtrLowCvrDesc: '상위 25% CTR, 하위 25% CVR - 전환 퍼널 최적화',
+          highCvrLowCtr: '높은 CVR, 낮은 CTR',
+          highCvrLowCtrDesc: '상위 25% CVR, 하위 25% CTR - 노출과 트래픽 확대',
+          recommendations: '추천 사항',
+          recommendationAov: 'AOV가 카테고리 평균보다 10.5% 낮습니다. 고가 상품 프로모션을 고려하세요.',
+          recommendationCvr: 'CVR이 강세입니다 - 평균 대비 11% 높습니다. 현재 전략을 유지하세요.',
+          recommendationReturnRate: '반품률이 평균보다 22% 낮습니다 - 우수한 품질 관리입니다.',
+          learnFromTopPerformers: '상위 성과자에게 배우기',
+          learnFromTopPerformersDesc: '고수익 판매자의 성공 패턴과 모범 사례',
+          recommendedActions: '추천 액션',
+          recommendedActionsDesc: '수익 극대화를 위한 AI 기반 제안',
+          comingSoon: '곧 제공',
+          you: '나',
+          average: '평균',
+          top5: '상위 5%',
+          activeUsersLast30m: '최근 30분 활성 사용자',
+          activeUsersPerMinute: '분당 활성 사용자',
+          viewRealtime: '실시간 보기',
+        }
+      : displayLanguage === 'ja'
+        ? {
+            export: 'エクスポート',
+            globalCustomerDistribution: 'グローバル顧客分布',
+            viewBy: '表示基準:',
+            region: '地域:',
+            orders: '注文',
+            customers: '顧客',
+            northAmerica: '北米',
+            europe: 'ヨーロッパ',
+            asia: 'アジア',
+            oceania: 'オセアニア',
+            africa: 'アフリカ',
+            globalView: '全体表示',
+            regionalPerformanceInsights: '地域別パフォーマンスインサイト',
+            highestConversionRate: '最高コンバージョン率',
+            mostCustomers: '最多顧客',
+            highestRevenue: '最高売上',
+            fastestGrowing: '最速成長',
+            activeUsersByGender: '性別アクティブユーザー',
+            searchClickEfficiency: 'キーワード別 検索 -> クリック効率',
+            searchClickEfficiencyDesc: '検索需要とクリック成果のマッピング',
+            customerInterests: '顧客の興味',
+            newUsers: '新規ユーザー',
+            totalUsers: '合計ユーザー',
+            returningUsers: 'リピーターユーザー',
+            users: 'ユーザー',
+            impressions: '表示回数',
+            itemName: '項目名',
+            product: '商品',
+            content: 'コンテンツ',
+            revenueWord: '売上',
+            topPerformingItems: '上位{count}件の{type}成果アイテム',
+            highCtrLowCvr: '高CTR・低CVR',
+            highCtrLowCvrDesc: 'CTR上位25%、CVR下位25% - コンバージョン導線を最適化',
+            highCvrLowCtr: '高CVR・低CTR',
+            highCvrLowCtrDesc: 'CVR上位25%、CTR下位25% - 露出と流入を強化',
+            recommendations: 'おすすめ',
+            recommendationAov: 'AOVはカテゴリ平均より10.5%低いです。高単価商品の訴求を検討してください。',
+            recommendationCvr: 'CVRは好調です - 平均より11%高い状態です。現行戦略を維持しましょう。',
+            recommendationReturnRate: '返品率は平均より22%低く、優れた品質管理ができています。',
+            learnFromTopPerformers: 'トップパフォーマーから学ぶ',
+            learnFromTopPerformersDesc: '高収益セラーの成功パターンとベストプラクティス',
+            recommendedActions: '推奨アクション',
+            recommendedActionsDesc: '収益最大化のためのAI提案',
+            comingSoon: '近日公開',
+            you: 'あなた',
+            average: '平均',
+            top5: '上位5%',
+            activeUsersLast30m: '直近30分のアクティブユーザー',
+            activeUsersPerMinute: '1分あたりアクティブユーザー',
+            viewRealtime: 'リアルタイムを見る',
+          }
+        : {
+            export: 'Export',
+            globalCustomerDistribution: 'Global Customer Distribution',
+            viewBy: 'View by:',
+            region: 'Region:',
+            orders: 'Orders',
+            customers: 'Customers',
+            northAmerica: 'North America',
+            europe: 'Europe',
+            asia: 'Asia',
+            oceania: 'Oceania',
+            africa: 'Africa',
+            globalView: 'Global View',
+            regionalPerformanceInsights: 'Regional Performance Insights',
+            highestConversionRate: 'Highest Conversion Rate',
+            mostCustomers: 'Most Customers',
+            highestRevenue: 'Highest Revenue',
+            fastestGrowing: 'Fastest Growing',
+            activeUsersByGender: 'Active users by Gender',
+            searchClickEfficiency: 'Search -> Click Efficiency by Keyword',
+            searchClickEfficiencyDesc: 'Mapping user search demand against click performance',
+            customerInterests: 'Customer Interests',
+            newUsers: 'New users',
+            totalUsers: 'Total users',
+            returningUsers: 'Returning users',
+            users: 'Users',
+            impressions: 'Impressions',
+            itemName: 'Item Name',
+            product: 'Product',
+            content: 'Content',
+            revenueWord: 'revenue',
+            topPerformingItems: 'Top {count} performing {type} items',
+            highCtrLowCvr: 'High CTR, Low CVR',
+            highCtrLowCvrDesc: 'Top 25% CTR, Bottom 25% CVR - Optimize conversion funnel',
+            highCvrLowCtr: 'High CVR, Low CTR',
+            highCvrLowCtrDesc: 'Top 25% CVR, Bottom 25% CTR - Increase visibility and traffic',
+            recommendations: 'Recommendations',
+            recommendationAov: 'Your AOV is 10.5% below category average. Consider promoting higher-value items.',
+            recommendationCvr: 'Your CVR is strong - 11% above average. Maintain current strategy.',
+            recommendationReturnRate: 'Your return rate is 22% lower than average - excellent quality control.',
+            learnFromTopPerformers: 'Learn from Top Performers',
+            learnFromTopPerformersDesc: 'Success patterns and best practices from high-earning sellers',
+            recommendedActions: 'Recommended Actions',
+            recommendedActionsDesc: 'AI-powered suggestions to maximize your earnings',
+            comingSoon: 'Coming Soon',
+            you: 'You',
+            average: 'Average',
+            top5: 'Top 5%',
+            activeUsersLast30m: 'Active Users In Last 30 min',
+            activeUsersPerMinute: 'Active users per minute',
+            viewRealtime: 'View realtime',
+          };
+  const settingsNavLabels: Record<SettingsNavTab, string> = {
+    account: settingsCopy.settingsTabAccount,
+    general: settingsCopy.settingsTabGeneral,
+    organization: settingsCopy.settingsTabOrganization,
+    team: settingsCopy.settingsTabTeam,
+    support: settingsCopy.settingsTabSupport,
+  };
+  const localizedRecommendations = [
+    extraCopy.recommendationAov,
+    extraCopy.recommendationCvr,
+    extraCopy.recommendationReturnRate,
+  ];
 
   // Mock notifications data
   const mockNotifications = [
@@ -1283,24 +1516,28 @@ const PartnerPerformanceDashboard = () => {
   const cvrTrend = filteredRevenueData.map(d => ((d.conversions / d.clicks) * 100));
 
   // Function to get date range description
-  const getDateRangeDescription = (range: typeof timeRange): string => {
+  const getTimeRangeLabel = (range: typeof timeRange): string => {
     const descriptions: Record<string, string> = {
-      'hourly': 'Hourly',
-      '7d': 'Last 7 days',
-      '14d': 'Last 14 days',
-      '30d': 'Last 30 days',
-      'thisMonth': 'This month',
-      'lastMonth': 'Last month',
-      'thisQ': 'This quarter',
-      'lastQ': 'Last quarter',
-      'custom': 'Custom range'
+      hourly: settingsCopy.periodHourly,
+      '7d': settingsCopy.periodLast7Days,
+      '14d': settingsCopy.periodLast14Days,
+      '30d': settingsCopy.periodLast30Days,
+      thisMonth: settingsCopy.periodThisMonth,
+      lastMonth: settingsCopy.periodLastMonth,
+      thisQ: settingsCopy.periodThisQuarter,
+      lastQ: settingsCopy.periodLastQuarter,
+      custom: settingsCopy.periodCustomRange,
     };
-    return descriptions[range] || 'Last 7 days';
+    return descriptions[range] || settingsCopy.periodLast7Days;
+  };
+  const getDateRangeDescription = (range: typeof timeRange): string => {
+    return getTimeRangeLabel(range);
   };
 
   const metrics = React.useMemo(() => [
     {
-      title: 'Total Revenue',
+      key: 'totalRevenue',
+      title: settingsCopy.metricTotalRevenue,
       value: formatCurrency(aggregatedMetrics.revenue),
       change: `${aggregatedMetrics.change >= 0 ? '+' : ''}${aggregatedMetrics.change.toFixed(1)}%`,
       trend: aggregatedMetrics.trend,
@@ -1309,33 +1546,36 @@ const PartnerPerformanceDashboard = () => {
       color: '#0f62fe'
     },
     {
-      title: 'Click Through Rate',
+      key: 'ctr',
+      title: settingsCopy.metricClickThroughRate,
       value: `${aggregatedMetrics.ctr.toFixed(1)}%`,
       change: '+0.8%',
       trend: 'up' as const,
-      description: 'Average CTR',
+      description: settingsCopy.metricAverageCtr,
       trendData: cvrTrend,
       color: '#8a3ffc'
     },
     {
-      title: 'ROAS',
+      key: 'roas',
+      title: settingsCopy.metricRoas,
       value: `${aggregatedMetrics.roas.toFixed(1)}x`,
       change: '+0.5x',
       trend: 'up' as const,
-      description: 'Return on ad spend',
+      description: settingsCopy.metricReturnOnAdSpend,
       trendData: filteredRevenueData.map(d => d.roas),
       color: '#0072c3'
     },
     {
-      title: 'Conversion Rate',
+      key: 'cvr',
+      title: settingsCopy.metricConversionRate,
       value: `${aggregatedMetrics.cvr.toFixed(1)}%`,
       change: '-0.3%',
       trend: 'down' as const,
-      description: 'Average CVR',
+      description: settingsCopy.metricAverageCvr,
       trendData: cvrTrend,
       color: '#00539a'
     },
-  ], [timeRange, revenueTrend, cvrTrend, aggregatedMetrics, filteredRevenueData, currency]);
+  ], [timeRange, revenueTrend, cvrTrend, aggregatedMetrics, filteredRevenueData, currency, settingsCopy]);
 
   // Call all sorting hooks at top level
   const revenueTableSort = useTableSort(revenueData, 'date');
@@ -1621,7 +1861,7 @@ const PartnerPerformanceDashboard = () => {
   const generalItems = [
     { 
       id: 'dashboard', 
-      label: 'Dashboard', 
+      label: settingsCopy.navDashboard, 
       icon: Dashboard, 
       active: true,
       planBadge: null,
@@ -1631,7 +1871,7 @@ const PartnerPerformanceDashboard = () => {
     },
     {
       id: 'shop-performance',
-      label: 'Shop Performance',
+      label: settingsCopy.navShopPerformance,
       icon: ShoppingCart,
       active: true,
       planBadge: null,
@@ -1640,19 +1880,19 @@ const PartnerPerformanceDashboard = () => {
       subItems: [
         {
           id: 'shop-detail-reports',
-          label: 'Detail Reports',
+          label: settingsCopy.navDetailReports,
           active: true,
           locked: false
         },
         {
           id: 'shop-bid-campaign',
-          label: 'Campaigns',
+          label: settingsCopy.navCampaigns,
           active: false,
           locked: true
         },
         {
           id: 'shop-update-images',
-          label: 'Content Management',
+          label: settingsCopy.navContentManagement,
           active: false,
           locked: true
         }
@@ -1660,7 +1900,7 @@ const PartnerPerformanceDashboard = () => {
     },
     {
       id: 'creator-performance',
-      label: 'Creator Performance',
+      label: settingsCopy.navCreatorPerformance,
       icon: User,
       active: hasCreatorPlan(),
       planBadge: null,
@@ -1669,25 +1909,25 @@ const PartnerPerformanceDashboard = () => {
       subItems: [
         {
           id: 'creator-overview',
-          label: 'Overview',
+          label: settingsCopy.navOverview,
           active: true,
           locked: false
         },
         {
           id: 'creator-detail-reports',
-          label: 'Detail Reports',
+          label: settingsCopy.navDetailReports,
           active: true,
           locked: false
         },
         {
           id: 'creator-campaigns',
-          label: 'Campaigns',
+          label: settingsCopy.navCampaigns,
           active: false,
           locked: true
         },
         {
           id: 'creator-content-mgmt',
-          label: 'Content Management',
+          label: settingsCopy.navContentManagement,
           active: false,
           locked: true
         }
@@ -1698,7 +1938,7 @@ const PartnerPerformanceDashboard = () => {
   const toolsItems = [
     {
       id: 'documents',
-      label: 'APIs',
+      label: settingsCopy.navApis,
       icon: Document,
       active: true,
       planBadge: null,
@@ -1707,7 +1947,7 @@ const PartnerPerformanceDashboard = () => {
     },
     {
       id: 'analytics',
-      label: 'Analytics',
+      label: settingsCopy.navAnalytics,
       icon: Analytics,
       active: false,
       planBadge: null,
@@ -1743,24 +1983,23 @@ const PartnerPerformanceDashboard = () => {
     }));
 
     // Check if this is the Total Revenue card
-    const isTotalRevenueCard = metric.title === 'Total Revenue';
+    const isTotalRevenueCard = metric.key === 'totalRevenue';
 
     return (
       <div className="shopify-metric-card">
         {/* Header with title, info icon, and value */}
         <div style={{ padding: '16px 16px 0 16px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <MetricTooltip metric={
-              metric.title === 'Total Revenue' ? 'Revenue' :
-              metric.title === 'ROAS' ? 'ROAS' :
-              metric.title === 'Conversion Rate' ? 'CVR' :
-              metric.title === 'Click through rate' ? 'CTR' :
-              metric.title === 'Revenue Per Click' ? 'RPC' :
-              metric.title === 'Return Rate' ? 'Return Rate' :
-              metric.title === 'Avg Order Value' ? 'AOV' :
-              metric.title === 'Net CPA' ? 'Net CPA' :
+            <MetricTooltip
+              formulaLabel={settingsCopy.formulaLabel}
+              metric={
+              metric.key === 'totalRevenue' ? 'Revenue' :
+              metric.key === 'roas' ? 'ROAS' :
+              metric.key === 'cvr' ? 'CVR' :
+              metric.key === 'ctr' ? 'CTR' :
               metric.title
-            }>
+            }
+            >
               <div className="shopify-metric-label">{metric.title}</div>
             </MetricTooltip>
           </div>
@@ -1833,17 +2072,17 @@ const PartnerPerformanceDashboard = () => {
                             {data.date}
                           </div>
                           <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '10px', color: '#202124' }}>
-                            Total: {formatCurrency(total)}
+                            {settingsCopy.totalLabel}: {formatCurrency(total)}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                             <div style={{ width: '12px', height: '12px', backgroundColor: '#0f62fe', borderRadius: '2px' }}></div>
-                            <span style={{ color: '#5f6368', fontSize: '13px' }}>New Users:</span>
+                            <span style={{ color: '#5f6368', fontSize: '13px' }}>{settingsCopy.newUsers}:</span>
                             <span style={{ fontWeight: '600', color: '#202124', marginLeft: 'auto' }}>{formatCurrency(data.revenueNew)}</span>
                             <span style={{ color: '#5f6368', fontSize: '12px' }}>({newPercent}%)</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ width: '12px', height: '12px', backgroundColor: '#a6c8ff', borderRadius: '2px' }}></div>
-                            <span style={{ color: '#5f6368', fontSize: '13px' }}>Returning:</span>
+                            <span style={{ color: '#5f6368', fontSize: '13px' }}>{settingsCopy.returningUsers}:</span>
                             <span style={{ fontWeight: '600', color: '#202124', marginLeft: 'auto' }}>{formatCurrency(data.revenueReturning)}</span>
                             <span style={{ color: '#5f6368', fontSize: '12px' }}>({returningPercent}%)</span>
                           </div>
@@ -1857,8 +2096,8 @@ const PartnerPerformanceDashboard = () => {
                   verticalAlign="top" 
                   height={36}
                   formatter={(value: string) => {
-                    if (value === 'revenueNew') return 'New Users';
-                    if (value === 'revenueReturning') return 'Returning Users';
+                    if (value === 'revenueNew') return settingsCopy.newUsers;
+                    if (value === 'revenueReturning') return settingsCopy.returningUsers;
                     if (value === 'value') return 'Total Trend';
                     return value;
                   }}
@@ -1945,7 +2184,17 @@ const PartnerPerformanceDashboard = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f6f6f7' }}>
+    <div
+      style={{
+        display: 'flex',
+        width: '100%',
+        maxWidth: '100%',
+        minHeight: '100vh',
+        minWidth: 0,
+        overflowX: 'clip',
+        backgroundColor: '#f6f6f7',
+      }}
+    >
       {/* Shopify-style Sidebar */}
       <aside 
         className="shopify-sidebar"
@@ -1959,6 +2208,7 @@ const PartnerPerformanceDashboard = () => {
           position: 'sticky',
           top: 0,
           height: '100vh',
+          overflowX: 'hidden',
           overflowY: 'auto',
           alignSelf: 'stretch',
         }}
@@ -2321,7 +2571,21 @@ const PartnerPerformanceDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <main
+        style={{
+          flex: 1,
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          minHeight: '100vh',
+          maxHeight: '100vh',
+          overflowY: 'auto',
+          overflowX: 'clip',
+        }}
+      >
         {/* Nexus-style Header */}
         <header style={{
           height: '64px',
@@ -2801,12 +3065,30 @@ const PartnerPerformanceDashboard = () => {
                     padding: '16px',
                     borderBottom: '1px solid var(--shopify-border)'
                   }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      marginBottom: '8px'
-                    }}>
+                    <div
+                      onClick={() => {
+                        setActiveSection('settings');
+                        setSettingsNavTab('account');
+                        setShowUserMenu(false);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setActiveSection('settings');
+                          setSettingsNavTab('account');
+                          setShowUserMenu(false);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        marginBottom: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
                       <img 
                         src="/avatar.png" 
                         alt="User avatar"
@@ -2987,21 +3269,27 @@ const PartnerPerformanceDashboard = () => {
 
         <div style={{ 
           padding: '0',
-          flex: 1, 
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          overflowX: 'hidden',
           overflowY: 'auto',
           backgroundColor: '#f6f6f7'
         }}>
           {/* Detail Reports */}
           {activeSection === 'shop-detail-reports' && (
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div style={{ width: '100%', minWidth: 0, flex: 1, height: '100%', maxHeight: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 flexWrap: 'wrap',
                 gap: '12px',
-                padding: '16px 24px',
+                padding: '12px 24px',
                 borderBottom: '1px solid var(--shopify-border)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 4,
                 background: 'unset',
                 backgroundColor: 'var(--cds-layer-01)',
               }}>
@@ -3013,11 +3301,8 @@ const PartnerPerformanceDashboard = () => {
                     margin: 0,
                     letterSpacing: '-0.02em'
                   }}>
-                    Detail Reports
+                    {settingsCopy.detailReportsTitle}
                   </h2>
-                  <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: '4px 0 0 0' }}>
-                    Full reports for each dashboard chart and detail spreadsheet
-                  </p>
                 </div>
                 <select
                   value={detailReportDateFilter}
@@ -3035,21 +3320,26 @@ const PartnerPerformanceDashboard = () => {
               <div
                 style={{
                   display: 'flex',
+                  width: '100%',
+                  maxWidth: '100%',
                   alignItems: 'stretch',
                   flex: 1,
+                  minWidth: 0,
                   minHeight: 0,
                   gap: 0,
+                  overflow: 'hidden',
                 }}
               >
                 <nav
-                  aria-label="Detail report sections"
+                  aria-label={settingsCopy.detailReportSectionsAriaLabel}
                   style={{
-                    width: '240px',
+                    width: '200px',
                     flexShrink: 0,
-                    alignSelf: 'stretch',
-                    minHeight: '100%',
+                    alignSelf: 'flex-start',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 3,
                     backgroundColor: 'var(--cds-layer)',
-                    borderRight: '1px solid #e0e0e0',
                     padding: '16px 12px',
                     display: 'flex',
                     flexDirection: 'column',
@@ -3057,12 +3347,12 @@ const PartnerPerformanceDashboard = () => {
                   }}
                 >
                   {([
-                    { id: 'weekday-weekend' as const, label: 'Weekday vs Weekend' },
-                    { id: 'customer-interests' as const, label: 'Customer Interests' },
-                    { id: 'product-content' as const, label: 'Product & Content' },
-                    { id: 'high-ctr-low-cvr' as const, label: 'High CTR Low CVR' },
-                    { id: 'high-cvr-low-ctr' as const, label: 'High CVR Low CTR' },
-                    { id: 'spreadsheet' as const, label: 'Detail Spreadsheet' },
+                    { id: 'weekday-weekend' as const, label: settingsCopy.tabWeekdayWeekend },
+                    { id: 'customer-interests' as const, label: settingsCopy.tabCustomerInterests },
+                    { id: 'product-content' as const, label: settingsCopy.tabProductContent },
+                    { id: 'high-ctr-low-cvr' as const, label: settingsCopy.tabHighCtrLowCvr },
+                    { id: 'high-cvr-low-ctr' as const, label: settingsCopy.tabHighCvrLowCtr },
+                    { id: 'spreadsheet' as const, label: settingsCopy.tabDetailSpreadsheet },
                   ] as const).map(({ id, label }) => {
                     const isActive = detailReportTab === id;
                     return (
@@ -3092,10 +3382,13 @@ const PartnerPerformanceDashboard = () => {
                 </nav>
                 <div
                   style={{
-                    flex: 1,
+                    flex: '1 1 0%',
                     minWidth: 0,
+                    height: '100%',
                     minHeight: '100%',
-                    padding: '24px',
+                    padding: '16px 12px',
+                    boxSizing: 'border-box',
+                    overflowX: 'hidden',
                     overflowY: 'auto',
                     backgroundColor: 'var(--cds-layer)',
                   }}
@@ -3108,13 +3401,13 @@ const PartnerPerformanceDashboard = () => {
                   const weekendRPC = aggregatedData.weekend.clicks > 0 ? aggregatedData.weekend.revenue / aggregatedData.weekend.clicks : 0;
                   const weekdayRPC = aggregatedData.weekday.clicks > 0 ? aggregatedData.weekday.revenue / aggregatedData.weekday.clicks : 0;
                   return (
-                    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', border: '1px solid var(--shopify-border)' }}>
-                      <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 16px 0' }}>Weekday vs Weekend Performance</h3>
-                      <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 20px 0' }}>Weekends: Saturday, Sunday. Full breakdown below.</p>
+                    <div style={{ backgroundColor: 'white', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box', padding: '24px', borderRadius: '8px', border: '1px solid var(--shopify-border)' }}>
+                      <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 16px 0' }}>{settingsCopy.weekdayWeekendPerformanceTitle}</h3>
+                      <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 20px 0' }}>{settingsCopy.weekdayWeekendPerformanceDescription}</p>
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                           gap: '16px',
                           marginBottom: '24px',
                           width: '100%',
@@ -3124,11 +3417,11 @@ const PartnerPerformanceDashboard = () => {
                         }}
                       >
                         <div className="shopify-metric-card" style={{ padding: '16px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
-                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>Revenue (Weekday / Weekend)</div>
+                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>{settingsCopy.revenueWeekdayWeekend}</div>
                           <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{formatCurrency(aggregatedData.weekday.revenue, { compact: true })} / {formatCurrency(aggregatedData.weekend.revenue, { compact: true })}</div>
                           <div style={{ height: '160px', marginTop: '12px', width: '100%', minWidth: 0 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.revenue }, { name: 'Weekend', value: aggregatedData.weekend.revenue }]} margin={{ top: 5, right: 10, left: 10, bottom: 25 }}>
+                              <BarChart data={[{ name: settingsCopy.weekday, value: aggregatedData.weekday.revenue }, { name: settingsCopy.weekend, value: aggregatedData.weekend.revenue }]} margin={{ top: 5, right: 10, left: 10, bottom: 25 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                                 <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
                                 <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => formatCurrency(v, { compact: true })} />
@@ -3139,11 +3432,11 @@ const PartnerPerformanceDashboard = () => {
                           </div>
                         </div>
                         <div className="shopify-metric-card" style={{ padding: '16px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
-                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>Conversions</div>
+                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>{settingsCopy.metricConversions}</div>
                           <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{aggregatedData.weekday.conversions.toLocaleString()} / {aggregatedData.weekend.conversions.toLocaleString()}</div>
                           <div style={{ height: '160px', marginTop: '12px', width: '100%', minWidth: 0 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.conversions }, { name: 'Weekend', value: aggregatedData.weekend.conversions }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                              <BarChart data={[{ name: settingsCopy.weekday, value: aggregatedData.weekday.conversions }, { name: settingsCopy.weekend, value: aggregatedData.weekend.conversions }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                                 <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
                                 <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} />
@@ -3154,11 +3447,26 @@ const PartnerPerformanceDashboard = () => {
                           </div>
                         </div>
                         <div className="shopify-metric-card" style={{ padding: '16px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
-                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>RPC (Weekday / Weekend)</div>
+                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>{settingsCopy.rpcWeekdayWeekend}</div>
                           <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{formatCurrency(weekdayRPC)} / {formatCurrency(weekendRPC)}</div>
                           <div style={{ height: '160px', marginTop: '12px', width: '100%', minWidth: 0 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={[{ name: 'Weekday', value: weekdayRPC }, { name: 'Weekend', value: weekendRPC }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                              <BarChart data={[{ name: settingsCopy.weekday, value: weekdayRPC }, { name: settingsCopy.weekend, value: weekendRPC }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                                <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
+                                <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => formatCurrency(v)} />
+                                <Tooltip formatter={(v: number) => [formatCurrency(Number(v)), '']} />
+                                <Bar dataKey="value" radius={[4,4,0,0]}><Cell fill="#6fa8ff" /><Cell fill="#0f62fe" /></Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                        <div className="shopify-metric-card" style={{ padding: '16px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>{settingsCopy.aovLabel} ({settingsCopy.weekday} / {settingsCopy.weekend})</div>
+                          <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{formatCurrency(weekdayAOV)} / {formatCurrency(weekendAOV)}</div>
+                          <div style={{ height: '160px', marginTop: '12px', width: '100%', minWidth: 0 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={[{ name: settingsCopy.weekday, value: weekdayAOV }, { name: settingsCopy.weekend, value: weekendAOV }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                                 <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
                                 <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => formatCurrency(v)} />
@@ -3169,19 +3477,20 @@ const PartnerPerformanceDashboard = () => {
                           </div>
                         </div>
                       </div>
-                      <h4 style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 8px 0', color: 'var(--shopify-text-primary)' }}>Detail table by day</h4>
-                      <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: '0 0 12px 0' }}>Monday–Sunday by date.</p>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 8px 0', color: 'var(--shopify-text-primary)' }}>{settingsCopy.detailTableByDay}</h4>
+                      <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: '0 0 12px 0' }}>{settingsCopy.mondaySundayByDate}</p>
                       <div style={{ overflowX: 'auto', border: '1px solid var(--shopify-border)', borderRadius: '8px' }}>
+                        <div style={{ minWidth: '980px', width: 'max-content' }}>
                         <Table size="sm">
                           <TableHead>
                             <TableRow>
-                              <TableHeader>Date</TableHeader>
-                              <TableHeader>Day</TableHeader>
-                              <TableHeader>Weekend / Weekday</TableHeader>
-                              <TableHeader>Revenue</TableHeader>
-                              <TableHeader>Conversions</TableHeader>
-                              <TableHeader>CVR</TableHeader>
-                              <TableHeader>AOV</TableHeader>
+                              <TableHeader>{settingsCopy.dateLabel}</TableHeader>
+                              <TableHeader>{settingsCopy.dayLabel}</TableHeader>
+                              <TableHeader>{settingsCopy.weekendWeekdayLabel}</TableHeader>
+                              <TableHeader>{settingsCopy.metricTotalRevenue}</TableHeader>
+                              <TableHeader>{settingsCopy.metricConversions}</TableHeader>
+                              <TableHeader>{settingsCopy.cvrLabel}</TableHeader>
+                              <TableHeader>{settingsCopy.aovLabel}</TableHeader>
                               <TableHeader>RPC</TableHeader>
                             </TableRow>
                           </TableHead>
@@ -3190,7 +3499,7 @@ const PartnerPerformanceDashboard = () => {
                               <TableRow key={row.date} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f9f9f9' }}>
                                 <TableCell>{row.dateLabel}</TableCell>
                                 <TableCell>{row.dayOfWeek}</TableCell>
-                                <TableCell>{row.dayOfWeek === 'Saturday' || row.dayOfWeek === 'Sunday' ? 'Weekend' : 'Weekday'}</TableCell>
+                                <TableCell>{row.dayOfWeek === 'Saturday' || row.dayOfWeek === 'Sunday' ? settingsCopy.weekend : settingsCopy.weekday}</TableCell>
                                 <TableCell>{formatCurrency(row.revenue)}</TableCell>
                                 <TableCell>{row.conversions.toLocaleString()}</TableCell>
                                 <TableCell>{row.cvr.toFixed(1)}%</TableCell>
@@ -3200,6 +3509,7 @@ const PartnerPerformanceDashboard = () => {
                             ))}
                           </TableBody>
                         </Table>
+                        </div>
                       </div>
                     </div>
                   );
@@ -3208,7 +3518,7 @@ const PartnerPerformanceDashboard = () => {
                 {/* Customer Interests - full report */}
                 {detailReportTab === 'customer-interests' && (
                   <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', border: '1px solid var(--shopify-border)' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 16px 0' }}>Customer Interests</h3>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 16px 0' }}>{settingsCopy.customerInterestsTitle}</h3>
                     <Grid narrow style={{ marginBottom: '24px' }}>
                       <Column lg={8}>
                         <div style={{ height: '280px' }}>
@@ -3225,27 +3535,27 @@ const PartnerPerformanceDashboard = () => {
                       <Column lg={8}>
                         <div style={{ padding: '16px', backgroundColor: '#f6f6f7', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '12px' }}>
-                            <div><div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Peak Shopping Time</div><div style={{ fontSize: '16px', fontWeight: '600' }}>7-9 PM</div></div>
-                            <div><div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Peak Shopping Day</div><div style={{ fontSize: '16px', fontWeight: '600' }}>Fri, Sat, Sun</div></div>
-                            <div><div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Preferred Device</div><div style={{ fontSize: '16px', fontWeight: '600' }}>Mobile (68%)</div></div>
-                            <div><div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Most Popular</div><div style={{ fontSize: '16px', fontWeight: '600' }}>Clothing</div></div>
+                            <div><div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>{settingsCopy.peakShoppingTime}</div><div style={{ fontSize: '16px', fontWeight: '600' }}>7-9 PM</div></div>
+                            <div><div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>{settingsCopy.peakShoppingDay}</div><div style={{ fontSize: '16px', fontWeight: '600' }}>Fri, Sat, Sun</div></div>
+                            <div><div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>{settingsCopy.preferredDevice}</div><div style={{ fontSize: '16px', fontWeight: '600' }}>Mobile (68%)</div></div>
+                            <div><div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>{settingsCopy.mostPopular}</div><div style={{ fontSize: '16px', fontWeight: '600' }}>Clothing</div></div>
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', fontStyle: 'italic', borderTop: '1px solid #e0e0e0', paddingTop: '8px' }}>* Time is based on shopper&apos;s local time</div>
+                          <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', fontStyle: 'italic', borderTop: '1px solid #e0e0e0', paddingTop: '8px' }}>{settingsCopy.localTimeNote}</div>
                         </div>
                       </Column>
                     </Grid>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 8px 0', color: 'var(--shopify-text-primary)' }}>Detail table</h4>
-                    <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: '0 0 12px 0' }}>Per-user interest, shopping time, device, day, and product.</p>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 8px 0', color: 'var(--shopify-text-primary)' }}>{settingsCopy.detailTable}</h4>
+                    <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: '0 0 12px 0' }}>{settingsCopy.perUserInterestDescription}</p>
                     <div style={{ overflowX: 'auto', border: '1px solid var(--shopify-border)', borderRadius: '8px', maxHeight: '400px', overflowY: 'auto' }}>
                       <Table size="sm">
                         <TableHead>
                           <TableRow>
-                            <TableHeader>User ID</TableHeader>
-                            <TableHeader>Product Category</TableHeader>
-                            <TableHeader>Product Item</TableHeader>
-                            <TableHeader>Shopping Time</TableHeader>
-                            <TableHeader>Shopping Day</TableHeader>
-                            <TableHeader>Device</TableHeader>
+                            <TableHeader>{settingsCopy.userId}</TableHeader>
+                            <TableHeader>{settingsCopy.productCategory}</TableHeader>
+                            <TableHeader>{settingsCopy.productItem}</TableHeader>
+                            <TableHeader>{settingsCopy.shoppingTime}</TableHeader>
+                            <TableHeader>{settingsCopy.shoppingDay}</TableHeader>
+                            <TableHeader>{settingsCopy.deviceLabel}</TableHeader>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -3268,23 +3578,24 @@ const PartnerPerformanceDashboard = () => {
                 {/* Product & Content - full report with tables */}
                 {detailReportTab === 'product-content' && (
                   <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', border: '1px solid var(--shopify-border)' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 8px 0' }}>Product & Content Performance</h3>
-                    <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 16px 0' }}>By traffic source. Item Name, Impressions, Clicks, Revenue, CTR, CVR.</p>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 8px 0' }}>{settingsCopy.productContentPerformanceTitle}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 16px 0' }}>{settingsCopy.productContentTrafficSourceDescription}</p>
                     {(['Product', 'Content'] as const).map((itemType) => {
                       const sortState = itemType === 'Product' ? productItemsSort : contentItemsSort;
+                      const itemTypeLabel = itemType === 'Product' ? settingsCopy.reportProduct : settingsCopy.reportContent;
                       return (
                         <div key={itemType} style={{ marginBottom: '24px' }}>
-                          <h4 style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 8px 0', color: 'var(--shopify-text-primary)' }}>{itemType} performance</h4>
+                          <h4 style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 8px 0', color: 'var(--shopify-text-primary)' }}>{itemTypeLabel} {settingsCopy.performanceSuffix}</h4>
                           <div style={{ overflowX: 'auto', border: '1px solid var(--shopify-border)', borderRadius: '8px' }}>
                             <Table size="sm">
                               <TableHead>
                                 <TableRow>
-                                  <TableHeader onClick={() => sortState.handleSort('name' as any)} style={{ cursor: 'pointer', ...ITEM_NAME_COLUMN_STYLE }}>Item Name</TableHeader>
-                                  <TableHeader onClick={() => sortState.handleSort('impressions' as any)} style={{ cursor: 'pointer' }}>Impressions</TableHeader>
-                                  <TableHeader onClick={() => sortState.handleSort('clicks' as any)} style={{ cursor: 'pointer' }}>Clicks</TableHeader>
-                                  <TableHeader onClick={() => sortState.handleSort('revenue' as any)} style={{ cursor: 'pointer' }}>Revenue</TableHeader>
-                                  <TableHeader onClick={() => sortState.handleSort('ctr' as any)} style={{ cursor: 'pointer' }}>CTR</TableHeader>
-                                  <TableHeader onClick={() => sortState.handleSort('cvr' as any)} style={{ cursor: 'pointer' }}>CVR</TableHeader>
+                                  <TableHeader onClick={() => sortState.handleSort('name' as any)} style={{ cursor: 'pointer', ...ITEM_NAME_COLUMN_STYLE }}>{settingsCopy.itemName}</TableHeader>
+                                  <TableHeader onClick={() => sortState.handleSort('impressions' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.metricImpressions}</TableHeader>
+                                  <TableHeader onClick={() => sortState.handleSort('clicks' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.metricClicks}</TableHeader>
+                                  <TableHeader onClick={() => sortState.handleSort('revenue' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.metricTotalRevenue}</TableHeader>
+                                  <TableHeader onClick={() => sortState.handleSort('ctr' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.ctrLabel}</TableHeader>
+                                  <TableHeader onClick={() => sortState.handleSort('cvr' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.cvrLabel}</TableHeader>
                                 </TableRow>
                               </TableHead>
                               <TableBody>
@@ -3310,18 +3621,18 @@ const PartnerPerformanceDashboard = () => {
                 {/* High CTR Low CVR - full report */}
                 {detailReportTab === 'high-ctr-low-cvr' && (
                   <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', border: '1px solid var(--shopify-border)' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 8px 0' }}>High CTR, Low CVR</h3>
-                    <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 16px 0' }}>Items with high click-through but lower conversion. Opportunity to improve landing experience.</p>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 8px 0' }}>{settingsCopy.highCtrLowCvrTitle}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 16px 0' }}>{settingsCopy.highCtrLowCvrDescription}</p>
                     <div style={{ overflowX: 'auto', border: '1px solid var(--shopify-border)', borderRadius: '8px' }}>
                       <Table size="sm">
                         <TableHead>
                           <TableRow>
-                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('name' as any)} style={{ cursor: 'pointer', ...ITEM_NAME_COLUMN_STYLE }}>Item Name</TableHeader>
-                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('impressions' as any)} style={{ cursor: 'pointer' }}>Impressions</TableHeader>
-                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('clicks' as any)} style={{ cursor: 'pointer' }}>Clicks</TableHeader>
-                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('revenue' as any)} style={{ cursor: 'pointer' }}>Revenue</TableHeader>
-                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('ctr' as any)} style={{ cursor: 'pointer' }}>CTR</TableHeader>
-                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('cvr' as any)} style={{ cursor: 'pointer' }}>CVR</TableHeader>
+                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('name' as any)} style={{ cursor: 'pointer', ...ITEM_NAME_COLUMN_STYLE }}>{settingsCopy.itemName}</TableHeader>
+                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('impressions' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.metricImpressions}</TableHeader>
+                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('clicks' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.metricClicks}</TableHeader>
+                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('revenue' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.metricTotalRevenue}</TableHeader>
+                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('ctr' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.ctrLabel}</TableHeader>
+                            <TableHeader onClick={() => highCTRLowCVRSort.handleSort('cvr' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.cvrLabel}</TableHeader>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -3344,18 +3655,18 @@ const PartnerPerformanceDashboard = () => {
                 {/* High CVR Low CTR - full report */}
                 {detailReportTab === 'high-cvr-low-ctr' && (
                   <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', border: '1px solid var(--shopify-border)' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 8px 0' }}>High CVR, Low CTR</h3>
-                    <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 16px 0' }}>Items that convert well once clicked but get fewer clicks. Opportunity to increase visibility.</p>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 8px 0' }}>{settingsCopy.highCvrLowCtrTitle}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 16px 0' }}>{settingsCopy.highCvrLowCtrDescription}</p>
                     <div style={{ overflowX: 'auto', border: '1px solid var(--shopify-border)', borderRadius: '8px' }}>
                       <Table size="sm">
                         <TableHead>
                           <TableRow>
-                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('name' as any)} style={{ cursor: 'pointer', ...ITEM_NAME_COLUMN_STYLE }}>Item Name</TableHeader>
-                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('impressions' as any)} style={{ cursor: 'pointer' }}>Impressions</TableHeader>
-                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('clicks' as any)} style={{ cursor: 'pointer' }}>Clicks</TableHeader>
-                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('revenue' as any)} style={{ cursor: 'pointer' }}>Revenue</TableHeader>
-                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('ctr' as any)} style={{ cursor: 'pointer' }}>CTR</TableHeader>
-                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('cvr' as any)} style={{ cursor: 'pointer' }}>CVR</TableHeader>
+                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('name' as any)} style={{ cursor: 'pointer', ...ITEM_NAME_COLUMN_STYLE }}>{settingsCopy.itemName}</TableHeader>
+                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('impressions' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.metricImpressions}</TableHeader>
+                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('clicks' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.metricClicks}</TableHeader>
+                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('revenue' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.metricTotalRevenue}</TableHeader>
+                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('ctr' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.ctrLabel}</TableHeader>
+                            <TableHeader onClick={() => highCVRLowCTRSort.handleSort('cvr' as any)} style={{ cursor: 'pointer' }}>{settingsCopy.cvrLabel}</TableHeader>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -3378,26 +3689,26 @@ const PartnerPerformanceDashboard = () => {
                 {/* Detail Spreadsheet - combined data */}
                 {detailReportTab === 'spreadsheet' && (() => {
                   const allRows = [
-                    ...productItemsSort.sortedData.map((item) => ({ ...item, report: 'Product' })),
-                    ...contentItemsSort.sortedData.map((item) => ({ ...item, report: 'Content' })),
-                    ...highCTRLowCVRSort.sortedData.map((item) => ({ ...item, report: 'High CTR Low CVR' })),
-                    ...highCVRLowCTRSort.sortedData.map((item) => ({ ...item, report: 'High CVR Low CTR' }))
+                    ...productItemsSort.sortedData.map((item) => ({ ...item, report: settingsCopy.reportProduct })),
+                    ...contentItemsSort.sortedData.map((item) => ({ ...item, report: settingsCopy.reportContent })),
+                    ...highCTRLowCVRSort.sortedData.map((item) => ({ ...item, report: settingsCopy.reportHighCtrLowCvr })),
+                    ...highCVRLowCTRSort.sortedData.map((item) => ({ ...item, report: settingsCopy.reportHighCvrLowCtr }))
                   ];
                   return (
                     <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', border: '1px solid var(--shopify-border)' }}>
-                      <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 8px 0' }}>Detail Spreadsheet</h3>
-                      <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 16px 0' }}>All items across Product, Content, and optimization reports. Sort by column header.</p>
+                      <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 8px 0' }}>{settingsCopy.detailSpreadsheetTitle}</h3>
+                      <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 16px 0' }}>{settingsCopy.detailSpreadsheetDescription}</p>
                       <div style={{ overflowX: 'auto', border: '1px solid var(--shopify-border)', borderRadius: '8px', maxHeight: '60vh', overflowY: 'auto' }}>
                         <Table size="sm">
                           <TableHead>
                             <TableRow>
-                              <TableHeader>Report</TableHeader>
-                              <TableHeader style={ITEM_NAME_COLUMN_STYLE}>Item Name</TableHeader>
-                              <TableHeader>Impressions</TableHeader>
-                              <TableHeader>Clicks</TableHeader>
-                              <TableHeader>Revenue</TableHeader>
-                              <TableHeader>CTR</TableHeader>
-                              <TableHeader>CVR</TableHeader>
+                              <TableHeader>{settingsCopy.reportLabel}</TableHeader>
+                              <TableHeader style={ITEM_NAME_COLUMN_STYLE}>{settingsCopy.itemName}</TableHeader>
+                              <TableHeader>{settingsCopy.metricImpressions}</TableHeader>
+                              <TableHeader>{settingsCopy.metricClicks}</TableHeader>
+                              <TableHeader>{settingsCopy.metricTotalRevenue}</TableHeader>
+                              <TableHeader>{settingsCopy.ctrLabel}</TableHeader>
+                              <TableHeader>{settingsCopy.cvrLabel}</TableHeader>
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -3467,7 +3778,7 @@ const PartnerPerformanceDashboard = () => {
                     <Column lg={3} md={2} sm={1}>
                       <div className="shopify-metric-card">
                         <div className="shopify-metric-value">${mockWebsitePerformance.revenue.toLocaleString()}</div>
-                        <div className="shopify-metric-label">Revenue</div>
+                        <div className="shopify-metric-label">{settingsCopy.metricTotalRevenue}</div>
                         <div className={`shopify-metric-change ${mockWebsitePerformance.trend.direction === 'up' ? 'positive' : 'negative'}`}>
                           {mockWebsitePerformance.trend.direction === 'up' ? (
                             <ArrowUp size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
@@ -3484,7 +3795,7 @@ const PartnerPerformanceDashboard = () => {
                     <Column lg={3} md={2} sm={1}>
                       <div className="shopify-metric-card">
                         <div className="shopify-metric-value">{mockWebsitePerformance.conversions.toLocaleString()}</div>
-                        <div className="shopify-metric-label">Conversions</div>
+                        <div className="shopify-metric-label">{settingsCopy.metricConversions}</div>
                         <div className="shopify-metric-change positive">
                           <ArrowUp size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
                           +15.2%
@@ -3532,24 +3843,24 @@ const PartnerPerformanceDashboard = () => {
                       marginBottom: '8px',
                       color: 'var(--shopify-text-primary)'
                     }}>
-                      Performance Funnel: Clicks → Conversions → CVR
+                      {settingsCopy.performanceFunnelTitle}
                     </h3>
                     <p style={{ 
                       fontSize: '13px', 
                       color: 'var(--shopify-text-secondary)',
                       marginBottom: '24px'
                     }}>
-                      Track your conversion funnel performance
+                      {settingsCopy.performanceFunnelDescription}
                     </p>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={[
                         { 
-                          name: 'Clicks', 
+                          name: settingsCopy.metricClicks, 
                           value: mockWebsitePerformance.funnel.clicks,
                           fill: '#0f62fe'
                         },
                         { 
-                          name: 'Conversions', 
+                          name: settingsCopy.metricConversions, 
                           value: mockWebsitePerformance.funnel.conversions,
                           fill: '#8a3ffc'
                         },
@@ -3590,10 +3901,10 @@ const PartnerPerformanceDashboard = () => {
                     </ResponsiveContainer>
                     <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-around', fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>
                       <div>
-                        <strong style={{ color: 'var(--shopify-text-primary)' }}>{mockWebsitePerformance.funnel.clicks.toLocaleString()}</strong> Clicks
+                        <strong style={{ color: 'var(--shopify-text-primary)' }}>{mockWebsitePerformance.funnel.clicks.toLocaleString()}</strong> {settingsCopy.metricClicks}
                       </div>
                       <div>
-                        <strong style={{ color: 'var(--shopify-text-primary)' }}>{mockWebsitePerformance.funnel.conversions.toLocaleString()}</strong> Conversions
+                        <strong style={{ color: 'var(--shopify-text-primary)' }}>{mockWebsitePerformance.funnel.conversions.toLocaleString()}</strong> {settingsCopy.metricConversions}
                       </div>
                       <div>
                         <strong style={{ color: 'var(--shopify-text-primary)' }}>{mockWebsitePerformance.funnel.cvr.toFixed(1)}%</strong> CVR
@@ -3611,14 +3922,14 @@ const PartnerPerformanceDashboard = () => {
                       marginBottom: '8px',
                       color: 'var(--shopify-text-primary)'
                     }}>
-                      Revenue Trend vs Previous Period
+                      {settingsCopy.revenueTrendTitle}
                     </h3>
                     <p style={{ 
                       fontSize: '13px', 
                       color: 'var(--shopify-text-secondary)',
                       marginBottom: '24px'
                     }}>
-                      Compare current performance with previous period
+                      {settingsCopy.revenueTrendDescription}
                     </p>
                     <ResponsiveContainer width="100%" height={400}>
                       <AreaChart data={filteredRevenueData}>
@@ -3657,7 +3968,7 @@ const PartnerPerformanceDashboard = () => {
                           fillOpacity={1} 
                           fill="url(#colorCurrent)"
                           strokeWidth={2}
-                          name="Current Period"
+                          name={settingsCopy.currentPeriod}
                         />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -3675,7 +3986,7 @@ const PartnerPerformanceDashboard = () => {
                       color: 'var(--shopify-text-primary)',
                       letterSpacing: '-0.01em'
                     }}>
-                      Revenue Data
+                      {settingsCopy.revenueDataTitle}
                     </h3>
                     <p style={{ 
                       fontSize: '14px', 
@@ -3683,7 +3994,7 @@ const PartnerPerformanceDashboard = () => {
                       margin: 0,
                       lineHeight: '1.5'
                     }}>
-                      Source of truth: Daily revenue breakdown with detailed metrics
+                      {settingsCopy.revenueDataDescription}
                     </p>
                   </div>
                   <Table>
@@ -3694,7 +4005,7 @@ const PartnerPerformanceDashboard = () => {
                               onClick={() => revenueTableSort.handleSort('date' as keyof typeof revenueData[0])}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                Date
+                                {settingsCopy.dateLabel}
                                 {revenueTableSort.sortConfig?.key === 'date' && (
                                   revenueTableSort.sortConfig.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />
                                 )}
@@ -3797,7 +4108,7 @@ const PartnerPerformanceDashboard = () => {
                         margin: 0,
                         lineHeight: '1.5'
                       }}>
-                        Source of truth: Detailed performance metrics for all campaigns
+                        {settingsCopy.sourceOfTruthCampaignMetrics}
                       </p>
                     </div>
                     {/* Filter */}
@@ -3961,18 +4272,18 @@ const PartnerPerformanceDashboard = () => {
                       margin: 0,
                       lineHeight: '1.5'
                     }}>
-                      Source of truth: Top performing products by exposure and conversions
+                      {settingsCopy.sourceOfTruthTopProducts}
                     </p>
                   </div>
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableHeader>Product Name</TableHeader>
-                        <TableHeader>Views</TableHeader>
-                        <TableHeader>Clicks</TableHeader>
-                        <TableHeader>Conversions</TableHeader>
-                        <TableHeader>Revenue</TableHeader>
-                        <TableHeader>Conversion Rate</TableHeader>
+                        <TableHeader>{settingsCopy.productName}</TableHeader>
+                        <TableHeader>{settingsCopy.viewsLabel}</TableHeader>
+                        <TableHeader>{settingsCopy.metricClicks}</TableHeader>
+                        <TableHeader>{settingsCopy.metricConversions}</TableHeader>
+                        <TableHeader>{settingsCopy.metricTotalRevenue}</TableHeader>
+                        <TableHeader>{settingsCopy.metricConversionRate}</TableHeader>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -4002,7 +4313,7 @@ const PartnerPerformanceDashboard = () => {
                         color: 'var(--shopify-text-primary)',
                         letterSpacing: '-0.01em'
                       }}>
-                        Ads Performance
+                        {settingsCopy.adsPerformanceTitle}
                       </h3>
                     <p style={{ 
                       fontSize: '14px', 
@@ -4010,35 +4321,35 @@ const PartnerPerformanceDashboard = () => {
                       margin: 0,
                       lineHeight: '1.5'
                     }}>
-                      Source of truth: Comprehensive ad metrics and performance
+                      {settingsCopy.sourceOfTruthAdMetrics}
                     </p>
                   </div>
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableHeader>Metric</TableHeader>
-                        <TableHeader>Value</TableHeader>
-                        <TableHeader>Rate</TableHeader>
+                        <TableHeader>{settingsCopy.metricLabel}</TableHeader>
+                        <TableHeader>{settingsCopy.valueLabel}</TableHeader>
+                        <TableHeader>{settingsCopy.rateLabel}</TableHeader>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       <TableRow>
-                        <TableCell>Impressions</TableCell>
+                        <TableCell>{settingsCopy.metricImpressions}</TableCell>
                         <TableCell>{mockWebsitePerformance.ads.impressions.toLocaleString()}</TableCell>
                         <TableCell>-</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell>Clicks</TableCell>
+                        <TableCell>{settingsCopy.metricClicks}</TableCell>
                         <TableCell>{mockWebsitePerformance.ads.clicks.toLocaleString()}</TableCell>
-                        <TableCell>{mockWebsitePerformance.ads.ctr.toFixed(2)}% CTR</TableCell>
+                        <TableCell>{mockWebsitePerformance.ads.ctr.toFixed(2)}% {settingsCopy.ctrLabel}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell>Spend</TableCell>
+                        <TableCell>{settingsCopy.spendLabel}</TableCell>
                         <TableCell>${mockWebsitePerformance.ads.spend.toLocaleString()}</TableCell>
-                        <TableCell>${mockWebsitePerformance.ads.cpc.toFixed(2)} CPC</TableCell>
+                        <TableCell>${mockWebsitePerformance.ads.cpc.toFixed(2)} {settingsCopy.cpcLabel}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell>Revenue</TableCell>
+                        <TableCell>{settingsCopy.metricTotalRevenue}</TableCell>
                         <TableCell>${mockWebsitePerformance.ads.revenue.toLocaleString()}</TableCell>
                         <TableCell>{(mockWebsitePerformance.ads.revenue / mockWebsitePerformance.ads.spend).toFixed(1)}x ROAS</TableCell>
                       </TableRow>
@@ -4112,7 +4423,7 @@ const PartnerPerformanceDashboard = () => {
                       margin: 0,
                       letterSpacing: '-0.02em'
                     }}>
-                      Creator Detail Reports
+                      {settingsCopy.creatorDetailReportsTitle}
                     </h2>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -4122,13 +4433,13 @@ const PartnerPerformanceDashboard = () => {
                       style={DASHBOARD_PERIOD_SELECT_STYLE}
                       {...dashboardPeriodSelectInteractionProps}
                     >
-                      <option value="7d">Last 7 days</option>
-                      <option value="14d">Last 14 days</option>
-                      <option value="30d">Last 30 days</option>
-                      <option value="thisMonth">This month</option>
-                      <option value="lastMonth">Last month</option>
-                      <option value="thisQ">This Q</option>
-                      <option value="lastQ">Last Q</option>
+                      <option value="7d">{settingsCopy.periodLast7Days}</option>
+                      <option value="14d">{settingsCopy.periodLast14Days}</option>
+                      <option value="30d">{settingsCopy.periodLast30Days}</option>
+                      <option value="thisMonth">{settingsCopy.periodThisMonth}</option>
+                      <option value="lastMonth">{settingsCopy.periodLastMonth}</option>
+                      <option value="thisQ">{settingsCopy.periodThisQuarter}</option>
+                      <option value="lastQ">{settingsCopy.periodLastQuarter}</option>
                     </select>
                   </div>
                 </div>
@@ -4141,7 +4452,7 @@ const PartnerPerformanceDashboard = () => {
                     fontSize: '14px',
                     color: 'var(--shopify-text-secondary)'
                   }}>
-                    Additional creator report pages (per-metric breakdowns, spreadsheets, and more) will appear here as they ship.
+                    {settingsCopy.creatorDetailReportsPlaceholder}
                   </div>
                 </div>
               </div>
@@ -4151,6 +4462,7 @@ const PartnerPerformanceDashboard = () => {
                 <CreatorDashboardView
                   variant="full"
                   currency={currency}
+                  locale={displayLanguage}
                   excludeCancelled={creatorExcludeCancelled}
                   onExcludeCancelledChange={setCreatorExcludeCancelled}
                 />
@@ -4298,7 +4610,7 @@ const PartnerPerformanceDashboard = () => {
                   margin: 0,
                   letterSpacing: '-0.02em'
                 }}>
-                  APIs
+                  {settingsCopy.titleApis}
                 </h2>
               </div>
               <div style={{ 
@@ -4310,7 +4622,7 @@ const PartnerPerformanceDashboard = () => {
                   color: 'var(--shopify-text-secondary)',
                   fontStyle: 'italic'
                 }}>
-                  Work in Progress
+                  {settingsCopy.workInProgress}
                 </div>
               </div>
             </div>
@@ -4336,19 +4648,24 @@ const PartnerPerformanceDashboard = () => {
                   flexShrink: 0,
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '0px', alignItems: 'flex-start' }}>
                   <h2
                     style={{
                       fontFamily: "'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif",
                       fontSize: '25.375px',
                       fontWeight: 600,
                       lineHeight: '25.375px',
+                      height: '36.5px',
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'left',
+                      justifyContent: 'left',
                       letterSpacing: '0.32px',
                       color: '#161616',
                       margin: 0,
                     }}
                   >
-                    Settings
+                    {settingsCopy.titleSettings}
                   </h2>
                   <p
                     style={{
@@ -4361,7 +4678,7 @@ const PartnerPerformanceDashboard = () => {
                       maxWidth: '736px',
                     }}
                   >
-                    Manage your workspace preferences, organization, team, and support.
+                    {settingsCopy.settingsDescription}
                   </p>
                 </div>
               </div>
@@ -4377,14 +4694,14 @@ const PartnerPerformanceDashboard = () => {
                 }}
               >
                 <TabsVertical
-                  selectedIndex={Math.max(0, SETTINGS_NAV_ITEMS.findIndex((i) => i.id === settingsNavTab))}
-                  onChange={({ selectedIndex }) => setSettingsNavTab(SETTINGS_NAV_ITEMS[selectedIndex].id)}
+                  selectedIndex={Math.max(0, SETTINGS_NAV_ITEMS.findIndex((i) => i === settingsNavTab))}
+                  onChange={({ selectedIndex }) => setSettingsNavTab(SETTINGS_NAV_ITEMS[selectedIndex])}
                   height="100%"
                 >
                   <nav
                     aria-label="Settings sections"
                     style={{
-                      width: '240px',
+                      width: '200px',
                       flexShrink: 0,
                       alignSelf: 'stretch',
                       minHeight: '100%',
@@ -4397,13 +4714,13 @@ const PartnerPerformanceDashboard = () => {
                     }}
                   >
                     {SETTINGS_NAV_ITEMS.map((item) => {
-                      const isActive = settingsNavTab === item.id;
+                      const isActive = settingsNavTab === item;
                       return (
                         <button
-                          key={item.id}
+                          key={item}
                           type="button"
                           aria-selected={isActive}
-                          onClick={() => setSettingsNavTab(item.id)}
+                          onClick={() => setSettingsNavTab(item)}
                           style={{
                             textAlign: 'left',
                             width: '100%',
@@ -4419,12 +4736,121 @@ const PartnerPerformanceDashboard = () => {
                             transition: 'background-color 0.15s ease, color 0.15s ease',
                           }}
                         >
-                          {item.label}
+                          {settingsNavLabels[item]}
                         </button>
                       );
                     })}
                   </nav>
                   <TabPanels>
+                    <TabPanel
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        minHeight: 0,
+                        padding: '16px 12px',
+                        overflowY: 'auto',
+                        backgroundColor: 'var(--cds-layer)',
+                      }}
+                    >
+                    <div
+                      style={{
+                        maxWidth: '980px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          backgroundColor: 'var(--shopify-white)',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          padding: '16px 20px',
+                        }}
+                      >
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(2, minmax(260px, 1fr))',
+                          gap: '16px 32px',
+                        }}
+                      >
+                        <TextInput
+                          id="settings-account-full-name"
+                          labelText={settingsCopy.accountFullName}
+                          value="Admin"
+                          readOnly
+                          size="md"
+                        />
+                        <TextInput
+                          id="settings-account-email"
+                          labelText={settingsCopy.accountEmailAddress}
+                          value="uniqlo_manager@realry.com"
+                          readOnly
+                          size="md"
+                        />
+                      </div>
+                      </div>
+                      <div
+                        style={{
+                          backgroundColor: 'var(--shopify-white)',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          padding: '16px 20px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '20px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <h4
+                            style={{
+                              fontFamily: "'IBM Plex Sans', sans-serif",
+                              fontSize: '20px',
+                              fontWeight: 600,
+                              color: '#161616',
+                              margin: '0 0 8px 0',
+                            }}
+                          >
+                            {settingsCopy.displayLanguageTitle}
+                          </h4>
+                          <p
+                            style={{
+                              fontSize: '14px',
+                              color: '#525252',
+                              margin: '0 0 0 0',
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {settingsCopy.displayLanguageDescription}
+                          </p>
+                        </div>
+                        <div style={{ width: '100%', maxWidth: '560px' }}>
+                          <Dropdown<DisplayLanguageOption>
+                            id="settings-account-display-language"
+                            label="Select language"
+                            titleText=""
+                            items={[...DISPLAY_LANGUAGE_OPTIONS]}
+                            itemToString={(item) => (item ? item.label : '')}
+                            selectedItem={selectedDisplayLanguageItem ?? undefined}
+                            onChange={({ selectedItem }) => {
+                              if (selectedItem) {
+                                const next = selectedItem.value as SupportedLocale;
+                                setDisplayLanguage(next);
+                                if (typeof (globalThis as unknown as { window?: unknown }).window !== 'undefined') {
+                                  (globalThis as unknown as { localStorage?: { setItem(key: string, value: string): void } }).localStorage?.setItem(
+                                    'dashboard-display-language',
+                                    next
+                                  );
+                                }
+                              }
+                            }}
+                            size="md"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    </TabPanel>
                     <TabPanel
                       style={{
                         flex: 1,
@@ -4450,17 +4876,16 @@ const PartnerPerformanceDashboard = () => {
                       >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <h3
-                            style={{
-                              fontFamily: "'IBM Plex Sans', sans-serif",
-                              fontSize: '20px',
-                              fontWeight: 600,
-                              lineHeight: '24px',
-                              color: '#161616',
-                              margin: 0,
-                            }}
-                          >
-                            Site-wide configuration
-                          </h3>
+                          style={{
+                            fontFamily: "'IBM Plex Sans', sans-serif",
+                            fontSize: '20px',
+                            fontWeight: 600,
+                            color: '#161616',
+                            margin: '0 0 8px 0',
+                          }}
+                        >
+                            {settingsCopy.reportDisplayDetailsTitle}
+                        </h3>
                           <p
                             style={{
                               fontFamily: "'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif",
@@ -4471,13 +4896,13 @@ const PartnerPerformanceDashboard = () => {
                               margin: 0,
                             }}
                           >
-                            Currency and timezone apply to the entire dashboard.
+                            {settingsCopy.reportDisplayDetailsDescription}
                           </p>
                         </div>
                         <div style={{ width: '100%', maxWidth: '560px' }}>
                           <SettingsFilterableSelect
                             id="dashboard-settings-currency"
-                            titleText="Currency"
+                            titleText={settingsCopy.currencyDisplayedAs}
                             placeholder="Select currency"
                             items={[...CURRENCY_COMBO_ITEMS]}
                             selectedItem={selectedCurrencyItem ?? null}
@@ -4496,7 +4921,7 @@ const PartnerPerformanceDashboard = () => {
                         <div style={{ width: '100%', maxWidth: '560px' }}>
                           <SettingsFilterableSelect
                             id="dashboard-settings-timezone"
-                            titleText="Timezone"
+                            titleText={settingsCopy.reportingTimezone}
                             placeholder="Select timezone"
                             items={timezoneComboItems}
                             selectedItem={selectedTimezoneItem ?? null}
@@ -4561,7 +4986,7 @@ const PartnerPerformanceDashboard = () => {
                             margin: '0 0 8px 0',
                           }}
                         >
-                          Organization
+                          {settingsCopy.organizationTitle}
                         </h3>
                         <p
                           style={{
@@ -4571,7 +4996,7 @@ const PartnerPerformanceDashboard = () => {
                             lineHeight: 1.5,
                           }}
                         >
-                          Manage organization details and shared configurations.
+                          {settingsCopy.organizationDescription}
                         </p>
                         <div
                           style={{
@@ -4584,16 +5009,31 @@ const PartnerPerformanceDashboard = () => {
                         >
                           <TextInput
                             id="settings-org-name"
-                            labelText="Organization name"
+                            labelText={settingsCopy.organizationName}
                             readOnly
                             value={mockOrganizationSettings.organizationName}
                             size="md"
                             helperText={
                               <span style={{ fontStyle: 'italic' }}>
-                                Contact support to change organization details.
+                                {settingsCopy.orgDetailsReadonlyHint}
                               </span>
                             }
                           />
+                          <div style={{ marginTop: '16px' }}>
+                            <SettingsFilterableSelect
+                              id="settings-org-country-of-business"
+                              titleText={settingsCopy.countryOfBusiness}
+                              placeholder={settingsCopy.selectCountry}
+                              items={countryOfBusinessItems}
+                              selectedItem={selectedCountryOfBusinessItem ?? null}
+                              itemToString={(item) => item.label}
+                              filterItem={(item, q) =>
+                                `${item.label} ${item.value}`.toLowerCase().includes(q)
+                              }
+                              onSelect={(item) => setCountryOfBusiness(item.value)}
+                              size="md"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -4614,7 +5054,7 @@ const PartnerPerformanceDashboard = () => {
                             margin: '0 0 8px 0',
                           }}
                         >
-                          Associated Entities
+                          {settingsCopy.associatedEntitiesTitle}
                         </h3>
                         <p
                           style={{
@@ -4624,7 +5064,7 @@ const PartnerPerformanceDashboard = () => {
                             lineHeight: 1.5,
                           }}
                         >
-                          Manage display names for your brand entities.
+                          {settingsCopy.associatedEntitiesDescription}
                         </p>
                         <div style={{ width: '100%', overflowX: 'auto' }}>
                         <Table size="sm">
@@ -4639,7 +5079,7 @@ const PartnerPerformanceDashboard = () => {
                                   color: '#6d7175',
                                 }}
                               >
-                                Shop name (fixed)
+                                {settingsCopy.shopNameFixed}
                               </TableHeader>
                               <TableHeader
                                 style={{
@@ -4650,7 +5090,7 @@ const PartnerPerformanceDashboard = () => {
                                   color: '#6d7175',
                                 }}
                               >
-                                Display name
+                                {settingsCopy.displayNameLabel}
                               </TableHeader>
                               <TableHeader
                                 style={{
@@ -4661,7 +5101,7 @@ const PartnerPerformanceDashboard = () => {
                                   color: '#6d7175',
                                 }}
                               >
-                                Logo
+                                {settingsCopy.logoLabel}
                               </TableHeader>
                               <TableHeader
                                 style={{
@@ -4672,7 +5112,7 @@ const PartnerPerformanceDashboard = () => {
                                   color: '#6d7175',
                                 }}
                               >
-                                Background
+                                {settingsCopy.backgroundLabel}
                               </TableHeader>
                               <TableHeader
                                 style={{
@@ -4685,7 +5125,7 @@ const PartnerPerformanceDashboard = () => {
                                   textAlign: 'center',
                                 }}
                               >
-                                Action
+                                {settingsCopy.actionLabel}
                               </TableHeader>
                             </TableRow>
                           </TableHead>
@@ -4719,7 +5159,7 @@ const PartnerPerformanceDashboard = () => {
                                       }))
                                     }
                                     size="sm"
-                                    style={{ minWidth: '140px', borderRadius: '6px' }}
+                                    style={{ minWidth: '140px', borderRadius: '0px' }}
                                   />
                                 </TableCell>
                                 <TableCell>
@@ -4742,7 +5182,7 @@ const PartnerPerformanceDashboard = () => {
                                     <IconButton
                                       kind="ghost"
                                       size="sm"
-                                      label="Upload logo"
+                                      label={settingsCopy.uploadLogoLabel}
                                       onClick={() => {}}
                                     >
                                       <Upload size={16} />
@@ -4764,7 +5204,7 @@ const PartnerPerformanceDashboard = () => {
                                     <IconButton
                                       kind="ghost"
                                       size="sm"
-                                      label="Upload background"
+                                      label={settingsCopy.uploadBackgroundLabel}
                                       onClick={() => {}}
                                     >
                                       <Upload size={16} />
@@ -4775,7 +5215,7 @@ const PartnerPerformanceDashboard = () => {
                                   <CheckmarkFilled
                                     size={20}
                                     style={{ color: 'var(--brand-primary)' }}
-                                    aria-label="Saved"
+                                    aria-label={settingsCopy.savedLabel}
                                   />
                                 </TableCell>
                               </TableRow>
@@ -4828,7 +5268,7 @@ const PartnerPerformanceDashboard = () => {
                               lineHeight: 1.3,
                             }}
                           >
-                            Team Management
+                            {settingsCopy.teamManagementTitle}
                           </h3>
                           <p
                             style={{
@@ -4838,7 +5278,7 @@ const PartnerPerformanceDashboard = () => {
                               lineHeight: 1.5,
                             }}
                           >
-                            Manage your organization members and their roles.
+                            {settingsCopy.teamManagementDescription}
                           </p>
                         </div>
                         <Button
@@ -4856,7 +5296,7 @@ const PartnerPerformanceDashboard = () => {
                             boxShadow: '0 1px 2px rgba(114, 86, 246, 0.25)',
                           }}
                         >
-                          Invite Member
+                          {settingsCopy.inviteMemberLabel}
                         </Button>
                       </div>
                       <div style={{ padding: '24px 24px 24px' }}>
@@ -4880,7 +5320,7 @@ const PartnerPerformanceDashboard = () => {
                                     backgroundColor: '#fafafa',
                                   }}
                                 >
-                                  Member
+                                  {settingsCopy.memberLabel}
                                 </TableHeader>
                                 <TableHeader
                                   style={{
@@ -4892,7 +5332,7 @@ const PartnerPerformanceDashboard = () => {
                                     backgroundColor: '#fafafa',
                                   }}
                                 >
-                                  Role
+                                  {settingsCopy.roleLabel}
                                 </TableHeader>
                                 <TableHeader
                                   style={{
@@ -4904,7 +5344,7 @@ const PartnerPerformanceDashboard = () => {
                                     backgroundColor: '#fafafa',
                                   }}
                                 >
-                                  Joined
+                                  {settingsCopy.joinedLabel}
                                 </TableHeader>
                               </TableRow>
                             </TableHead>
@@ -5020,7 +5460,7 @@ const PartnerPerformanceDashboard = () => {
                                 margin: 0,
                               }}
                             >
-                              Recent Inquiries
+                              {settingsCopy.recentInquiriesTitle}
                             </h3>
                             <p
                             style={{
@@ -5031,7 +5471,7 @@ const PartnerPerformanceDashboard = () => {
                               lineHeight: 1.5,
                             }}
                           >
-                            Track your support requests
+                            {settingsCopy.recentInquiriesDescription}
                           </p>
 
                           </div>
@@ -5052,7 +5492,7 @@ const PartnerPerformanceDashboard = () => {
                                 boxShadow: '0 1px 2px rgba(114, 86, 246, 0.25)',
                               }}
                             >
-                              Contact us
+                              {settingsCopy.contactUsLabel}
                             </Button>
                           </div>
                         </div>
@@ -5068,7 +5508,7 @@ const PartnerPerformanceDashboard = () => {
                               backgroundColor: 'var(--cds-layer-01)',
                             }}
                           >
-                            No inquiries.
+                            {settingsCopy.noInquiriesLabel}
                           </div>
                         ) : (
                           <div style={{ width: '100%', overflowX: 'auto' }}>
@@ -5097,7 +5537,7 @@ const PartnerPerformanceDashboard = () => {
                                       backgroundColor: '#fafafa',
                                     }}
                                   >
-                                    Inquiry category
+                                    {settingsCopy.inquiryCategoryLabel}
                                   </TableHeader>
                                   <TableHeader
                                     style={{
@@ -5109,7 +5549,7 @@ const PartnerPerformanceDashboard = () => {
                                       backgroundColor: '#fafafa',
                                     }}
                                   >
-                                    Subject
+                                    {settingsCopy.subjectLabel}
                                   </TableHeader>
                                   <TableHeader
                                     style={{
@@ -5122,7 +5562,7 @@ const PartnerPerformanceDashboard = () => {
                                       width: '260px',
                                     }}
                                   >
-                                    Message
+                                    {settingsCopy.messageLabel}
                                   </TableHeader>
                                 </TableRow>
                               </TableHead>
@@ -5170,7 +5610,7 @@ const PartnerPerformanceDashboard = () => {
               {!canViewSalesDashboard && !canViewCreatorDashboard ? (
                 <div style={{ padding: '48px 24px', textAlign: 'center' }}>
                   <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                    No dashboard is available for your account. Enable Shop or Creator performance to see metrics here.
+                    {settingsCopy.dashboardNoAccess}
                   </p>
                 </div>
               ) : (
@@ -5193,14 +5633,14 @@ const PartnerPerformanceDashboard = () => {
                     margin: 0,
                     letterSpacing: '-0.02em'
                   }}>
-                    Dashboard
+                    {settingsCopy.titleDashboard}
                   </h2>
                   {canViewSalesDashboard && canViewCreatorDashboard && (
                     <div
                       className="dashboard-view-tabs"
                       style={{ marginLeft: '4px' }}
                       role="tablist"
-                      aria-label="Dashboard view"
+                      aria-label={settingsCopy.dashboardViewLabel}
                     >
                       <button
                         type="button"
@@ -5211,7 +5651,7 @@ const PartnerPerformanceDashboard = () => {
                         )}
                         onClick={() => setDashboardView('sales')}
                       >
-                        Sales
+                        {settingsCopy.dashboardViewSales}
                       </button>
                       <button
                         type="button"
@@ -5222,7 +5662,7 @@ const PartnerPerformanceDashboard = () => {
                         )}
                         onClick={() => setDashboardView('creators')}
                       >
-                        Creators
+                        {settingsCopy.dashboardViewCreators}
                       </button>
                     </div>
                   )}
@@ -5248,7 +5688,7 @@ const PartnerPerformanceDashboard = () => {
                         fontWeight: '500',
                         color: 'var(--shopify-text-primary)'
                       }}>
-                        Performance rank:
+                        {settingsCopy.performanceRank}
                       </span>
                       <span style={{ 
                         fontWeight: '600',
@@ -5271,15 +5711,15 @@ const PartnerPerformanceDashboard = () => {
                     style={DASHBOARD_PERIOD_SELECT_STYLE}
                     {...dashboardPeriodSelectInteractionProps}
                   >
-                    <option value="hourly">Hourly</option>
-                    <option value="7d">Last 7 days</option>
-                    <option value="14d">Last 14 days</option>
-                    <option value="30d">Last 30 days</option>
-                    <option value="thisMonth">This month</option>
-                    <option value="lastMonth">Last month</option>
-                    <option value="thisQ">This quarter</option>
-                    <option value="lastQ">Last quarter</option>
-                    <option value="custom">Custom range</option>
+                    <option value="hourly">{settingsCopy.periodHourly}</option>
+                    <option value="7d">{settingsCopy.periodLast7Days}</option>
+                    <option value="14d">{settingsCopy.periodLast14Days}</option>
+                    <option value="30d">{settingsCopy.periodLast30Days}</option>
+                    <option value="thisMonth">{settingsCopy.periodThisMonth}</option>
+                    <option value="lastMonth">{settingsCopy.periodLastMonth}</option>
+                    <option value="thisQ">{settingsCopy.periodThisQuarter}</option>
+                    <option value="lastQ">{settingsCopy.periodLastQuarter}</option>
+                    <option value="custom">{settingsCopy.periodCustomRange}</option>
                   </select>
                   
                   {/* Custom Date Range Picker - shown when custom is selected */}
@@ -5309,7 +5749,7 @@ const PartnerPerformanceDashboard = () => {
                           }
                         }}
                       />
-                      <span style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)' }}>to</span>
+                      <span style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)' }}>{settingsCopy.to}</span>
                       <input
                         type="date"
                         value={customEndDate}
@@ -5354,7 +5794,7 @@ const PartnerPerformanceDashboard = () => {
                           (e.currentTarget as unknown as { style: Record<string, string> }).style.backgroundColor = '#7256F6';
                         }}
                       >
-                        Apply
+                        {settingsCopy.apply}
                       </button>
                     </div>
                   )}
@@ -5392,12 +5832,12 @@ const PartnerPerformanceDashboard = () => {
                           aria-label={
                             creatorFilterSelectedCount > 0
                               ? `Filter, ${creatorFilterSelectedCount} active`
-                              : 'Filter'
+                              : settingsCopy.filter
                           }
                           onClick={() => setCreatorFilterMenuOpen((o) => !o)}
                         >
                           <Filter size={16} />
-                          <span>Filter</span>
+                          <span>{settingsCopy.filter}</span>
                           {creatorFilterSelectedCount > 0 && (
                             <span
                               aria-hidden
@@ -5467,7 +5907,7 @@ const PartnerPerformanceDashboard = () => {
                                   flexShrink: 0,
                                 }}
                               />
-                              <span>Exclude cancelled orders</span>
+                              <span>{settingsCopy.excludeCancelledOrders}</span>
                             </label>
                           </div>
                         )}
@@ -5485,7 +5925,7 @@ const PartnerPerformanceDashboard = () => {
                         }}
                       >
                         <Filter size={16} />
-                        Filter
+                        {settingsCopy.filter}
                       </button>
                     )}
                   </div>
@@ -5502,7 +5942,7 @@ const PartnerPerformanceDashboard = () => {
                     }}
                   >
                     <Download size={16} />
-                    Export
+                    {extraCopy.export}
                   </button>
                 </div>
               </div>
@@ -5527,15 +5967,7 @@ const PartnerPerformanceDashboard = () => {
                       height: '100%'
                     }}>
                       <h4 style={{ fontSize: '13px', fontWeight: '400', color: '#202124', marginBottom: '12px' }}>
-                        {timeRange === 'hourly' ? 'Hourly' :
-                         timeRange === '7d' ? 'Last 7 days' :
-                         timeRange === '14d' ? 'Last 14 days' :
-                         timeRange === '30d' ? 'Last 30 days' :
-                         timeRange === 'thisMonth' ? 'This month' :
-                         timeRange === 'lastMonth' ? 'Last month' :
-                         timeRange === 'thisQ' ? 'This quarter' :
-                         timeRange === 'lastQ' ? 'Last quarter' :
-                         isCustomRange ? formatCustomDateRange() : 'Selected period'} vs. Previous period
+                        {isCustomRange ? formatCustomDateRange() : getTimeRangeLabel(timeRange)} vs. {settingsCopy.previousPeriod}
                       </h4>
                       
                       {/* Metric data configuration */}
@@ -5579,26 +6011,26 @@ const PartnerPerformanceDashboard = () => {
                         const metricData = {
                           newUsers: {
                             data: generateMetricData('newUsers'),
-                            label: 'New users',
-                            yAxisLabel: 'Users',
+                            label: extraCopy.newUsers,
+                            yAxisLabel: extraCopy.users,
                             formatValue: (value: number) => `${(value / 1000).toFixed(1)}K`
                           },
                           totalUsers: {
                             data: generateMetricData('totalUsers'),
-                            label: 'Total users',
-                            yAxisLabel: 'Users',
+                            label: extraCopy.totalUsers,
+                            yAxisLabel: extraCopy.users,
                             formatValue: (value: number) => `${(value / 1000).toFixed(1)}K`
                           },
                           impressions: {
                             data: generateMetricData('impressions'),
-                            label: 'Impressions',
-                            yAxisLabel: 'Impressions',
+                            label: extraCopy.impressions,
+                            yAxisLabel: extraCopy.impressions,
                             formatValue: (value: number) => `${(value / 1000).toFixed(0)}K`
                           },
                           returningUsers: {
                             data: generateMetricData('returningUsers'),
-                            label: 'Returning users',
-                            yAxisLabel: 'Users',
+                            label: extraCopy.returningUsers,
+                            yAxisLabel: extraCopy.users,
                             formatValue: (value: number) => `${(value / 1000).toFixed(1)}K`
                           }
                         };
@@ -5790,21 +6222,13 @@ const PartnerPerformanceDashboard = () => {
                                     strokeWidth={2}
                                     dot={false}
                                     activeDot={{ r: 5, fill: '#1a73e8', strokeWidth: 2, stroke: 'white' }}
-                                    name={timeRange === 'hourly' ? 'Hourly' :
-                                          timeRange === '7d' ? 'Last 7 days' :
-                                          timeRange === '14d' ? 'Last 14 days' :
-                                          timeRange === '30d' ? 'Last 30 days' :
-                                          timeRange === 'thisMonth' ? 'This month' :
-                                          timeRange === 'lastMonth' ? 'Last month' :
-                                          timeRange === 'thisQ' ? 'This quarter' :
-                                          timeRange === 'lastQ' ? 'Last quarter' :
-                                          isCustomRange ? formatCustomDateRange() : 'Selected period'}
+                                    name={isCustomRange ? formatCustomDateRange() : getTimeRangeLabel(timeRange)}
                                   />
                                 </LineChart>
                               </ResponsiveContainer>
                               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '8px' }}>
                                 <div style={{ fontSize: '12px', color: '#1a73e8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  View reports snapshot
+                                  {settingsCopy.viewReportsSnapshot}
                                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M6 3L11 8L6 13" stroke="#1a73e8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                   </svg>
@@ -5833,7 +6257,7 @@ const PartnerPerformanceDashboard = () => {
                             <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" fill="#34a853"/>
                             <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" stroke="white" strokeWidth="2"/>
                           </svg>
-                          Active Users In Last 30 min
+                          {extraCopy.activeUsersLast30m}
                         </div>
                         <div style={{ fontSize: '32px', fontWeight: '400', color: '#202124', lineHeight: 1 }}>436</div>
                       </div>
@@ -5841,7 +6265,7 @@ const PartnerPerformanceDashboard = () => {
                       {/* Orders Per Minute Chart */}
                       <div style={{ marginBottom: '16px' }}>
                         <div style={{ fontSize: '12px', color: '#5f6368', marginBottom: '8px', fontWeight: '400' }}>
-                          Active users per minute
+                          {extraCopy.activeUsersPerMinute}
                         </div>
                         <ResponsiveContainer width="100%" height={60}>
                           <BarChart data={[
@@ -5945,7 +6369,7 @@ const PartnerPerformanceDashboard = () => {
                         })}
 
                         <div style={{ fontSize: '12px', color: '#1a73e8', textAlign: 'right', marginTop: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-                          View realtime
+                          {extraCopy.viewRealtime}
                           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M6 3L11 8L6 13" stroke="#1a73e8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
@@ -5987,10 +6411,10 @@ const PartnerPerformanceDashboard = () => {
                   <div style={{ marginBottom: '12px', paddingLeft: '0px', paddingRight: '0px' }}>
                     <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#202124', margin: 0, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Calendar size={20} style={{ color: '#8a3ffc' }} />
-                      Weekend vs Weekday 
+                      {settingsCopy.weekendVsWeekdayTitle}
                     </h4>
                     <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                      Weekends: Saturday, Sunday
+                      {settingsCopy.weekendsDefinition}
                     </p>
                   </div>
                   
@@ -6017,8 +6441,8 @@ const PartnerPerformanceDashboard = () => {
                       <div className="shopify-metric-card">
                         <div style={{ padding: '12px 12px 0 12px', marginBottom: '12px' }}>
                           <div className="shopify-metric-label" style={{ marginBottom: '4px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MetricTooltip metric="Revenue">
-                              Revenue
+                            <MetricTooltip metric="Revenue" formulaLabel={settingsCopy.formulaLabel}>
+                              {settingsCopy.metricTotalRevenue}
                             </MetricTooltip>
                           </div>
                           <div className="shopify-metric-value" style={{ marginBottom: '4px', fontSize: '22px' }}>
@@ -6031,7 +6455,7 @@ const PartnerPerformanceDashboard = () => {
                           padding: '0 12px 0 12px'
                         }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.revenue }, { name: 'Weekend', value: aggregatedData.weekend.revenue }]} margin={{ top: 5, right: 10, left: 10, bottom: 25 }}>
+                            <BarChart data={[{ name: settingsCopy.weekday, value: aggregatedData.weekday.revenue }, { name: settingsCopy.weekend, value: aggregatedData.weekend.revenue }]} margin={{ top: 5, right: 10, left: 10, bottom: 25 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                               <XAxis 
                                 dataKey="name" 
@@ -6075,8 +6499,8 @@ const PartnerPerformanceDashboard = () => {
                       <div className="shopify-metric-card">
                         <div style={{ padding: '12px 12px 0 12px', marginBottom: '12px' }}>
                           <div className="shopify-metric-label" style={{ marginBottom: '4px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MetricTooltip metric="Conversions">
-                              Conversions
+                            <MetricTooltip metric="Conversions" formulaLabel={settingsCopy.formulaLabel}>
+                              {settingsCopy.metricConversions}
                             </MetricTooltip>
                           </div>
                           <div className="shopify-metric-value" style={{ marginBottom: '4px', fontSize: '22px' }}>
@@ -6089,7 +6513,7 @@ const PartnerPerformanceDashboard = () => {
                           padding: '0 12px 0 12px'
                         }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.conversions }, { name: 'Weekend', value: aggregatedData.weekend.conversions }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                            <BarChart data={[{ name: settingsCopy.weekday, value: aggregatedData.weekday.conversions }, { name: settingsCopy.weekend, value: aggregatedData.weekend.conversions }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
                               <XAxis 
                                 dataKey="name" 
@@ -6324,10 +6748,10 @@ const PartnerPerformanceDashboard = () => {
                   <div>
                     <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Currency size={20} style={{ color: '#7256F6' }} />
-                      Performance Overview
+                      {settingsCopy.salesPerformanceOverviewTitle}
                     </h3>
                     <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                      Monitor your key financial metrics and efficiency
+                      {settingsCopy.salesPerformanceOverviewDescription}
                     </p>
                   </div>
                   <Tag type="green">+12.5% vs last period</Tag>
@@ -6435,22 +6859,22 @@ const PartnerPerformanceDashboard = () => {
                 <div style={{ marginBottom: '12px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <UserMultiple size={20} style={{ color: '#0f62fe' }} />
-                    Your Customers
+                    {settingsCopy.salesYourCustomersTitle}
                   </h3>
                   <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                    Demographics, interests, and shopping behavior
+                    {settingsCopy.salesYourCustomersDescription}
                   </p>
                 </div>
 
                 {/* Global Customer Distribution - World Map */}
                 <div style={{ marginBottom: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600' }}>Global Customer Distribution</div>
+                    <div style={{ fontSize: '14px', fontWeight: '600' }}>{extraCopy.globalCustomerDistribution}</div>
                     {/* Metric and Region Filters */}
                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                       {/* Metric Switcher */}
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>View by:</span>
+                        <span style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>{extraCopy.viewBy}</span>
                         <select
                           value={selectedMetric}
                           onChange={(e) => setSelectedMetric((e.target as unknown as { value: string }).value as 'orders' | 'customers' | 'revenue' | 'cvr')}
@@ -6471,15 +6895,15 @@ const PartnerPerformanceDashboard = () => {
                             minWidth: '140px'
                           }}
                         >
-                          <option value="orders">Orders</option>
-                          <option value="customers">Customers</option>
+                          <option value="orders">{extraCopy.orders}</option>
+                          <option value="customers">{extraCopy.customers}</option>
                           <option value="revenue">Revenue</option>
-                          <option value="cvr">Conversion Rate</option>
+                          <option value="cvr">{settingsCopy.metricConversionRate}</option>
                         </select>
                       </div>
                       {/* Region Filter */}
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>Region:</span>
+                        <span style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)' }}>{extraCopy.region}</span>
                         <select
                         value={mapRegion}
                         onChange={(e) => {
@@ -6525,12 +6949,12 @@ const PartnerPerformanceDashboard = () => {
                           transition: 'border-color 0.15s ease'
                         }}
                       >
-                        <option value="north-america">North America</option>
-                        <option value="europe">Europe</option>
-                        <option value="asia">Asia</option>
-                        <option value="oceania">Oceania</option>
-                        <option value="africa">Africa</option>
-                        <option value="global">Global View</option>
+                        <option value="north-america">{extraCopy.northAmerica}</option>
+                        <option value="europe">{extraCopy.europe}</option>
+                        <option value="asia">{extraCopy.asia}</option>
+                        <option value="oceania">{extraCopy.oceania}</option>
+                        <option value="africa">{extraCopy.africa}</option>
+                        <option value="global">{extraCopy.globalView}</option>
                       </select>
                       </div>
                     </div>
@@ -7432,7 +7856,7 @@ const PartnerPerformanceDashboard = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                           <ChartLineSmooth size={16} style={{ color: '#7256F6' }} />
                           <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                            Regional Performance Insights
+                            {extraCopy.regionalPerformanceInsights}
                           </span>
                         </div>
                         
@@ -7445,7 +7869,7 @@ const PartnerPerformanceDashboard = () => {
                             borderLeft: '3px solid #F97316'
                           }}>
                             <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>
-                              🎯 Highest Conversion Rate
+                              🎯 {extraCopy.highestConversionRate}
                             </div>
                             <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
                               {(() => {
@@ -7463,7 +7887,7 @@ const PartnerPerformanceDashboard = () => {
                             borderLeft: '3px solid #1192E8'
                           }}>
                             <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>
-                              👥 Most Customers
+                              👥 {extraCopy.mostCustomers}
                             </div>
                             <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
                               {(() => {
@@ -7481,7 +7905,7 @@ const PartnerPerformanceDashboard = () => {
                             borderLeft: '3px solid #16A34A'
                           }}>
                             <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>
-                              💰 Highest Revenue
+                              💰 {extraCopy.highestRevenue}
                             </div>
                             <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
                               {(() => {
@@ -7499,7 +7923,7 @@ const PartnerPerformanceDashboard = () => {
                             borderLeft: '3px solid #7256F6'
                           }}>
                             <div style={{ fontSize: '11px', color: 'var(--shopify-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>
-                              📈 Fastest Growing
+                              📈 {extraCopy.fastestGrowing}
                             </div>
                             <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
                               {(() => {
@@ -7535,7 +7959,7 @@ const PartnerPerformanceDashboard = () => {
                             <path d="M9.634 13.824a6 6 0 1 1 8.6-.9m-.491-7.932L21.75.75M18 .75h3.75V4.5M5.25 20.25h6" />
                           </g>
                         </svg>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>Active users by Gender</span>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>{extraCopy.activeUsersByGender}</span>
                       </div>
                       <div style={{ flex: 1, width: '100%', minHeight: 280 }}>
                         <ResponsiveContainer width="100%" height={280}>
@@ -7609,10 +8033,10 @@ const PartnerPerformanceDashboard = () => {
                             <path fill="#7256F6" fillRule="evenodd" d="M0 2.965C0 1.88.88 1 1.965 1h2.807c1.085 0 1.965.88 1.965 1.965v.561c0 1.086-.88 1.965-1.965 1.965H1.965A1.965 1.965 0 0 1 0 3.526v-.561Zm1.965-.28a.28.28 0 0 0-.28.28v.561a.28.28 0 0 0 .28.281h2.807a.28.28 0 0 0 .28-.28v-.562a.28.28 0 0 0-.28-.28H1.965Zm6.175.561c0-.465.377-.842.842-.842h6.176a.842.842 0 1 1 0 1.684H8.982a.842.842 0 0 1-.842-.842ZM.28 8.298c0-.465.378-.842.843-.842H11.79a.842.842 0 1 1 0 1.684H1.123a.842.842 0 0 1-.842-.842Zm0 5.052c0-.464.378-.841.843-.841h13.474a.842.842 0 1 1 0 1.684H1.123a.842.842 0 0 1-.842-.842Z" clipRule="evenodd" />
                             <path fill="#7256F6" d="M14.877 9.14a.842.842 0 1 0 0-1.684a.842.842 0 0 0 0 1.684Z" />
                           </svg>
-                          Search → Click Efficiency by Keyword
+                          {extraCopy.searchClickEfficiency}
                         </div>
                         <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '12px' }}>
-                          Mapping user search demand against click performance
+                          {extraCopy.searchClickEfficiencyDesc}
                         </p>
                         <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e5e5', overflow: 'hidden' }}>
                           <div style={{ position: 'relative', width: '100%', height: 340 }}>
@@ -7727,7 +8151,7 @@ const PartnerPerformanceDashboard = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <div style={{ fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Favorite size={16} style={{ color: '#7256F6' }} />
-                        Customer Interests
+                        {extraCopy.customerInterests}
                       </div>
                     </div>
                   <Grid narrow style={{ marginLeft: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }}>
@@ -7928,10 +8352,10 @@ const PartnerPerformanceDashboard = () => {
                 <div style={{ marginBottom: '12px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <TargetIcon size={20} style={{ color: '#d97706' }} />
-                    What's Working Best for You
+                    {settingsCopy.salesWhatsWorkingBestTitle}
                   </h3>
                   <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                    Top performing items by type
+                    {settingsCopy.salesWhatsWorkingBestDescription}
                   </p>
                 </div>
 
@@ -7947,8 +8371,8 @@ const PartnerPerformanceDashboard = () => {
 
                   // Group by itemType (only Product and Content)
                   const itemsByType = {
-                    'Product': allItems.filter(item => item.itemType === 'Product'),
-                    'Content': allItems.filter(item => item.itemType === 'Content')
+                    Product: allItems.filter(item => item.itemType === 'Product'),
+                    Content: allItems.filter(item => item.itemType === 'Content')
                   };
 
                   // Item type icons and colors
@@ -7986,14 +8410,16 @@ const PartnerPerformanceDashboard = () => {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <IconComponent size={16} style={{ color: iconColor }} />
-                              {itemType}
+                              {itemType === 'Product' ? extraCopy.product : extraCopy.content}
                             </h4>
                             <Tag type="blue" size="sm">
-                              {totals.clicks.toLocaleString()} clicks, ${totals.revenue.toLocaleString()} revenue
+                              {totals.clicks.toLocaleString()} {settingsCopy.metricClicks.toLowerCase()}, ${totals.revenue.toLocaleString()} {extraCopy.revenueWord}
                             </Tag>
                           </div>
                           <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                            Top {sortedItems.length} performing {itemType.toLowerCase()} items
+                            {extraCopy.topPerformingItems
+                              .replace('{count}', String(sortedItems.length))
+                              .replace('{type}', (itemType === 'Product' ? extraCopy.product : extraCopy.content).toLowerCase())}
                           </p>
                         </div>
 
@@ -8011,13 +8437,13 @@ const PartnerPerformanceDashboard = () => {
                                       style={{ cursor: 'pointer', userSelect: 'none', ...ITEM_NAME_COLUMN_STYLE }}
                                       onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('name' as any)}
                                     >
-                                      Item Name
+                                      {extraCopy.itemName}
                                     </TableHeader>
                                     <TableHeader 
                                       style={{ cursor: 'pointer', userSelect: 'none' }}
                                       onClick={() => (itemType === 'Product' ? productItemsSort : contentItemsSort).handleSort('impressions' as any)}
                                     >
-                                      Impression
+                                      {extraCopy.impressions}
                                     </TableHeader>
                                     <TableHeader 
                                       style={{ cursor: 'pointer', userSelect: 'none' }}
@@ -8216,10 +8642,10 @@ const PartnerPerformanceDashboard = () => {
                       <div style={{ marginBottom: '20px' }}>
                         <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Idea size={20} style={{ color: '#d97706' }} />
-                          Product Optimization Opportunities
+                          {settingsCopy.salesProductOptimizationTitle}
                         </h4>
                         <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                          Identify products that need optimization based on CTR and CVR performance
+                          {settingsCopy.salesProductOptimizationDescription}
                         </p>
                       </div>
 
@@ -8235,10 +8661,10 @@ const PartnerPerformanceDashboard = () => {
                           }}>
                             <div style={{ marginBottom: '16px' }}>
                               <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                                High CTR, Low CVR
+                                {extraCopy.highCtrLowCvr}
                               </h3>
                               <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                                Top 25% CTR, Bottom 25% CVR - Optimize conversion funnel
+                                {extraCopy.highCtrLowCvrDesc}
                               </p>
                             </div>
                             {allOptimizationItems.highCTRLowCVR.length > 0 ? (
@@ -8256,13 +8682,13 @@ const PartnerPerformanceDashboard = () => {
                                               style={{ cursor: 'pointer', userSelect: 'none', ...ITEM_NAME_COLUMN_STYLE }}
                                               onClick={() => highCTRLowCVRSort.handleSort('name' as any)}
                                             >
-                                              Item Name
+                                              {extraCopy.itemName}
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
                                               onClick={() => highCTRLowCVRSort.handleSort('impressions' as any)}
                                             >
-                                              Impression
+                                              {extraCopy.impressions}
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
@@ -8425,10 +8851,10 @@ const PartnerPerformanceDashboard = () => {
                           }}>
                             <div style={{ marginBottom: '16px' }}>
                               <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                                High CVR, Low CTR
+                                {extraCopy.highCvrLowCtr}
                               </h3>
                               <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                                Top 25% CVR, Bottom 25% CTR - Increase visibility and traffic
+                                {extraCopy.highCvrLowCtrDesc}
                               </p>
                             </div>
                             {allOptimizationItems.highCVRLowCTR.length > 0 ? (
@@ -8446,13 +8872,13 @@ const PartnerPerformanceDashboard = () => {
                                               style={{ cursor: 'pointer', userSelect: 'none', ...ITEM_NAME_COLUMN_STYLE }}
                                               onClick={() => highCVRLowCTRSort.handleSort('name' as any)}
                                             >
-                                              Item Name
+                                              {extraCopy.itemName}
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
                                               onClick={() => highCVRLowCTRSort.handleSort('impressions' as any)}
                                             >
-                                              Impression
+                                              {extraCopy.impressions}
                                             </TableHeader>
                                             <TableHeader 
                                               style={{ cursor: 'pointer', userSelect: 'none' }}
@@ -8625,10 +9051,10 @@ const PartnerPerformanceDashboard = () => {
                 <div style={{ marginBottom: '0px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ChartLineSmooth size={20} style={{ color: '#8a3ffc' }} />
-                    Performance vs Peers
+                    {settingsCopy.salesPerformanceVsPeersTitle}
                   </h3>
                   <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '20px' }}>
-                    Compare your performance against similar partners in your category
+                    {settingsCopy.salesPerformanceVsPeersDescription}
                   </p>
                 </div>
 
@@ -8651,16 +9077,16 @@ const PartnerPerformanceDashboard = () => {
                           <BarChart 
                             data={[
                               { 
-                                name: 'You',
+                                name: extraCopy.you,
                                 value: partnerBenchmarking.metrics.cvr.partner,
                                 percentile: partnerBenchmarking.metrics.cvr.percentile
                               },
                               { 
-                                name: 'Average',
+                                name: extraCopy.average,
                                 value: partnerBenchmarking.metrics.cvr.categoryAvg
                               },
                               { 
-                                name: 'Top 5%',
+                                name: extraCopy.top5,
                                 value: partnerBenchmarking.metrics.cvr.top5Percent
                               }
                             ]}
@@ -8691,7 +9117,7 @@ const PartnerPerformanceDashboard = () => {
                               }}
                             formatter={(value: number, name: string, props: any) => {
                               const formattedValue = `${value.toFixed(2)}%`;
-                              if (props.payload.name === 'You' && props.payload.percentile) {
+                              if (props.payload.name === extraCopy.you && props.payload.percentile) {
                                 return [`${formattedValue} (${props.payload.percentile}th percentile)`, 'CVR'];
                               }
                               return [formattedValue, 'CVR'];
@@ -8699,9 +9125,9 @@ const PartnerPerformanceDashboard = () => {
                           />
                           <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                             {[
-                              { name: 'You', fill: '#7256F6' },
-                              { name: 'Average', fill: '#8d8d8d' },
-                              { name: 'Top 5%', fill: '#f1c21b' }
+                              { name: extraCopy.you, fill: '#7256F6' },
+                              { name: extraCopy.average, fill: '#8d8d8d' },
+                              { name: extraCopy.top5, fill: '#f1c21b' }
                             ].map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
@@ -8729,16 +9155,16 @@ const PartnerPerformanceDashboard = () => {
                           <BarChart 
                             data={[
                               { 
-                                name: 'You',
+                                name: extraCopy.you,
                                 value: partnerBenchmarking.metrics.aov.partner,
                                 percentile: partnerBenchmarking.metrics.aov.percentile
                               },
                               { 
-                                name: 'Average',
+                                name: extraCopy.average,
                                 value: partnerBenchmarking.metrics.aov.categoryAvg
                               },
                               { 
-                                name: 'Top 5%',
+                                name: extraCopy.top5,
                                 value: partnerBenchmarking.metrics.aov.top5Percent
                               }
                             ]}
@@ -8769,7 +9195,7 @@ const PartnerPerformanceDashboard = () => {
                               }}
                             formatter={(value: number, name: string, props: any) => {
                               const formattedValue = `$${value.toFixed(2)}`;
-                              if (props.payload.name === 'You' && props.payload.percentile) {
+                              if (props.payload.name === extraCopy.you && props.payload.percentile) {
                                 return [`${formattedValue} (${props.payload.percentile}th percentile)`, 'AOV'];
                               }
                               return [formattedValue, 'AOV'];
@@ -8777,9 +9203,9 @@ const PartnerPerformanceDashboard = () => {
                           />
                           <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                             {[
-                              { name: 'You', fill: '#7256F6' },
-                              { name: 'Average', fill: '#8d8d8d' },
-                              { name: 'Top 5%', fill: '#f1c21b' }
+                              { name: extraCopy.you, fill: '#7256F6' },
+                              { name: extraCopy.average, fill: '#8d8d8d' },
+                              { name: extraCopy.top5, fill: '#f1c21b' }
                             ].map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
@@ -8807,16 +9233,16 @@ const PartnerPerformanceDashboard = () => {
                           <BarChart 
                             data={[
                               { 
-                                name: 'You',
+                                name: extraCopy.you,
                                 value: partnerBenchmarking.metrics.rpc.partner,
                                 percentile: partnerBenchmarking.metrics.rpc.percentile
                               },
                               { 
-                                name: 'Average',
+                                name: extraCopy.average,
                                 value: partnerBenchmarking.metrics.rpc.categoryAvg
                               },
                               { 
-                                name: 'Top 5%',
+                                name: extraCopy.top5,
                                 value: partnerBenchmarking.metrics.rpc.top5Percent
                               }
                             ]}
@@ -8847,7 +9273,7 @@ const PartnerPerformanceDashboard = () => {
                               }}
                             formatter={(value: number, name: string, props: any) => {
                               const formattedValue = `$${value.toFixed(2)}`;
-                              if (props.payload.name === 'You' && props.payload.percentile) {
+                              if (props.payload.name === extraCopy.you && props.payload.percentile) {
                                 return [`${formattedValue} (${props.payload.percentile}th percentile)`, 'Revenue Per Click'];
                               }
                               return [formattedValue, 'Revenue Per Click'];
@@ -8855,9 +9281,9 @@ const PartnerPerformanceDashboard = () => {
                           />
                           <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                             {[
-                              { name: 'You', fill: '#7256F6' },
-                              { name: 'Average', fill: '#8d8d8d' },
-                              { name: 'Top 5%', fill: '#f1c21b' }
+                              { name: extraCopy.you, fill: '#7256F6' },
+                              { name: extraCopy.average, fill: '#8d8d8d' },
+                              { name: extraCopy.top5, fill: '#f1c21b' }
                             ].map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
@@ -8885,16 +9311,16 @@ const PartnerPerformanceDashboard = () => {
                           <BarChart 
                             data={[
                               { 
-                                name: 'You',
+                                name: extraCopy.you,
                                 value: partnerBenchmarking.metrics.returnRate.partner,
                                 percentile: partnerBenchmarking.metrics.returnRate.percentile
                               },
                               { 
-                                name: 'Average',
+                                name: extraCopy.average,
                                 value: partnerBenchmarking.metrics.returnRate.categoryAvg
                               },
                               { 
-                                name: 'Top 5%',
+                                name: extraCopy.top5,
                                 value: partnerBenchmarking.metrics.returnRate.top5Percent
                               }
                             ]}
@@ -8925,7 +9351,7 @@ const PartnerPerformanceDashboard = () => {
                               }}
                             formatter={(value: number, name: string, props: any) => {
                               const formattedValue = `${value.toFixed(2)}%`;
-                              if (props.payload.name === 'You' && props.payload.percentile) {
+                              if (props.payload.name === extraCopy.you && props.payload.percentile) {
                                 return [`${formattedValue} (${props.payload.percentile}th percentile)`, 'Return Rate'];
                               }
                               return [formattedValue, 'Return Rate'];
@@ -8933,9 +9359,9 @@ const PartnerPerformanceDashboard = () => {
                           />
                           <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                             {[
-                              { name: 'You', fill: '#7256F6' },
-                              { name: 'Average', fill: '#8d8d8d' },
-                              { name: 'Top 5%', fill: '#f1c21b' }
+                              { name: extraCopy.you, fill: '#7256F6' },
+                              { name: extraCopy.average, fill: '#8d8d8d' },
+                              { name: extraCopy.top5, fill: '#f1c21b' }
                             ].map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
@@ -8955,10 +9381,10 @@ const PartnerPerformanceDashboard = () => {
                   border: '1px solid #e0d9ff'
                 }}>
                   <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '12px' }}>
-                    Recommendations
+                    {extraCopy.recommendations}
                   </div>
                   <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--shopify-text-primary)', listStyleType: 'disc' }}>
-                    {partnerBenchmarking.recommendations.map((rec, index) => (
+                    {localizedRecommendations.map((rec, index) => (
                       <li key={index} style={{ marginBottom: '8px' }}>{rec}</li>
                     ))}
                   </ul>
@@ -8988,10 +9414,10 @@ const PartnerPerformanceDashboard = () => {
                       <div style={{ marginBottom: '12px' }}>
                         <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Trophy size={20} style={{ color: '#8a3ffc' }} />
-                          Learn from Top Performers
+                          {extraCopy.learnFromTopPerformers}
                         </h3>
                         <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                          Success patterns and best practices from high-earning sellers
+                          {extraCopy.learnFromTopPerformersDesc}
                         </p>
                       </div>
                       
@@ -9007,7 +9433,7 @@ const PartnerPerformanceDashboard = () => {
                       }}>
                         <Time size={20} style={{ color: 'var(--shopify-text-secondary)', marginBottom: '6px', opacity: 0.6 }} />
                         <div style={{ fontSize: '12px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                          Coming Soon
+                          {extraCopy.comingSoon}
                         </div>
 
                       </div>
@@ -9029,10 +9455,10 @@ const PartnerPerformanceDashboard = () => {
                       <div style={{ marginBottom: '12px' }}>
                         <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Idea size={20} style={{ color: '#f1c21b' }} />
-                          Recommended Actions
+                          {extraCopy.recommendedActions}
                         </h3>
                         <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                          AI-powered suggestions to maximize your earnings
+                          {extraCopy.recommendedActionsDesc}
                         </p>
                       </div>
                       
@@ -9048,7 +9474,7 @@ const PartnerPerformanceDashboard = () => {
                       }}>
                         <Time size={20} style={{ color: 'var(--shopify-text-secondary)', marginBottom: '6px', opacity: 0.6 }} />
                         <div style={{ fontSize: '12px', fontWeight: '500', color: 'var(--shopify-text-primary)', marginBottom: '4px' }}>
-                          Coming Soon
+                          {extraCopy.comingSoon}
                         </div>
                       </div>
                     </div>
@@ -9069,6 +9495,7 @@ const PartnerPerformanceDashboard = () => {
               <CreatorDashboardView
                 variant="embedded"
                 currency={currency}
+                locale={displayLanguage}
                 excludeCancelled={creatorExcludeCancelled}
                 onExcludeCancelledChange={setCreatorExcludeCancelled}
               />
@@ -9090,9 +9517,9 @@ const PartnerPerformanceDashboard = () => {
         }}
         modalHeading={
           settingsModal === 'invite'
-            ? 'Invite Member'
+            ? settingsCopy.inviteMemberLabel
             : settingsModal === 'contact'
-              ? 'Contact Support'
+              ? settingsCopy.contactSupportLabel
               : ''
         }
         primaryButtonText={
@@ -9138,7 +9565,7 @@ const PartnerPerformanceDashboard = () => {
             </p>
             <TextInput
               id="invite-member-email"
-              labelText="Member email"
+              labelText={settingsCopy.memberEmailLabel}
               type="email"
               autoComplete="email"
               placeholder="Enter email"
@@ -9163,7 +9590,7 @@ const PartnerPerformanceDashboard = () => {
 
             <TextInput
               id="support-inquiry-subject"
-              labelText="Subject"
+              labelText={settingsCopy.subjectLabel}
               placeholder="Enter subject"
               value={contactSubject}
               onChange={(e) => setContactSubject((e.target as HTMLInputElement).value)}
