@@ -134,13 +134,13 @@ export const mockOrganizationSettings: {
   organizationName: string;
   associatedEntities: OrganizationAssociatedEntity[];
 } = {
-  organizationName: 'Style Mall',
+  organizationName: 'Uniqlo KR',
   associatedEntities: [
     {
       id: '1',
       shopName: 'Uniqlo KR',
-      email: 'uniqlo_kr@realry.com',
-      displayName: 'Admin',
+      email: 'jane@company.com',
+      displayName: 'Jane Doe',
     },
   ],
 };
@@ -419,7 +419,7 @@ export const mockPreviousPeriodData = [
   { date: 'Dec 7', revenue: 7000, clicks: 1450, conversions: 195, roas: 3.3 },
 ];
 
-export type TeamMemberRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+export type TeamMemberRole = 'OWNER' | 'ADMIN' | 'VIEWER';
 
 export interface TeamMember {
   id: string;
@@ -433,10 +433,148 @@ export interface TeamMember {
 export const mockTeamMembers: TeamMember[] = [
   {
     id: '1',
-    name: 'Admin (You)',
-    email: 'uniqlo_manager@realry.com',
+    name: 'Jane Doe (You)',
+    email: 'janedoe@company.com',
     role: 'OWNER',
     joined: '2/12/2026',
     isCurrentUser: true,
+  },
+  {
+    id: '2',
+    name: 'Adam Yang',
+    email: 'adam.yang@company.com',
+    role: 'ADMIN',
+    joined: '3/15/2026',
+    isCurrentUser: false,
+  },
+  {
+    id: '3',
+    name: 'Sarah Johnson',
+    email: 'sarah.j@company.com',
+    role: 'VIEWER',
+    joined: '3/20/2026',
+    isCurrentUser: false,
+  },
+];
+
+export type InquiryStatus = 'new' | 'in-progress' | 'resolved' | 'closed';
+export type InquiryPriority = 'high' | 'medium' | 'low';
+export type InquiryType = 'product' | 'partnership' | 'support' | 'billing' | 'general';
+
+export interface Inquiry {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  subject: string;
+  message: string;
+  type: InquiryType;
+  status: InquiryStatus;
+  priority: InquiryPriority;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: string;
+}
+
+export const mockRecentInquiries: Inquiry[] = [
+  {
+    id: 'INQ-001',
+    customerName: 'Emily Chen',
+    customerEmail: 'emily.chen@example.com',
+    subject: 'Partnership opportunity for summer collection',
+    message: 'Hi, I am interested in collaborating on your upcoming summer collection. Our brand has 500K+ followers and we specialize in sustainable fashion...',
+    type: 'partnership',
+    status: 'new',
+    priority: 'high',
+    createdAt: '2026-03-26T09:30:00Z',
+    updatedAt: '2026-03-26T09:30:00Z',
+  },
+  {
+    id: 'INQ-002',
+    customerName: 'Michael Park',
+    customerEmail: 'michael.p@retailco.com',
+    subject: 'Bulk order pricing inquiry',
+    message: 'We are looking to place a bulk order for approximately 500 units. Could you provide wholesale pricing and delivery timelines?',
+    type: 'product',
+    status: 'in-progress',
+    priority: 'high',
+    createdAt: '2026-03-25T14:15:00Z',
+    updatedAt: '2026-03-26T08:45:00Z',
+    assignedTo: 'John Smith',
+  },
+  {
+    id: 'INQ-003',
+    customerName: 'Sarah Williams',
+    customerEmail: 'swilliams@fashionblog.com',
+    subject: 'Product sample request for review',
+    message: 'I run a fashion review blog with 100K monthly readers. Would love to feature your products in our upcoming spring edition...',
+    type: 'partnership',
+    status: 'new',
+    priority: 'medium',
+    createdAt: '2026-03-25T11:20:00Z',
+    updatedAt: '2026-03-25T11:20:00Z',
+  },
+  {
+    id: 'INQ-004',
+    customerName: 'David Lee',
+    customerEmail: 'david.lee@techstart.io',
+    subject: 'API integration support needed',
+    message: 'We are having issues integrating your product feed API with our platform. Getting 403 errors on the /products endpoint...',
+    type: 'support',
+    status: 'in-progress',
+    priority: 'high',
+    createdAt: '2026-03-24T16:45:00Z',
+    updatedAt: '2026-03-25T10:30:00Z',
+    assignedTo: 'Sarah Johnson',
+  },
+  {
+    id: 'INQ-005',
+    customerName: 'Jennifer Martinez',
+    customerEmail: 'jmartinez@lifestyle.co',
+    subject: 'Billing discrepancy on last invoice',
+    message: 'There seems to be a charge on our March invoice that does not match our subscription plan. Invoice #INV-2026-0312...',
+    type: 'billing',
+    status: 'resolved',
+    priority: 'medium',
+    createdAt: '2026-03-23T09:00:00Z',
+    updatedAt: '2026-03-24T14:20:00Z',
+    assignedTo: 'Admin',
+  },
+  {
+    id: 'INQ-006',
+    customerName: 'Alex Thompson',
+    customerEmail: 'alex.t@creatorstudio.com',
+    subject: 'Creator program application',
+    message: 'I would like to apply for your creator partnership program. I have experience with lifestyle and fashion content creation...',
+    type: 'partnership',
+    status: 'new',
+    priority: 'medium',
+    createdAt: '2026-03-26T07:15:00Z',
+    updatedAt: '2026-03-26T07:15:00Z',
+  },
+  {
+    id: 'INQ-007',
+    customerName: 'Rachel Kim',
+    customerEmail: 'rachel@boutiquestore.com',
+    subject: 'Return policy clarification',
+    message: 'Quick question about your B2B return policy for damaged items. What is the window for reporting and what documentation is needed?',
+    type: 'general',
+    status: 'resolved',
+    priority: 'low',
+    createdAt: '2026-03-22T13:30:00Z',
+    updatedAt: '2026-03-22T15:45:00Z',
+    assignedTo: 'John Smith',
+  },
+  {
+    id: 'INQ-008',
+    customerName: 'Tom Anderson',
+    customerEmail: 'tanderson@megamart.com',
+    subject: 'Exclusive product line discussion',
+    message: 'Our retail chain is interested in discussing an exclusive product line for our stores. We operate 150+ locations nationwide...',
+    type: 'partnership',
+    status: 'in-progress',
+    priority: 'high',
+    createdAt: '2026-03-21T10:00:00Z',
+    updatedAt: '2026-03-25T16:00:00Z',
+    assignedTo: 'Admin',
   },
 ];

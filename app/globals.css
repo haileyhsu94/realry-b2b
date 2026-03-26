@@ -655,7 +655,6 @@
   min-height: 100%;
   box-sizing: border-box;
   background-color: var(--cds-layer);
-  border-right: 1px solid #e0e0e0;
   padding: 16px 12px;
 }
 
@@ -733,4 +732,8 @@
 .settings-filterable-select__search .cds--text-input__field-outer-wrapper:focus-within {
   outline: none;
   box-shadow: none;
+}
+
+.settings-page-tabs-vertical .cds--css-grid {
+  padding-top: 0;
 }
