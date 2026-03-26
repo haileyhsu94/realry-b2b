@@ -56,7 +56,7 @@ const TabsTrigger = React.forwardRef<
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
     value: string
   }
->(({ className, value, ...props }, ref) => {
+>(({ className, value, onClick, ...props }, ref) => {
   const context = React.useContext(TabsContext)
   if (!context) throw new Error("TabsTrigger must be used within Tabs")
   
@@ -73,8 +73,11 @@ const TabsTrigger = React.forwardRef<
           : "text-gray-600 hover:text-gray-900",
         className
       )}
-      onClick={() => context.onValueChange(value)}
       {...props}
+      onClick={(e) => {
+        onClick?.(e)
+        context.onValueChange(value)
+      }}
     />
   )
 })

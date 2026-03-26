@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 
 export interface RankedListItem {
   id: string;
@@ -50,6 +50,7 @@ export const RankedList: React.FC<RankedListProps> = ({
   onItemClick,
   footerSummary,
 }) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const formatValue = (value: number): string => {
     switch (valueFormat) {
       case 'currency':
@@ -102,6 +103,7 @@ export const RankedList: React.FC<RankedListProps> = ({
           const percentage = getPercentage(item.value);
           const isClickable = !!onItemClick;
 
+          const isHovered = isClickable && hoveredIndex === index;
           return (
             <div
               key={item.id}
@@ -110,22 +112,17 @@ export const RankedList: React.FC<RankedListProps> = ({
                 marginBottom: index < items.length - 1 ? '16px' : '0',
                 cursor: isClickable ? 'pointer' : 'default',
                 transition: 'all 0.2s ease',
+                ...(isHovered
+                  ? {
+                      backgroundColor: '#f5f5f5',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      margin: '0 -8px 8px -8px',
+                    }
+                  : {}),
               }}
-              onMouseEnter={(e) => {
-                if (isClickable) {
-                  e.currentTarget.style.backgroundColor = '#f5f5f5';
-                  e.currentTarget.style.borderRadius = '6px';
-                  e.currentTarget.style.padding = '8px';
-                  e.currentTarget.style.margin = '0 -8px 8px -8px';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (isClickable) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.padding = '0';
-                  e.currentTarget.style.margin = index < items.length - 1 ? '0 0 16px 0' : '0';
-                }
-              }}
+              onMouseEnter={() => isClickable && setHoveredIndex(index)}
+              onMouseLeave={() => isClickable && setHoveredIndex(null)}
             >
               {/* Item header */}
               <div style={{ 

@@ -3,11 +3,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
   Grid,
   Column,
   Button,
@@ -19,6 +14,14 @@ import {
   TableBody,
   TableCell,
   Dropdown,
+  TextInput,
+  IconButton,
+  Modal,
+  TabsVertical,
+  TabListVertical,
+  Tab,
+  TabPanels,
+  TabPanel,
 } from '@carbon/react';
 import {
   Dashboard,
@@ -55,6 +58,9 @@ import {
   Locked,
   Help,
   Favorite,
+  Upload,
+  CheckmarkFilled,
+  Add,
 } from '@carbon/icons-react';
 import {
   LineChart,
@@ -84,9 +90,10 @@ import {
   mockPartnerPlans,
   mockWebsitePerformance,
   mockCreatorPerformance,
-  mockTopTierShopPerformance,
   mockRevenueData,
   mockPreviousPeriodData,
+  mockOrganizationSettings,
+  mockTeamMembers,
   type PartnerPlans,
 } from '@/lib/mockData';
 import {
@@ -95,6 +102,9 @@ import {
   isStandardTimezoneId,
   type StandardTimezoneOption,
 } from '@/lib/standardTimezones';
+import { CreatorDashboardView } from '@/components/CreatorDashboardView';
+import { SettingsFilterableSelect } from '@/components/SettingsFilterableSelect';
+import { cn } from '@/lib/utils';
 
 /** Settings currency options — same `{ value, label }` shape as timezone Dropdown items */
 const CURRENCY_COMBO_ITEMS: readonly StandardTimezoneOption[] = [
@@ -749,8 +759,25 @@ const useTableSort = <T,>(data: T[], defaultSortKey?: keyof T) => {
 const PartnerPerformanceDashboard = () => {
   const [timeRange, setTimeRange] = useState<'hourly' | '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ' | 'custom'>('7d');
   const [activeSection, setActiveSection] = useState('dashboard');
+  /** When partner has both Shop and Creator access, switch Sales vs Creators summary on Dashboard */
+  const [dashboardView, setDashboardView] = useState<'sales' | 'creators'>('sales');
+  /** Creator tab (embedded): exclude cancelled — Sales-style Filter button + custom dropdown */
+  const [creatorExcludeCancelled, setCreatorExcludeCancelled] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const creatorSubSections = ['creator-overview', 'creator-detail-reports'];
+    if (creatorSubSections.includes(activeSection)) {
+      setExpandedMenus((prev) => {
+        if (prev.has('creator-performance')) return prev;
+        const next = new Set(prev);
+        next.add('creator-performance');
+        return next;
+      });
+    }
+  }, [activeSection]);
+
   const [plans, setPlans] = useState<PartnerPlans>(mockPartnerPlans);
   const [mapRegion, setMapRegion] = useState('north-america'); // north-america, europe, asia, oceania, africa, global
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
@@ -797,6 +824,10 @@ const PartnerPerformanceDashboard = () => {
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
 
+  /** Creators dashboard: Filter uses Sales-style button + custom dropdown (not Carbon) */
+  const [creatorFilterMenuOpen, setCreatorFilterMenuOpen] = useState(false);
+  const creatorFilterMenuRef = useRef<HTMLDivElement>(null);
+
   // Site-wide currency and timezone (persisted to localStorage)
   const [currency, setCurrency] = useState<string>(() => {
     if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return 'USD';
@@ -806,7 +837,97 @@ const PartnerPerformanceDashboard = () => {
     if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return 'America/New_York';
     return (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.getItem('dashboard-timezone') || 'America/New_York';
   });
-  const [settingsSaved, setSettingsSaved] = useState(false);
+  type SettingsNavTab = 'general' | 'organization' | 'team' | 'support';
+  const SETTINGS_NAV_ITEMS: { id: SettingsNavTab; label: string }[] = [
+    { id: 'general', label: 'General' },
+    { id: 'organization', label: 'Organization' },
+    { id: 'team', label: 'Team' },
+    { id: 'support', label: 'Support' },
+  ];
+  const [settingsNavTab, setSettingsNavTab] = useState<SettingsNavTab>('general');
+  /** Shared settings modal shell (same as Invite Member): invite vs contact support */
+  type SettingsModalMode = 'invite' | 'contact' | null;
+  const [settingsModal, setSettingsModal] = useState<SettingsModalMode>(null);
+  const [inviteMemberEmail, setInviteMemberEmail] = useState('');
+
+  type SupportInquiryStatus = 'Open' | 'Resolved';
+  type SupportInquiry = {
+    id: string;
+    category: string;
+    subject: string;
+    messagePreview: string;
+    status: SupportInquiryStatus;
+    submittedAt: string; // ISO
+  };
+
+  type SupportInquiryCategory = { value: string; label: string };
+
+  const SUPPORT_INQUIRY_CATEGORIES: readonly SupportInquiryCategory[] = [
+    { value: 'Technical Issue', label: 'Technical Issue' },
+    { value: 'Billing', label: 'Billing' },
+    { value: 'Account Access', label: 'Account Access' },
+    { value: 'Feature Request', label: 'Feature Request' },
+    { value: 'Other', label: 'Other' },
+  ];
+
+  const DEFAULT_SUPPORT_INQUIRY_CATEGORY = 'Technical Issue';
+
+  const [inquiries, setInquiries] = useState<SupportInquiry[]>([]);
+  const [inquiryCategory, setInquiryCategory] = useState<string>(DEFAULT_SUPPORT_INQUIRY_CATEGORY);
+  const [contactSubject, setContactSubject] = useState<string>('');
+  const [contactMessage, setContactMessage] = useState<string>('');
+  const [contactFormStatus, setContactFormStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+
+  const selectedSupportInquiryCategoryItem =
+    SUPPORT_INQUIRY_CATEGORIES.find((i) => i.value === inquiryCategory) ?? null;
+
+  const formatSupportInquiryDate = (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+  };
+
+  const resetContactSupportForm = () => {
+    setInquiryCategory(DEFAULT_SUPPORT_INQUIRY_CATEGORY);
+    setContactSubject('');
+    setContactMessage('');
+    setContactFormStatus(null);
+  };
+
+  const handleSendInquiry = () => {
+    const subject = contactSubject.trim();
+    const message = contactMessage.trim();
+
+    if (!subject || !message) {
+      setContactFormStatus({ type: 'error', message: 'Please enter a subject and message.' });
+      return false;
+    }
+
+    const nowIso = new Date().toISOString();
+    const preview = message.length > 120 ? message.slice(0, 120).trimEnd() : message;
+    const nextInquiry: SupportInquiry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      category: inquiryCategory,
+      subject,
+      messagePreview: preview,
+      status: 'Open',
+      submittedAt: nowIso,
+    };
+
+    setInquiries((prev) => [nextInquiry, ...prev]);
+    setContactSubject('');
+    setContactMessage('');
+    setContactFormStatus({ type: 'success', message: 'Inquiry sent. We will get back to you shortly.' });
+    setTimeout(() => setContactFormStatus(null), 3000);
+    return true;
+  };
+
+  const [orgEntityDisplayNames, setOrgEntityDisplayNames] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      mockOrganizationSettings.associatedEntities.map((e) => [e.id, e.displayName])
+    )
+  );
   useEffect(() => {
     if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return;
     const c = (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.getItem('dashboard-currency');
@@ -814,12 +935,16 @@ const PartnerPerformanceDashboard = () => {
     if (c) setCurrency(c);
     if (t) setTimezone(t);
   }, []);
-  const saveSettings = () => {
+  const persistDashboardSettings = (nextCurrency: string, nextTimezone: string) => {
     if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return;
-    (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.setItem('dashboard-currency', currency);
-    (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.setItem('dashboard-timezone', timezone);
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 2000);
+    (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.setItem(
+      'dashboard-currency',
+      nextCurrency
+    );
+    (globalThis as unknown as { localStorage?: { getItem(key: string): string | null; setItem(key: string, value: string): void } }).localStorage?.setItem(
+      'dashboard-timezone',
+      nextTimezone
+    );
   };
   const formatCurrency = (value: number, options?: { compact?: boolean }) => {
     if (options?.compact && value >= 1000) {
@@ -922,7 +1047,6 @@ const PartnerPerformanceDashboard = () => {
   const unreadCount = mockNotifications.filter(n => !n.read).length;
   
   // Filter states for detail tabs
-  const [chartMetric, setChartMetric] = useState('revenue'); // revenue, clicks, conversions, roas
   const [campaignFilter, setCampaignFilter] = useState('all'); // all, active, completed
   
   // Dashboard metric selection (GA4 style)
@@ -1353,6 +1477,20 @@ const PartnerPerformanceDashboard = () => {
     return false;
   };
 
+  const canViewSalesDashboard = hasShopPlan();
+  const canViewCreatorDashboard = hasCreatorPlan();
+  /** Sales metrics: show when shop-only, or when both and tab is Sales */
+  const showSalesDashboard =
+    canViewSalesDashboard &&
+    (!canViewCreatorDashboard || dashboardView === 'sales');
+  /** Creator summary: show when creator-only, or when both and tab is Creators */
+  const showCreatorDashboard =
+    canViewCreatorDashboard &&
+    (!canViewSalesDashboard || dashboardView === 'creators');
+
+  /** Active options in the Creators toolbar Filter menu (shown as a count badge on the button) */
+  const creatorFilterSelectedCount = creatorExcludeCancelled ? 1 : 0;
+
   // Handle time range selection
   const handleTimeRangeChange = (range: 'hourly' | '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ' | 'custom') => {
     setTimeRange(range);
@@ -1407,18 +1545,25 @@ const PartnerPerformanceDashboard = () => {
       if (notificationMenuRef.current && !(notificationMenuRef.current as unknown as { contains(node: EventTarget | null): boolean }).contains(event.target)) {
         setShowNotificationMenu(false);
       }
+      if (creatorFilterMenuRef.current && !(creatorFilterMenuRef.current as unknown as { contains(node: EventTarget | null): boolean }).contains(event.target)) {
+        setCreatorFilterMenuOpen(false);
+      }
     };
 
     type Doc = { addEventListener(type: string, listener: (e: MouseEvent) => void): void; removeEventListener(type: string, listener: (e: MouseEvent) => void): void };
     const doc = (globalThis as unknown as { document?: Doc }).document;
-    if (showCustomDatePicker || showHelpMenu || showUserMenu || showNotificationMenu) {
+    if (showCustomDatePicker || showHelpMenu || showUserMenu || showNotificationMenu || creatorFilterMenuOpen) {
       doc?.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       doc?.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showCustomDatePicker, showHelpMenu, showUserMenu, showNotificationMenu]);
+  }, [showCustomDatePicker, showHelpMenu, showUserMenu, showNotificationMenu, creatorFilterMenuOpen]);
+
+  useEffect(() => {
+    if (!showCreatorDashboard) setCreatorFilterMenuOpen(false);
+  }, [showCreatorDashboard]);
 
   // Use filtered revenue data with spend calculation (moved after filteredRevenueData definition)
   // This will be defined later after filteredRevenueData
@@ -1518,10 +1663,35 @@ const PartnerPerformanceDashboard = () => {
       label: 'Creator Performance',
       icon: User,
       active: hasCreatorPlan(),
-      planBadge: hasCreatorPlan() ? (plans.creator === 'paid' ? 'Paid' : 'Free') : null,
+      planBadge: null,
       badge: null,
       locked: !hasCreatorPlan(),
-      subItems: null
+      subItems: [
+        {
+          id: 'creator-overview',
+          label: 'Overview',
+          active: true,
+          locked: false
+        },
+        {
+          id: 'creator-detail-reports',
+          label: 'Detail Reports',
+          active: true,
+          locked: false
+        },
+        {
+          id: 'creator-campaigns',
+          label: 'Campaigns',
+          active: false,
+          locked: true
+        },
+        {
+          id: 'creator-content-mgmt',
+          label: 'Content Management',
+          active: false,
+          locked: true
+        }
+      ]
     },
   ];
 
@@ -1781,11 +1951,16 @@ const PartnerPerformanceDashboard = () => {
         className="shopify-sidebar"
         style={{ 
           width: sidebarOpen ? '240px' : '64px',
-          transition: 'width 0.3s ease',
+          minWidth: sidebarOpen ? '240px' : '64px',
+          maxWidth: sidebarOpen ? '240px' : '64px',
+          flexShrink: 0,
+          boxSizing: 'border-box',
+          transition: 'width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease',
           position: 'sticky',
           top: 0,
           height: '100vh',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          alignSelf: 'stretch',
         }}
       >
         <div style={{ 
@@ -1800,7 +1975,7 @@ const PartnerPerformanceDashboard = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <img 
                 src="/logo.svg" 
-                alt="Realry Logo" 
+                alt="Seris Logo" 
                 style={{ 
                   width: '60px', 
                   height: '32px',
@@ -1920,6 +2095,7 @@ const PartnerPerformanceDashboard = () => {
                     <>
                       <span style={{ 
                         flex: 1, 
+                        paddingLeft: '0px',
                         textAlign: 'left',
                         lineHeight: '20px'
                       }}>
@@ -1982,7 +2158,7 @@ const PartnerPerformanceDashboard = () => {
                 </button>
                 {sidebarOpen && hasSubItems && isExpanded && (
                   <div style={{ 
-                    marginLeft: '32px',
+                    marginLeft: '0px',
                     marginTop: '2px',
                     marginBottom: '2px'
                   }}>
@@ -2010,6 +2186,10 @@ const PartnerPerformanceDashboard = () => {
                         >
                           <span style={{ 
                             flex: 1, 
+                            // "Hanging" text: shift only the label left,
+                            // while keeping the whole tab/button background aligned.
+                            position: 'relative',
+                            left: '40px',
                             textAlign: 'left',
                             lineHeight: '20px'
                           }}>
@@ -2813,7 +2993,7 @@ const PartnerPerformanceDashboard = () => {
         }}>
           {/* Detail Reports */}
           {activeSection === 'shop-detail-reports' && (
-            <div style={{ width: '100%' }}>
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -2822,7 +3002,8 @@ const PartnerPerformanceDashboard = () => {
                 gap: '12px',
                 padding: '16px 24px',
                 borderBottom: '1px solid var(--shopify-border)',
-                backgroundColor: 'white'
+                background: 'unset',
+                backgroundColor: 'var(--cds-layer-01)',
               }}>
                 <div>
                   <h2 style={{
@@ -2851,44 +3032,74 @@ const PartnerPerformanceDashboard = () => {
                   <option value="lastMonth">Last month</option>
                 </select>
               </div>
-              {/* Report type tabs - one per "View full report" on dashboard */}
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '4px',
-                padding: '12px 24px 0',
-                backgroundColor: 'white',
-                borderBottom: '1px solid var(--shopify-border)'
-              }}>
-                {([
-                  { id: 'weekday-weekend', label: 'Weekday vs Weekend' },
-                  { id: 'customer-interests', label: 'Customer Interests' },
-                  { id: 'product-content', label: 'Product & Content' },
-                  { id: 'high-ctr-low-cvr', label: 'High CTR Low CVR' },
-                  { id: 'high-cvr-low-ctr', label: 'High CVR Low CTR' },
-                  { id: 'spreadsheet', label: 'Detail Spreadsheet' }
-                ] as const).map(({ id, label }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setDetailReportTab(id)}
-                    style={{
-                      padding: '10px 16px',
-                      border: 'none',
-                      borderBottom: detailReportTab === id ? '2px solid #7256F6' : '2px solid transparent',
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: detailReportTab === id ? 600 : 500,
-                      color: detailReportTab === id ? '#7256F6' : 'var(--shopify-text-secondary)',
-                      marginBottom: '-1px'
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div style={{ padding: '24px', backgroundColor: '#f6f6f7', minHeight: '400px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'stretch',
+                  flex: 1,
+                  minHeight: 0,
+                  gap: 0,
+                }}
+              >
+                <nav
+                  aria-label="Detail report sections"
+                  style={{
+                    width: '240px',
+                    flexShrink: 0,
+                    alignSelf: 'stretch',
+                    minHeight: '100%',
+                    backgroundColor: 'var(--cds-layer)',
+                    borderRight: '1px solid #e0e0e0',
+                    padding: '16px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  {([
+                    { id: 'weekday-weekend' as const, label: 'Weekday vs Weekend' },
+                    { id: 'customer-interests' as const, label: 'Customer Interests' },
+                    { id: 'product-content' as const, label: 'Product & Content' },
+                    { id: 'high-ctr-low-cvr' as const, label: 'High CTR Low CVR' },
+                    { id: 'high-cvr-low-ctr' as const, label: 'High CVR Low CTR' },
+                    { id: 'spreadsheet' as const, label: 'Detail Spreadsheet' },
+                  ] as const).map(({ id, label }) => {
+                    const isActive = detailReportTab === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setDetailReportTab(id)}
+                        style={{
+                          textAlign: 'left',
+                          width: '100%',
+                          padding: '10px 14px',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          fontWeight: isActive ? 600 : 400,
+                          fontFamily: "'IBM Plex Sans', sans-serif",
+                          color: isActive ? '#161616' : '#525252',
+                          backgroundColor: isActive ? '#e8e8e8' : 'transparent',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s ease, color 0.15s ease',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </nav>
+                <div
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    minHeight: '100%',
+                    padding: '24px',
+                    overflowY: 'auto',
+                    backgroundColor: 'var(--cds-layer)',
+                  }}
+                >
                 {/* Weekday vs Weekend - full report */}
                 {detailReportTab === 'weekday-weekend' && (() => {
                   const aggregatedData = aggregateWeekendWeekdayData(weekendWeekdayPerformanceWeekly);
@@ -2900,59 +3111,64 @@ const PartnerPerformanceDashboard = () => {
                     <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', border: '1px solid var(--shopify-border)' }}>
                       <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: '0 0 16px 0' }}>Weekday vs Weekend Performance</h3>
                       <p style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', margin: '0 0 20px 0' }}>Weekends: Saturday, Sunday. Full breakdown below.</p>
-                      <Grid narrow style={{ marginBottom: '24px' }}>
-                        <Column lg={4} md={4} sm={2}>
-                          <div className="shopify-metric-card" style={{ padding: '16px' }}>
-                            <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>Revenue (Weekday / Weekend)</div>
-                            <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{formatCurrency(aggregatedData.weekday.revenue, { compact: true })} / {formatCurrency(aggregatedData.weekend.revenue, { compact: true })}</div>
-                            <div style={{ height: '160px', marginTop: '12px' }}>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.revenue }, { name: 'Weekend', value: aggregatedData.weekend.revenue }]} margin={{ top: 5, right: 10, left: 10, bottom: 25 }}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
-                                  <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
-                                  <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => formatCurrency(v, { compact: true })} />
-                                  <Tooltip formatter={(v: number) => [formatCurrency(Number(v)), '']} />
-                                  <Bar dataKey="value" radius={[4,4,0,0]}><Cell fill="#6fa8ff" /><Cell fill="#0f62fe" /></Bar>
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </div>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                          gap: '16px',
+                          marginBottom: '24px',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          background: 'unset',
+                          backgroundColor: 'var(--cds-layer-01)',
+                        }}
+                      >
+                        <div className="shopify-metric-card" style={{ padding: '16px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>Revenue (Weekday / Weekend)</div>
+                          <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{formatCurrency(aggregatedData.weekday.revenue, { compact: true })} / {formatCurrency(aggregatedData.weekend.revenue, { compact: true })}</div>
+                          <div style={{ height: '160px', marginTop: '12px', width: '100%', minWidth: 0 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.revenue }, { name: 'Weekend', value: aggregatedData.weekend.revenue }]} margin={{ top: 5, right: 10, left: 10, bottom: 25 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                                <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
+                                <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => formatCurrency(v, { compact: true })} />
+                                <Tooltip formatter={(v: number) => [formatCurrency(Number(v)), '']} />
+                                <Bar dataKey="value" radius={[4,4,0,0]}><Cell fill="#6fa8ff" /><Cell fill="#0f62fe" /></Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
                           </div>
-                        </Column>
-                        <Column lg={4} md={4} sm={2}>
-                          <div className="shopify-metric-card" style={{ padding: '16px' }}>
-                            <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>Conversions</div>
-                            <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{aggregatedData.weekday.conversions.toLocaleString()} / {aggregatedData.weekend.conversions.toLocaleString()}</div>
-                            <div style={{ height: '160px', marginTop: '12px' }}>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.conversions }, { name: 'Weekend', value: aggregatedData.weekend.conversions }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
-                                  <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
-                                  <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} />
-                                  <Tooltip />
-                                  <Bar dataKey="value" radius={[4,4,0,0]}><Cell fill="#6fa8ff" /><Cell fill="#0f62fe" /></Bar>
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </div>
+                        </div>
+                        <div className="shopify-metric-card" style={{ padding: '16px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>Conversions</div>
+                          <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{aggregatedData.weekday.conversions.toLocaleString()} / {aggregatedData.weekend.conversions.toLocaleString()}</div>
+                          <div style={{ height: '160px', marginTop: '12px', width: '100%', minWidth: 0 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={[{ name: 'Weekday', value: aggregatedData.weekday.conversions }, { name: 'Weekend', value: aggregatedData.weekend.conversions }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                                <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
+                                <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} />
+                                <Tooltip />
+                                <Bar dataKey="value" radius={[4,4,0,0]}><Cell fill="#6fa8ff" /><Cell fill="#0f62fe" /></Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
                           </div>
-                        </Column>
-                        <Column lg={4} md={4} sm={2}>
-                          <div className="shopify-metric-card" style={{ padding: '16px' }}>
-                            <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>RPC (Weekday / Weekend)</div>
-                            <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{formatCurrency(weekdayRPC)} / {formatCurrency(weekendRPC)}</div>
-                            <div style={{ height: '160px', marginTop: '12px' }}>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={[{ name: 'Weekday', value: weekdayRPC }, { name: 'Weekend', value: weekendRPC }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
-                                  <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
-                                  <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => formatCurrency(v)} />
-                                  <Tooltip formatter={(v: number) => [formatCurrency(Number(v)), '']} />
-                                  <Bar dataKey="value" radius={[4,4,0,0]}><Cell fill="#6fa8ff" /><Cell fill="#0f62fe" /></Bar>
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </div>
+                        </div>
+                        <div className="shopify-metric-card" style={{ padding: '16px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+                          <div className="shopify-metric-label" style={{ marginBottom: '8px' }}>RPC (Weekday / Weekend)</div>
+                          <div className="shopify-metric-value" style={{ fontSize: '20px' }}>{formatCurrency(weekdayRPC)} / {formatCurrency(weekendRPC)}</div>
+                          <div style={{ height: '160px', marginTop: '12px', width: '100%', minWidth: 0 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={[{ name: 'Weekday', value: weekdayRPC }, { name: 'Weekend', value: weekendRPC }]} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                                <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12 }} tickLine={{ stroke: '#6d7175' }} />
+                                <YAxis stroke="#6d7175" tick={{ fontSize: 12 }} width={40} tickFormatter={(v: number) => formatCurrency(v)} />
+                                <Tooltip formatter={(v: number) => [formatCurrency(Number(v)), '']} />
+                                <Bar dataKey="value" radius={[4,4,0,0]}><Cell fill="#6fa8ff" /><Cell fill="#0f62fe" /></Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
                           </div>
-                        </Column>
-                      </Grid>
+                        </div>
+                      </div>
                       <h4 style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 8px 0', color: 'var(--shopify-text-primary)' }}>Detail table by day</h4>
                       <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: '0 0 12px 0' }}>Monday–Sunday by date.</p>
                       <div style={{ overflowX: 'auto', border: '1px solid var(--shopify-border)', borderRadius: '8px' }}>
@@ -3202,6 +3418,7 @@ const PartnerPerformanceDashboard = () => {
                     </div>
                   );
                 })()}
+                </div>
               </div>
             </div>
           )}
@@ -3868,22 +4085,40 @@ const PartnerPerformanceDashboard = () => {
           </FeatureGate>
 
           <FeatureGate feature="creator-performance">
-            {activeSection === 'creator-performance' && (
+            <div
+              style={{
+                width: '100%',
+                minHeight: 0,
+                background: 'unset',
+                backgroundColor: 'var(--cds-layer-01)',
+              }}
+            >
+            {activeSection === 'creator-detail-reports' && (
               <div style={{ width: '100%' }}>
-                <div style={{ padding: '24px', borderBottom: '1px solid var(--shopify-border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <h1 style={{ 
-                      fontSize: '24px', 
-                      fontWeight: '600', 
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 24px',
+                  borderBottom: '1px solid var(--shopify-border)',
+                  background: 'unset',
+                  backgroundColor: 'var(--cds-layer-01)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                    <h2 style={{
+                      fontSize: '24px',
+                      fontWeight: '600',
                       color: 'var(--shopify-text-primary)',
                       margin: 0,
                       letterSpacing: '-0.02em'
                     }}>
-                      Creator Performance
-                    </h1>
+                      Creator Detail Reports
+                    </h2>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <select
                       value={creatorPerformanceDateFilter}
-                      onChange={(e) => setCreatorPerformanceDateFilter((e.target as unknown as { value: string }).value as '7d' | '14d' | '30d' | 'thisMonth' | 'lastMonth' | 'thisQ' | 'lastQ')}
+                      onChange={(e) => setCreatorPerformanceDateFilter((e.target as unknown as { value: string }).value as typeof creatorPerformanceDateFilter)}
                       style={DASHBOARD_PERIOD_SELECT_STYLE}
                       {...dashboardPeriodSelectInteractionProps}
                     >
@@ -3896,305 +4131,30 @@ const PartnerPerformanceDashboard = () => {
                       <option value="lastQ">Last Q</option>
                     </select>
                   </div>
-                  <p style={{ 
-                    fontSize: '14px', 
-                    color: 'var(--shopify-text-secondary)',
-                    margin: 0
-                  }}>
-                    Track your creator network performance and collaborations
-                  </p>
                 </div>
-
-                {/* Creator Metrics */}
-                <Grid narrow style={{ marginBottom: '24px' }}>
-                  <Column lg={3} md={2} sm={1}>
-                    <div className="shopify-metric-card">
-                      <div className="shopify-metric-value">{mockCreatorPerformance.totalCreators}</div>
-                      <div className="shopify-metric-label">Total Creators</div>
-                    </div>
-                  </Column>
-                  <Column lg={3} md={2} sm={1}>
-                    <div className="shopify-metric-card">
-                      <div className="shopify-metric-value">{mockCreatorPerformance.activeCollaborations}</div>
-                      <div className="shopify-metric-label">Active Collaborations</div>
-                    </div>
-                  </Column>
-                  <Column lg={3} md={2} sm={1}>
-                    <div className="shopify-metric-card">
-                      <div className="shopify-metric-value">${mockCreatorPerformance.creatorRevenue.toLocaleString()}</div>
-                      <div className="shopify-metric-label">Creator Revenue</div>
-                    </div>
-                  </Column>
-                  <Column lg={3} md={2} sm={1}>
-                    <div className="shopify-metric-card">
-                      <div className="shopify-metric-value">{mockCreatorPerformance.creatorConversions}</div>
-                      <div className="shopify-metric-label">Creator Conversions</div>
-                    </div>
-                  </Column>
-                </Grid>
-
-                {/* Creator Performance Table - Source of Truth */}
-                <div className="shopify-chart-container" style={{ marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-                    <div>
-                      <h3 style={{ 
-                        fontSize: '18px', 
-                        fontWeight: '600', 
-                        marginBottom: '8px',
-                        color: 'var(--shopify-text-primary)',
-                        letterSpacing: '-0.01em'
-                      }}>
-                        Creator Performance
-                      </h3>
-                      <p style={{ 
-                        fontSize: '14px', 
-                        color: 'var(--shopify-text-secondary)',
-                        margin: 0,
-                        lineHeight: '1.5'
-                      }}>
-                        Source of truth: Detailed performance metrics for all creators
-                      </p>
-                    </div>
-                    {/* Filter */}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <label style={{ fontSize: '13px', color: 'var(--shopify-text-secondary)', fontWeight: '500' }}>
-                        Sort by:
-                      </label>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        {['revenue', 'conversions', 'growth'].map((sort) => (
-                          <button
-                            key={sort}
-                            className={`shopify-time-button ${chartMetric === sort ? 'active' : ''}`}
-                            onClick={() => setChartMetric(sort)}
-                            style={{ textTransform: 'capitalize', fontSize: '12px', padding: '4px 10px' }}
-                          >
-                            {sort}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                <div style={{ padding: '24px', backgroundColor: '#f6f6f7', minHeight: '400px' }}>
+                  <div style={{
+                    backgroundColor: 'white',
+                    padding: '24px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--shopify-border)',
+                    fontSize: '14px',
+                    color: 'var(--shopify-text-secondary)'
+                  }}>
+                    Additional creator report pages (per-metric breakdowns, spreadsheets, and more) will appear here as they ship.
                   </div>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeader>Creator Name</TableHeader>
-                        <TableHeader>Revenue</TableHeader>
-                        <TableHeader>Conversions</TableHeader>
-                        <TableHeader>Growth %</TableHeader>
-                        <TableHeader>Status</TableHeader>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {mockCreatorPerformance.topCreators.map((creator) => (
-                        <TableRow key={creator.id}>
-                          <TableCell>{creator.name}</TableCell>
-                          <TableCell>${creator.revenue.toLocaleString()}</TableCell>
-                          <TableCell>{creator.conversions.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '4px',
-                              color: creator.growth > 0 ? '#7256F6' : '#d72c0d'
-                            }}>
-                              {creator.growth > 0 ? (
-                                <ArrowUp size={16} />
-                              ) : (
-                                <ArrowDown size={16} />
-                              )}
-                              {Math.abs(creator.growth)}%
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Tag type="green" size="sm">Active</Tag>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
                 </div>
-
-                {/* Creator Revenue Breakdown */}
-                <div className="shopify-chart-container" style={{ marginBottom: '24px' }}>
-                  <h3 style={{ 
-                    fontSize: '16px', 
-                    fontWeight: '600', 
-                    marginBottom: '8px',
-                    color: 'var(--shopify-text-primary)'
-                  }}>
-                    Creator Revenue Summary
-                  </h3>
-                  <p style={{ 
-                    fontSize: '13px', 
-                    color: 'var(--shopify-text-secondary)',
-                    marginBottom: '24px'
-                  }}>
-                    Overall creator network performance metrics
-                  </p>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeader>Metric</TableHeader>
-                        <TableHeader>Value</TableHeader>
-                        <TableHeader>Details</TableHeader>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Total Creators</TableCell>
-                        <TableCell>{mockCreatorPerformance.totalCreators}</TableCell>
-                        <TableCell>{mockCreatorPerformance.activeCollaborations} active collaborations</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Total Revenue</TableCell>
-                        <TableCell>${mockCreatorPerformance.creatorRevenue.toLocaleString()}</TableCell>
-                        <TableCell>From creator-driven traffic</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Total Conversions</TableCell>
-                        <TableCell>{mockCreatorPerformance.creatorConversions.toLocaleString()}</TableCell>
-                        <TableCell>{((mockCreatorPerformance.creatorConversions / mockCreatorPerformance.creatorRevenue) * 100).toFixed(1)}% conversion rate</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Average Revenue per Creator</TableCell>
-                        <TableCell>${(mockCreatorPerformance.creatorRevenue / mockCreatorPerformance.totalCreators).toLocaleString()}</TableCell>
-                        <TableCell>Based on {mockCreatorPerformance.totalCreators} creators</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Top-Tier Benchmarking - Free Creator Feature */}
-                <FeatureGate feature="top-tier-benchmarking">
-                  <div className="shopify-chart-container" style={{ marginBottom: '24px' }}>
-                    <div style={{ marginBottom: '24px' }}>
-                      <h3 style={{ 
-                        fontSize: '18px', 
-                        fontWeight: '600', 
-                        marginBottom: '8px',
-                        color: 'var(--shopify-text-primary)',
-                        letterSpacing: '-0.01em'
-                      }}>
-                        Top-Tier Shop Performance
-                      </h3>
-                      <p style={{ 
-                        fontSize: '14px', 
-                        color: 'var(--shopify-text-secondary)',
-                        margin: 0,
-                        lineHeight: '1.5'
-                      }}>
-                        Benchmark against top performers in your category
-                      </p>
-                    </div>
-                    <div style={{ marginBottom: '20px' }}>
-                      {mockTopTierShopPerformance.map((shop, index) => (
-                        <div key={index} className="shopify-card" style={{ marginBottom: '24px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                            <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: 0 }}>
-                              {shop.shopName}
-                            </h4>
-                            <Tag type="green" size="sm">Top Performer</Tag>
-                          </div>
-                          <Grid narrow>
-                            <Column lg={3} md={2} sm={1}>
-                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Revenue</div>
-                              <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                                ${shop.metrics.revenue.toLocaleString()}
-                              </div>
-                            </Column>
-                            <Column lg={3} md={2} sm={1}>
-                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>ROAS</div>
-                              <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                                {shop.metrics.roas.toFixed(1)}x
-                              </div>
-                            </Column>
-                            <Column lg={3} md={2} sm={1}>
-                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>CVR</div>
-                              <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                                {shop.metrics.funnel.cvr.toFixed(1)}%
-                              </div>
-                            </Column>
-                            <Column lg={3} md={2} sm={1}>
-                              <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>AOV</div>
-                              <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                                ${shop.metrics.aov.toFixed(2)}
-                              </div>
-                            </Column>
-                          </Grid>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Top-Tier Comparison Table */}
-                    <div style={{ marginTop: '24px' }}>
-                      <h4 style={{ 
-                        fontSize: '14px', 
-                        fontWeight: '600', 
-                        marginBottom: '24px',
-                        color: 'var(--shopify-text-primary)'
-                      }}>
-                        Your Performance vs Top-Tier Shops
-                      </h4>
-                      <Table>
-                        <TableHead>
-                          <TableRow>
-                            <TableHeader>Metric</TableHeader>
-                            <TableHeader>Your Performance</TableHeader>
-                            <TableHeader>Top-Tier Average</TableHeader>
-                            <TableHeader>Gap</TableHeader>
-                            <TableHeader>% of Top-Tier</TableHeader>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell>Revenue</TableCell>
-                            <TableCell>${mockWebsitePerformance.revenue.toLocaleString()}</TableCell>
-                            <TableCell>${Math.round((mockTopTierShopPerformance[0].metrics.revenue + mockTopTierShopPerformance[1].metrics.revenue) / 2).toLocaleString()}</TableCell>
-                            <TableCell>
-                              ${(Math.round((mockTopTierShopPerformance[0].metrics.revenue + mockTopTierShopPerformance[1].metrics.revenue) / 2) - mockWebsitePerformance.revenue).toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              {((mockWebsitePerformance.revenue / Math.round((mockTopTierShopPerformance[0].metrics.revenue + mockTopTierShopPerformance[1].metrics.revenue) / 2)) * 100).toFixed(0)}%
-                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>ROAS</TableCell>
-                            <TableCell>{mockWebsitePerformance.roas.toFixed(1)}x</TableCell>
-                            <TableCell>{((mockTopTierShopPerformance[0].metrics.roas + mockTopTierShopPerformance[1].metrics.roas) / 2).toFixed(1)}x</TableCell>
-                            <TableCell>
-                              {(((mockTopTierShopPerformance[0].metrics.roas + mockTopTierShopPerformance[1].metrics.roas) / 2) - mockWebsitePerformance.roas).toFixed(1)}x
-                            </TableCell>
-                            <TableCell>
-                              {((mockWebsitePerformance.roas / ((mockTopTierShopPerformance[0].metrics.roas + mockTopTierShopPerformance[1].metrics.roas) / 2)) * 100).toFixed(0)}%
-                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>CVR</TableCell>
-                            <TableCell>{mockWebsitePerformance.funnel.cvr.toFixed(1)}%</TableCell>
-                            <TableCell>{((mockTopTierShopPerformance[0].metrics.funnel.cvr + mockTopTierShopPerformance[1].metrics.funnel.cvr) / 2).toFixed(1)}%</TableCell>
-                            <TableCell>
-                              {(((mockTopTierShopPerformance[0].metrics.funnel.cvr + mockTopTierShopPerformance[1].metrics.funnel.cvr) / 2) - mockWebsitePerformance.funnel.cvr).toFixed(1)}%
-                            </TableCell>
-                            <TableCell>
-                              {((mockWebsitePerformance.funnel.cvr / ((mockTopTierShopPerformance[0].metrics.funnel.cvr + mockTopTierShopPerformance[1].metrics.funnel.cvr) / 2)) * 100).toFixed(0)}%
-                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>AOV</TableCell>
-                            <TableCell>${mockWebsitePerformance.aov.toFixed(2)}</TableCell>
-                            <TableCell>${((mockTopTierShopPerformance[0].metrics.aov + mockTopTierShopPerformance[1].metrics.aov) / 2).toFixed(2)}</TableCell>
-                            <TableCell>
-                              ${(((mockTopTierShopPerformance[0].metrics.aov + mockTopTierShopPerformance[1].metrics.aov) / 2) - mockWebsitePerformance.aov).toFixed(2)}
-                            </TableCell>
-                            <TableCell>
-                              {((mockWebsitePerformance.aov / ((mockTopTierShopPerformance[0].metrics.aov + mockTopTierShopPerformance[1].metrics.aov) / 2)) * 100).toFixed(0)}%
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                </FeatureGate>
+              </div>
+            )}
+            {activeSection === 'creator-overview' && (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <CreatorDashboardView
+                  variant="full"
+                  currency={currency}
+                  excludeCancelled={creatorExcludeCancelled}
+                  onExcludeCancelledChange={setCreatorExcludeCancelled}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0 24px 24px' }}>
 
                 {/* AI Suggestions */}
                 <div className="shopify-chart-container">
@@ -4314,7 +4274,9 @@ const PartnerPerformanceDashboard = () => {
                   </div>
                 </div>
               </div>
+            </div>
             )}
+            </div>
           </FeatureGate>
 
           {activeSection === 'documents' && (
@@ -4325,7 +4287,9 @@ const PartnerPerformanceDashboard = () => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '12px 24px',
-                borderBottom: '1px solid var(--shopify-border)'
+                borderBottom: '1px solid var(--shopify-border)',
+                background: 'unset',
+                backgroundColor: 'var(--cds-layer-01)',
               }}>
                 <h2 style={{
                   fontSize: '24px',
@@ -4352,14 +4316,24 @@ const PartnerPerformanceDashboard = () => {
             </div>
           )}
 
-          {/* Settings - Currency & Timezone (site-wide) — layout aligned with Figma node 111:52943 */}
+          {/* Settings — two-column layout (nav + panel); General = currency & timezone */}
           {activeSection === 'settings' && (
-            <div style={{ width: '100%', minHeight: '100%', backgroundColor: '#f4f4f4' }}>
+            <div
+              style={{
+                width: '100%',
+                minHeight: 'calc(100vh - 64px)',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: '#f4f4f4',
+              }}
+            >
               <div
                 style={{
-                  backgroundColor: 'var(--shopify-white)',
+                  background: 'unset',
+                  backgroundColor: 'var(--cds-layer-01)',
                   borderBottom: '1px solid #e0e0e0',
                   padding: '12px 24px',
+                  flexShrink: 0,
                 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
@@ -4380,114 +4354,836 @@ const PartnerPerformanceDashboard = () => {
                     style={{
                       fontFamily: "'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif",
                       fontSize: '14px',
-                      lineHeight: '14px',
+                      lineHeight: '20px',
                       letterSpacing: '0.32px',
                       color: '#525252',
                       margin: 0,
                       maxWidth: '736px',
                     }}
                   >
-                    Manage site-wide currency and timezone for the dashboard.
+                    Manage your workspace preferences, organization, team, and support.
                   </p>
                 </div>
               </div>
-              <div style={{ padding: '24px', minHeight: '400px' }}>
-                <div
-                  style={{
-                    backgroundColor: 'var(--shopify-white)',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '8px',
-                    padding: '16px 20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '20px',
-                    maxWidth: '100%',
-                  }}
+              <div
+                className="settings-page-tabs-vertical"
+                style={{
+                  display: 'flex',
+                  alignItems: 'stretch',
+                  flex: 1,
+                  minHeight: 0,
+                  gap: 0,
+                  minWidth: 0,
+                }}
+              >
+                <TabsVertical
+                  selectedIndex={Math.max(0, SETTINGS_NAV_ITEMS.findIndex((i) => i.id === settingsNavTab))}
+                  onChange={({ selectedIndex }) => setSettingsNavTab(SETTINGS_NAV_ITEMS[selectedIndex].id)}
+                  height="100%"
                 >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <p
+                  <nav
+                    aria-label="Settings sections"
+                    style={{
+                      width: '240px',
+                      flexShrink: 0,
+                      alignSelf: 'stretch',
+                      minHeight: '100%',
+                      backgroundColor: 'var(--cds-layer)',
+                      borderRight: '1px solid #e0e0e0',
+                      padding: '16px 12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    {SETTINGS_NAV_ITEMS.map((item) => {
+                      const isActive = settingsNavTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          aria-selected={isActive}
+                          onClick={() => setSettingsNavTab(item.id)}
+                          style={{
+                            textAlign: 'left',
+                            width: '100%',
+                            padding: '10px 14px',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            fontWeight: isActive ? 600 : 400,
+                            fontFamily: "'IBM Plex Sans', sans-serif",
+                            color: isActive ? '#161616' : '#525252',
+                            backgroundColor: isActive ? '#e8e8e8' : 'transparent',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.15s ease, color 0.15s ease',
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                  <TabPanels>
+                    <TabPanel
                       style={{
-                        fontFamily: "'IBM Plex Sans', sans-serif",
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        lineHeight: '24px',
-                        color: '#161616',
-                        margin: 0,
+                        flex: 1,
+                        minWidth: 0,
+                        minHeight: 0,
+                        padding: '24px',
+                        overflowY: 'auto',
+                        backgroundColor: 'var(--cds-layer)',
                       }}
                     >
-                      Site-wide configuration
-                    </p>
-                    <p
+                    <>
+                      <div
+                        style={{
+                          backgroundColor: 'var(--shopify-white)',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          padding: '16px 20px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '20px',
+                          maxWidth: '720px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <h3
+                            style={{
+                              fontFamily: "'IBM Plex Sans', sans-serif",
+                              fontSize: '20px',
+                              fontWeight: 600,
+                              lineHeight: '24px',
+                              color: '#161616',
+                              margin: 0,
+                            }}
+                          >
+                            Site-wide configuration
+                          </h3>
+                          <p
+                            style={{
+                              fontFamily: "'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif",
+                              fontSize: '14px',
+                              lineHeight: '14px',
+                              letterSpacing: '0.32px',
+                              color: '#525252',
+                              margin: 0,
+                            }}
+                          >
+                            Currency and timezone apply to the entire dashboard.
+                          </p>
+                        </div>
+                        <div style={{ width: '100%', maxWidth: '560px' }}>
+                          <SettingsFilterableSelect
+                            id="dashboard-settings-currency"
+                            titleText="Currency"
+                            placeholder="Select currency"
+                            items={[...CURRENCY_COMBO_ITEMS]}
+                            selectedItem={selectedCurrencyItem ?? null}
+                            itemToString={(item) => item.label}
+                            filterItem={(item, q) =>
+                              `${item.label} ${item.value}`.toLowerCase().includes(q)
+                            }
+                            onSelect={(item) => {
+                              const nextCurrency = item.value;
+                              setCurrency(nextCurrency);
+                              persistDashboardSettings(nextCurrency, timezone);
+                            }}
+                            size="md"
+                          />
+                        </div>
+                        <div style={{ width: '100%', maxWidth: '560px' }}>
+                          <SettingsFilterableSelect
+                            id="dashboard-settings-timezone"
+                            titleText="Timezone"
+                            placeholder="Select timezone"
+                            items={timezoneComboItems}
+                            selectedItem={selectedTimezoneItem ?? null}
+                            itemToString={(item) => item.label}
+                            itemToElement={(item) => (
+                              <span title={item.label}>{item.label}</span>
+                            )}
+                            filterItem={(item, q) => {
+                              const fromString = getTimezoneTypeaheadString(
+                                item.label,
+                                item.value
+                              ).toLowerCase();
+                              return (
+                                fromString.includes(q) ||
+                                item.label.toLowerCase().includes(q) ||
+                                item.value.toLowerCase().includes(q)
+                              );
+                            }}
+                            onSelect={(item) => {
+                              const nextTimezone = item.value;
+                              setTimezone(nextTimezone);
+                              persistDashboardSettings(currency, nextTimezone);
+                            }}
+                            size="md"
+                          />
+                        </div>
+                      </div>
+                    </>
+                    </TabPanel>
+                    <TabPanel
                       style={{
-                        fontFamily: "'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif",
-                        fontSize: '14px',
-                        lineHeight: '14px',
-                        letterSpacing: '0.32px',
-                        color: '#525252',
-                        margin: 0,
+                        flex: 1,
+                        minWidth: 0,
+                        minHeight: 0,
+                        padding: '24px',
+                        overflowY: 'auto',
+                        backgroundColor: 'var(--cds-layer)',
                       }}
                     >
-                      Currency and timezone apply to the entire dashboard.
-                    </p>
-                  </div>
-                  <div style={{ width: '100%', maxWidth: '560px' }}>
-                    <Dropdown<StandardTimezoneOption>
-                      id="dashboard-settings-currency"
-                      titleText="Currency"
-                      label="Select currency"
-                      items={[...CURRENCY_COMBO_ITEMS]}
-                      itemToString={(item) => (item ? item.label : '')}
-                      selectedItem={selectedCurrencyItem ?? undefined}
-                      onChange={({ selectedItem }) => {
-                        if (selectedItem) setCurrency(selectedItem.value);
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '24px',
+                        maxWidth: '960px',
                       }}
-                      
-                      size="md"
-                    />
-                  </div>
-                  <div style={{ width: '100%', maxWidth: '560px' }}>
-                    <Dropdown<StandardTimezoneOption>
-                      id="dashboard-settings-timezone"
-                      titleText="Timezone"
-                      label="Select timezone"
-                      items={timezoneComboItems}
-                      itemToString={(item) =>
-                        item ? getTimezoneTypeaheadString(item.label, item.value) : ''
-                      }
-                      itemToElement={(item) => (
-                        <span title={item.label}>{item.label}</span>
-                      )}
-                      renderSelectedItem={(item) => <span>{item.label}</span>}
-                      selectedItem={selectedTimezoneItem ?? undefined}
-                      onChange={({ selectedItem }) => {
-                        if (selectedItem) setTimezone(selectedItem.value);
+                    >
+                      <div
+                        style={{
+                          backgroundColor: 'var(--shopify-white)',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          padding: '16px 20px',
+                        }}
+                      >
+                        <h3
+                          style={{
+                            fontFamily: "'IBM Plex Sans', sans-serif",
+                            fontSize: '20px',
+                            fontWeight: 600,
+                            color: '#161616',
+                            margin: '0 0 8px 0',
+                          }}
+                        >
+                          Organization
+                        </h3>
+                        <p
+                          style={{
+                            fontSize: '14px',
+                            color: '#525252',
+                            margin: '0 0 24px 0',
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          Manage organization details and shared configurations.
+                        </p>
+                        <div
+                          style={{
+                            maxWidth: '560px',
+                            padding: '12px',
+                            borderRadius: '6px',
+                            background: 'unset',
+                            backgroundColor: 'var(--cds-layer-01)',
+                          }}
+                        >
+                          <TextInput
+                            id="settings-org-name"
+                            labelText="Organization name"
+                            readOnly
+                            value={mockOrganizationSettings.organizationName}
+                            size="md"
+                            helperText={
+                              <span style={{ fontStyle: 'italic' }}>
+                                Contact support to change organization details.
+                              </span>
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          backgroundColor: 'var(--shopify-white)',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          padding: '24px',
+                        }}
+                      >
+                        <h3
+                          style={{
+                            fontFamily: "'IBM Plex Sans', sans-serif",
+                            fontSize: '18px',
+                            fontWeight: 600,
+                            color: '#161616',
+                            margin: '0 0 8px 0',
+                          }}
+                        >
+                          Associated Entities
+                        </h3>
+                        <p
+                          style={{
+                            fontSize: '14px',
+                            color: '#525252',
+                            margin: '0 0 20px 0',
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          Manage display names for your brand entities.
+                        </p>
+                        <div style={{ width: '100%', overflowX: 'auto' }}>
+                        <Table size="sm">
+                          <TableHead>
+                            <TableRow>
+                              <TableHeader
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  letterSpacing: '0.32px',
+                                  textTransform: 'uppercase',
+                                  color: '#6d7175',
+                                }}
+                              >
+                                Shop name (fixed)
+                              </TableHeader>
+                              <TableHeader
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  letterSpacing: '0.32px',
+                                  textTransform: 'uppercase',
+                                  color: '#6d7175',
+                                }}
+                              >
+                                Display name
+                              </TableHeader>
+                              <TableHeader
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  letterSpacing: '0.32px',
+                                  textTransform: 'uppercase',
+                                  color: '#6d7175',
+                                }}
+                              >
+                                Logo
+                              </TableHeader>
+                              <TableHeader
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  letterSpacing: '0.32px',
+                                  textTransform: 'uppercase',
+                                  color: '#6d7175',
+                                }}
+                              >
+                                Background
+                              </TableHeader>
+                              <TableHeader
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  letterSpacing: '0.32px',
+                                  textTransform: 'uppercase',
+                                  color: '#6d7175',
+                                  width: '80px',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                Action
+                              </TableHeader>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {mockOrganizationSettings.associatedEntities.map((row) => (
+                              <TableRow key={row.id}>
+                                <TableCell>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span
+                                      style={{
+                                        fontWeight: 600,
+                                        color: 'var(--shopify-text-primary)',
+                                        fontSize: '14px',
+                                      }}
+                                    >
+                                      {row.shopName}
+                                    </span>
+                                    <span style={{ fontSize: '12px', color: '#6d7175' }}>{row.email}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <TextInput
+                                    id={`settings-entity-display-${row.id}`}
+                                    labelText=""
+                                    hideLabel
+                                    value={orgEntityDisplayNames[row.id] ?? row.displayName}
+                                    onChange={(e) =>
+                                      setOrgEntityDisplayNames((prev) => ({
+                                        ...prev,
+                                        [row.id]: (e.target as HTMLInputElement).value,
+                                      }))
+                                    }
+                                    size="sm"
+                                    style={{ minWidth: '140px', borderRadius: '6px' }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div
+                                      style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: '6px',
+                                        backgroundColor: 'var(--shopify-gray-100)',
+                                        border: '1px solid var(--shopify-border)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                      }}
+                                      aria-hidden
+                                    >
+                                      <Image size={18} style={{ color: '#9ca3af' }} />
+                                    </div>
+                                    <IconButton
+                                      kind="ghost"
+                                      size="sm"
+                                      label="Upload logo"
+                                      onClick={() => {}}
+                                    >
+                                      <Upload size={16} />
+                                    </IconButton>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div
+                                      style={{
+                                        width: 56,
+                                        height: 32,
+                                        borderRadius: '6px',
+                                        backgroundColor: 'var(--shopify-gray-100)',
+                                        border: '1px solid var(--shopify-border)',
+                                      }}
+                                      aria-hidden
+                                    />
+                                    <IconButton
+                                      kind="ghost"
+                                      size="sm"
+                                      label="Upload background"
+                                      onClick={() => {}}
+                                    >
+                                      <Upload size={16} />
+                                    </IconButton>
+                                  </div>
+                                </TableCell>
+                                <TableCell style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                  <CheckmarkFilled
+                                    size={20}
+                                    style={{ color: 'var(--brand-primary)' }}
+                                    aria-label="Saved"
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        </div>
+                      </div>
+                    </div>
+                    </TabPanel>
+                    <TabPanel
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        minHeight: 0,
+                        padding: '24px',
+                        overflowY: 'auto',
+                        backgroundColor: 'var(--cds-layer)',
                       }}
-                      
-                      size="md"
-                    />
-                  </div>
-                </div>
-                <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                  <Button kind="primary" size="md" onClick={saveSettings}>
-                    Save settings
-                  </Button>
-                  {settingsSaved && (
-                    <span style={{ fontSize: '13px', color: '#16a34a' }}>Saved. Applied site-wide.</span>
-                  )}
-                </div>
+                    >
+                    <div
+                      style={{
+                        backgroundColor: 'var(--shopify-white)',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '12px',
+                        maxWidth: '960px',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.06)',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          gap: '16px',
+                          flexWrap: 'wrap',
+                          padding: '24px',
+                          borderBottom: '1px solid #e8e8e8',
+                        }}
+                      >
+                        <div>
+                          <h3
+                            style={{
+                              fontFamily: "'IBM Plex Sans', sans-serif",
+                              fontSize: '20px',
+                              fontWeight: 600,
+                              color: '#161616',
+                              margin: '0 0 6px 0',
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            Team Management
+                          </h3>
+                          <p
+                            style={{
+                              fontSize: '14px',
+                              color: '#6d7175',
+                              margin: 0,
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            Manage your organization members and their roles.
+                          </p>
+                        </div>
+                        <Button
+                          kind="primary"
+                          size="md"
+                          renderIcon={Add}
+                          onClick={() => {
+                            setInviteMemberEmail('');
+                            setSettingsModal('invite');
+                          }}
+                          style={{
+                            borderRadius: '8px',
+                            backgroundColor: '#7256F6',
+                            fontWeight: 400,
+                            boxShadow: '0 1px 2px rgba(114, 86, 246, 0.25)',
+                          }}
+                        >
+                          Invite Member
+                        </Button>
+                      </div>
+                      <div style={{ padding: '24px 24px 24px' }}>
+                        <div
+                          style={{
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableHeader
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    letterSpacing: '0.5px',
+                                    textTransform: 'uppercase',
+                                    color: '#6d7175',
+                                    backgroundColor: '#fafafa',
+                                  }}
+                                >
+                                  Member
+                                </TableHeader>
+                                <TableHeader
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    letterSpacing: '0.5px',
+                                    textTransform: 'uppercase',
+                                    color: '#6d7175',
+                                    backgroundColor: '#fafafa',
+                                  }}
+                                >
+                                  Role
+                                </TableHeader>
+                                <TableHeader
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    letterSpacing: '0.5px',
+                                    textTransform: 'uppercase',
+                                    color: '#6d7175',
+                                    backgroundColor: '#fafafa',
+                                  }}
+                                >
+                                  Joined
+                                </TableHeader>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {mockTeamMembers.map((member) => (
+                                <TableRow key={member.id}>
+                                  <TableCell>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      <div
+                                        style={{
+                                          width: 40,
+                                          height: 40,
+                                          borderRadius: '50%',
+                                          backgroundColor: '#dbeafe',
+                                          color: '#1e40af',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontSize: '16px',
+                                          fontWeight: 600,
+                                          flexShrink: 0,
+                                        }}
+                                        aria-hidden
+                                      >
+                                        {member.name.replace(/\s*\(You\)\s*/i, '').trim().charAt(0).toUpperCase() || '?'}
+                                      </div>
+                                      <div>
+                                        <div
+                                          style={{
+                                            fontSize: '14px',
+                                            fontWeight: 600,
+                                            color: '#161616',
+                                            lineHeight: 1.3,
+                                          }}
+                                        >
+                                          {member.name}
+                                        </div>
+                                        <div style={{ fontSize: '13px', color: '#6d7175', marginTop: '2px' }}>
+                                          {member.email}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span
+                                      style={{
+                                        display: 'inline-block',
+                                        padding: '4px 10px',
+                                        borderRadius: '6px',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        letterSpacing: '0.02em',
+                                        backgroundColor: '#fce7f3',
+                                        color: '#be185d',
+                                      }}
+                                    >
+                                      {member.role}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell style={{ fontSize: '14px', color: '#525252' }}>{member.joined}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </div>
+                    </TabPanel>
+                    <TabPanel
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        minHeight: 0,
+                        padding: '24px',
+                        overflowY: 'auto',
+                        backgroundColor: 'var(--cds-layer)',
+                      }}
+                    >
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px',
+                        maxWidth: '960px',
+                        width: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          backgroundColor: 'var(--shopify-white)',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '12px',
+                          padding: '24px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            justifyContent: 'space-between',
+                            gap: '16px',
+                            flexWrap: 'wrap',
+                            marginBottom: '16px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <h3
+                              style={{
+                                fontFamily: "'IBM Plex Sans', sans-serif",
+                                fontSize: '20px',
+                                fontWeight: 600,
+                                color: '#161616',
+                                margin: 0,
+                              }}
+                            >
+                              Recent Inquiries
+                            </h3>
+                            <p
+                            style={{
+                              fontSize: '14px',
+                              color: '#6d7175',
+                              margin: 0,
+                                fontWeight: 400,
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            Track your support requests
+                          </p>
+
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                              kind="primary"
+                              size="md"
+                              renderIcon={Chat}
+                              onClick={() => {
+                                resetContactSupportForm();
+                                setSettingsModal('contact');
+                              }}
+                              style={{
+                                borderRadius: '8px',
+                                backgroundColor: '#7256F6',
+                                fontWeight: 400,
+                                boxShadow: '0 1px 2px rgba(114, 86, 246, 0.25)',
+                              }}
+                            >
+                              Contact us
+                            </Button>
+                          </div>
+                        </div>
+
+                        {inquiries.length === 0 ? (
+                          <div
+                            style={{
+                              border: '1px dashed #d8dbe0',
+                              borderRadius: '10px',
+                              padding: '32px 16px',
+                              textAlign: 'center',
+                              color: '#6d7175',
+                              backgroundColor: 'var(--cds-layer-01)',
+                            }}
+                          >
+                            No inquiries.
+                          </div>
+                        ) : (
+                          <div style={{ width: '100%', overflowX: 'auto' }}>
+                            <Table size="sm">
+                              <TableHead>
+                                <TableRow>
+                                  <TableHeader
+                                    style={{
+                                      fontSize: '11px',
+                                      fontWeight: 600,
+                                      letterSpacing: '0.32px',
+                                      textTransform: 'uppercase',
+                                      color: '#6d7175',
+                                      backgroundColor: '#fafafa',
+                                    }}
+                                  >
+                                    Date
+                                  </TableHeader>
+                                  <TableHeader
+                                    style={{
+                                      fontSize: '11px',
+                                      fontWeight: 600,
+                                      letterSpacing: '0.32px',
+                                      textTransform: 'uppercase',
+                                      color: '#6d7175',
+                                      backgroundColor: '#fafafa',
+                                    }}
+                                  >
+                                    Inquiry category
+                                  </TableHeader>
+                                  <TableHeader
+                                    style={{
+                                      fontSize: '11px',
+                                      fontWeight: 600,
+                                      letterSpacing: '0.32px',
+                                      textTransform: 'uppercase',
+                                      color: '#6d7175',
+                                      backgroundColor: '#fafafa',
+                                    }}
+                                  >
+                                    Subject
+                                  </TableHeader>
+                                  <TableHeader
+                                    style={{
+                                      fontSize: '11px',
+                                      fontWeight: 600,
+                                      letterSpacing: '0.32px',
+                                      textTransform: 'uppercase',
+                                      color: '#6d7175',
+                                      backgroundColor: '#fafafa',
+                                      width: '260px',
+                                    }}
+                                  >
+                                    Message
+                                  </TableHeader>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {inquiries.map((inq) => (
+                                  <TableRow key={inq.id}>
+                                    <TableCell style={{ fontSize: '14px', color: '#525252' }}>
+                                      {formatSupportInquiryDate(inq.submittedAt)}
+                                    </TableCell>
+                                    <TableCell style={{ fontSize: '14px', color: '#161616' }}>{inq.category}</TableCell>
+                                    <TableCell style={{ fontSize: '14px', color: '#161616' }}>{inq.subject}</TableCell>
+                                    <TableCell>
+                                      <span
+                                        style={{
+                                          display: 'block',
+                                          maxWidth: '260px',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                          color: '#525252',
+                                          fontSize: '14px',
+                                        }}
+                                        title={inq.messagePreview}
+                                      >
+                                        {inq.messagePreview}
+                                      </span>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    </TabPanel>
+                  </TabPanels>
+                </TabsVertical>
               </div>
             </div>
           )}
 
           {activeSection === 'dashboard' && (
             <div style={{ width: '100%' }}>
+              {!canViewSalesDashboard && !canViewCreatorDashboard ? (
+                <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '14px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
+                    No dashboard is available for your account. Enable Shop or Creator performance to see metrics here.
+                  </p>
+                </div>
+              ) : (
+              <>
               {/* Dashboard Title and Controls */}
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '12px 24px',
-                borderBottom: '1px solid var(--shopify-border)'
+                borderBottom: '1px solid var(--shopify-border)',
+                background: 'unset',
+                backgroundColor: 'var(--cds-layer-01)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                   <h2 style={{
@@ -4499,9 +5195,40 @@ const PartnerPerformanceDashboard = () => {
                   }}>
                     Dashboard
                   </h2>
+                  {canViewSalesDashboard && canViewCreatorDashboard && (
+                    <div
+                      className="dashboard-view-tabs"
+                      style={{ marginLeft: '4px' }}
+                      role="tablist"
+                      aria-label="Dashboard view"
+                    >
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={dashboardView === 'sales'}
+                        className={cn(
+                          dashboardView === 'sales' && 'dashboard-view-tabs__segment--selected'
+                        )}
+                        onClick={() => setDashboardView('sales')}
+                      >
+                        Sales
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={dashboardView === 'creators'}
+                        className={cn(
+                          dashboardView === 'creators' && 'dashboard-view-tabs__segment--selected'
+                        )}
+                        onClick={() => setDashboardView('creators')}
+                      >
+                        Creators
+                      </button>
+                    </div>
+                  )}
                   
                   {/* Performance Rank Badge - Inline */}
-                  {performanceRankByTimeRange && (
+                  {performanceRankByTimeRange && showSalesDashboard && (
                     <div style={{ 
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -4631,24 +5358,140 @@ const PartnerPerformanceDashboard = () => {
                       </button>
                     </div>
                   )}
-                  
-                  {/* Filter Button */}
-                  <button
-                    className="shopify-time-button"
+
+                  <div
                     style={{
-                      padding: '8px 16px',
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '14px'
+                      gap: '12px',
+                      flexWrap: 'wrap',
                     }}
                   >
-                    <Filter size={16} />
-                    Filter
-                  </button>
-                  
-                  {/* Export Button */}
+                    {showCreatorDashboard ? (
+                      <div ref={creatorFilterMenuRef} style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          className="shopify-time-button"
+                          style={{
+                            padding: '8px 16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '14px',
+                            ...(creatorFilterMenuOpen
+                              ? {
+                                  borderColor: 'var(--brand-primary)',
+                                  boxShadow: '0 0 0 1px rgba(114, 86, 246, 0.35)',
+                                }
+                              : {}),
+                          }}
+                          aria-expanded={creatorFilterMenuOpen}
+                          aria-haspopup="true"
+                          aria-controls="creator-dashboard-filter-menu"
+                          id="creator-dashboard-filter-trigger"
+                          aria-label={
+                            creatorFilterSelectedCount > 0
+                              ? `Filter, ${creatorFilterSelectedCount} active`
+                              : 'Filter'
+                          }
+                          onClick={() => setCreatorFilterMenuOpen((o) => !o)}
+                        >
+                          <Filter size={16} />
+                          <span>Filter</span>
+                          {creatorFilterSelectedCount > 0 && (
+                            <span
+                              aria-hidden
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minWidth: '18px',
+                                height: '18px',
+                                padding: '0 5px',
+                                borderRadius: '9px',
+                                backgroundColor: 'var(--brand-primary)',
+                                color: 'white',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                lineHeight: 1,
+                              }}
+                            >
+                              {creatorFilterSelectedCount}
+                            </span>
+                          )}
+                        </button>
+                        {creatorFilterMenuOpen && (
+                          <div
+                            id="creator-dashboard-filter-menu"
+                            role="menu"
+                            aria-labelledby="creator-dashboard-filter-trigger"
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              right: 0,
+                              marginTop: '8px',
+                              backgroundColor: 'white',
+                              border: '1px solid var(--shopify-border)',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                              minWidth: '240px',
+                              zIndex: 1000,
+                              padding: '4px 0',
+                            }}
+                          >
+                            <label
+                              role="menuitemcheckbox"
+                              aria-checked={creatorExcludeCancelled}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '10px 14px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                color: 'var(--shopify-text-primary)',
+                                margin: 0,
+                                width: '100%',
+                                boxSizing: 'border-box',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={creatorExcludeCancelled}
+                                onChange={(e) => setCreatorExcludeCancelled(e.target.checked)}
+                                style={{
+                                  width: 16,
+                                  height: 16,
+                                  cursor: 'pointer',
+                                  accentColor: 'var(--brand-primary)',
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <span>Exclude cancelled orders</span>
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="shopify-time-button"
+                        style={{
+                          padding: '8px 16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '14px',
+                        }}
+                      >
+                        <Filter size={16} />
+                        Filter
+                      </button>
+                    )}
+                  </div>
+
                   <button
+                    type="button"
                     className="shopify-time-button"
                     style={{
                       padding: '8px 16px',
@@ -4664,6 +5507,8 @@ const PartnerPerformanceDashboard = () => {
                 </div>
               </div>
 
+              {showSalesDashboard && (
+              <React.Fragment>
               {/* 1. Recent Activity & Live Performance */}
               <div style={{ 
                 marginTop: '16px',
@@ -8210,10 +9055,167 @@ const PartnerPerformanceDashboard = () => {
                   </Column>
                 </Grid>
               </div>
+              </React.Fragment>
+          )}
+          {showCreatorDashboard && (
+            <div
+              style={{
+                marginTop: '16px',
+                marginLeft: '24px',
+                marginRight: '24px',
+                marginBottom: '24px',
+              }}
+            >
+              <CreatorDashboardView
+                variant="embedded"
+                currency={currency}
+                excludeCancelled={creatorExcludeCancelled}
+                onExcludeCancelledChange={setCreatorExcludeCancelled}
+              />
             </div>
+          )}
+          </>
+          )}
+        </div>
           )}
         </div>
       </main>
+
+      <Modal
+        open={settingsModal !== null}
+        onRequestClose={() => {
+          setSettingsModal(null);
+          setInviteMemberEmail('');
+          resetContactSupportForm();
+        }}
+        modalHeading={
+          settingsModal === 'invite'
+            ? 'Invite Member'
+            : settingsModal === 'contact'
+              ? 'Contact Support'
+              : ''
+        }
+        primaryButtonText={
+          settingsModal === 'invite'
+            ? 'Confirm'
+            : settingsModal === 'contact'
+              ? 'Send Inquiry'
+              : 'Confirm'
+        }
+        secondaryButtonText="Cancel"
+        onRequestSubmit={() => {
+          if (settingsModal === 'invite') {
+            setSettingsModal(null);
+            setInviteMemberEmail('');
+            return;
+          }
+          const didSend = handleSendInquiry();
+          if (didSend) {
+            setSettingsModal(null);
+            resetContactSupportForm();
+          }
+        }}
+        size="sm"
+        id={settingsModal === 'invite' ? 'invite-member-modal' : 'contact-support-modal'}
+        selectorPrimaryFocus={
+          settingsModal === 'invite'
+            ? '#invite-member-email'
+            : '#support-inquiry-subject'
+        }
+      >
+        {settingsModal === 'invite' ? (
+          <>
+            <p
+              id="invite-member-modal-desc"
+              style={{
+                fontSize: '14px',
+                color: 'var(--shopify-text-secondary)',
+                margin: '0 0 1rem',
+                lineHeight: 1.5,
+              }}
+            >
+              Enter the email of an existing user to add them to your organization.
+            </p>
+            <TextInput
+              id="invite-member-email"
+              labelText="Member email"
+              type="email"
+              autoComplete="email"
+              placeholder="Enter email"
+              value={inviteMemberEmail}
+              onChange={(e) => setInviteMemberEmail(e.target.value)}
+            />
+          </>
+        ) : settingsModal === 'contact' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <Dropdown<SupportInquiryCategory>
+              id="support-inquiry-category"
+              titleText="Inquiry category"
+              label="Select category"
+              items={[...SUPPORT_INQUIRY_CATEGORIES]}
+              itemToString={(item) => (item ? item.label : '')}
+              selectedItem={selectedSupportInquiryCategoryItem ?? undefined}
+              onChange={({ selectedItem }) => {
+                if (selectedItem) setInquiryCategory(selectedItem.value);
+              }}
+              size="md"
+            />
+
+            <TextInput
+              id="support-inquiry-subject"
+              labelText="Subject"
+              placeholder="Enter subject"
+              value={contactSubject}
+              onChange={(e) => setContactSubject((e.target as HTMLInputElement).value)}
+              size="md"
+              style={{ borderRadius: '0px' }}
+            />
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: '#6d7175',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  fontWeight: 600,
+                }}
+              >
+                Message
+              </div>
+              <textarea
+                value={contactMessage}
+                placeholder="Enter detailed message"
+                onChange={(e) => setContactMessage((e.target as HTMLTextAreaElement).value)}
+                style={{
+                  width: '100%',
+                  borderRadius: '6px',
+                  border: '1px solid var(--shopify-border)',
+                  backgroundColor: 'var(--cds-layer-01)',
+                  padding: '12px 12px',
+                  fontSize: '14px',
+                  color: 'var(--shopify-text-primary)',
+                  outline: 'none',
+                  minHeight: '140px',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+
+            {contactFormStatus && (
+              <div
+                style={{
+                  fontSize: '13px',
+                  color: contactFormStatus.type === 'success' ? '#16a34a' : '#be185d',
+                  fontWeight: 600,
+                }}
+              >
+                {contactFormStatus.message}
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 };
