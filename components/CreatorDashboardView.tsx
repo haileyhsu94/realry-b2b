@@ -31,12 +31,13 @@ import {
   Trophy,
   UserMultiple,
 } from '@carbon/icons-react';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   mockCreatorDashboardOverview,
   mockTopTierShopPerformance,
   mockWebsitePerformance,
 } from '@/lib/mockData';
+import { SETTINGS_I18N, type SupportedLocale } from '@/lib/i18n/settings';
 
 const TIMEFRAMES = [7, 30, 60, 90] as const;
 
@@ -82,6 +83,7 @@ const dashboardPeriodSelectInteractionProps: Pick<
 export type CreatorDashboardViewProps = {
   variant?: 'full' | 'embedded';
   currency?: string;
+  locale?: SupportedLocale;
   /**
    * Embedded: parent (dashboard header) owns exclude-cancelled; pass both for controlled mode.
    * Full: pass from parent so it matches Dashboard → Creators Filter (shared state in PartnerPerformanceDashboard).
@@ -178,10 +180,28 @@ const KPI_ACCENTS: Array<{
 export function CreatorDashboardView({
   variant = 'full',
   currency = 'USD',
+  locale = 'en',
   excludeCancelled: excludeCancelledProp,
   onExcludeCancelledChange,
 }: CreatorDashboardViewProps) {
   const data = mockCreatorDashboardOverview;
+  const copy = SETTINGS_I18N[locale];
+  const creatorKpiLabelByKey: Partial<Record<keyof typeof mockCreatorDashboardOverview.summary, string>> = {
+    revenue: copy.metricTotalRevenue,
+    rpc: 'RPC',
+    clicks: copy.metricClicks,
+    purchases: copy.creatorKpiPurchasesLabel,
+    conversionRate: copy.creatorKpiConversionLabel,
+    epc: copy.creatorKpiClickValueLabel,
+  };
+  const creatorKpiSubLabelByKey: Partial<Record<keyof typeof mockCreatorDashboardOverview.summary, string>> = {
+    revenue: copy.creatorKpiRevenueSublabel,
+    rpc: copy.creatorKpiRpcSublabel,
+    clicks: copy.creatorKpiClicksSublabel,
+    purchases: copy.creatorKpiPurchasesSublabel,
+    conversionRate: copy.creatorKpiConversionSublabel,
+    epc: copy.creatorKpiClickValueSublabel,
+  };
   const chartGradientId = useId().replace(/:/g, '');
   const [internalExclude, setInternalExclude] = useState(false);
   const controlled = onExcludeCancelledChange !== undefined;
@@ -258,7 +278,7 @@ export function CreatorDashboardView({
                 letterSpacing: '-0.02em',
               }}
             >
-              Creator Performance
+              {copy.creatorPerformanceTitle}
             </h2>
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -267,11 +287,11 @@ export function CreatorDashboardView({
               onChange={(e) => setDays(Number((e.target as HTMLSelectElement).value) as (typeof TIMEFRAMES)[number])}
               style={DASHBOARD_PERIOD_SELECT_STYLE}
               {...dashboardPeriodSelectInteractionProps}
-              aria-label="Time range"
+              aria-label={copy.timeRangeLabel}
             >
               {TIMEFRAMES.map((d) => (
                 <option key={d} value={d}>
-                  Last {d} days
+                  {copy.creatorLastDaysTemplate.replace('{days}', String(d))}
                 </option>
               ))}
             </select>
@@ -298,13 +318,13 @@ export function CreatorDashboardView({
                 id="creator-performance-full-filter-trigger"
                 aria-label={
                   fullFilterSelectedCount > 0
-                    ? `Filter, ${fullFilterSelectedCount} active`
-                    : 'Filter'
+                    ? `${copy.filter}, ${fullFilterSelectedCount} active`
+                    : copy.filter
                 }
                 onClick={() => setFullFilterMenuOpen((o) => !o)}
               >
                 <Filter size={16} />
-                <span>Filter</span>
+                <span>{copy.filter}</span>
                 {fullFilterSelectedCount > 0 && (
                   <span
                     aria-hidden
@@ -374,7 +394,7 @@ export function CreatorDashboardView({
                         flexShrink: 0,
                       }}
                     />
-                    <span>Exclude cancelled orders</span>
+                    <span>{copy.excludeCancelledOrders}</span>
                   </label>
                 </div>
               )}
@@ -433,13 +453,13 @@ export function CreatorDashboardView({
                 }}
               >
                 <Currency size={20} style={{ color: '#7256F6' }} />
-                Performance Overview
+                {copy.performanceOverviewTitle}
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-                Monitor your key financial metrics and efficiency
+                {copy.performanceOverviewDescription}
               </p>
             </div>
-            <Tag type="green">+12.5% vs last period</Tag>
+            <Tag type="green">+12.5% {copy.versusLastPeriod}</Tag>
           </div>
 
           <div
@@ -466,7 +486,7 @@ export function CreatorDashboardView({
                 }}
               >
                 <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>
-                  {kpi.label}
+                  {creatorKpiLabelByKey[kpi.key] ?? kpi.label}
                 </div>
                 <div
                   style={{
@@ -477,7 +497,9 @@ export function CreatorDashboardView({
                 >
                   {formatVal(kpi.key, kpi.format)}
                 </div>
-                <div style={{ fontSize: '12px', color: '#6d7175', marginTop: '4px' }}>{kpi.sublabel}</div>
+                <div style={{ fontSize: '12px', color: '#6d7175', marginTop: '4px' }}>
+                  {creatorKpiSubLabelByKey[kpi.key] ?? kpi.sublabel}
+                </div>
               </div>
             ))}
           </div>
@@ -492,7 +514,7 @@ export function CreatorDashboardView({
                 marginBottom: '12px',
               }}
             >
-              Revenue Trend
+              {copy.revenueTrendLabel}
             </div>
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={data.revenueByDay} margin={{ top: 5, right: 10, left: 0, bottom: 25 }}>
@@ -521,7 +543,7 @@ export function CreatorDashboardView({
                     borderRadius: '6px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   }}
-                  formatter={(value: number) => [formatMoney(value, currency), 'Revenue']}
+                  formatter={(value: number) => [formatMoney(value, currency), copy.metricTotalRevenue]}
                 />
                 <Area
                   type="monotone"
@@ -558,10 +580,10 @@ export function CreatorDashboardView({
               }}
             >
               <Trophy size={20} style={{ color: '#7256F6' }} />
-              Influencer Ranking
+              {copy.influencerRankingTitle}
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
-              Top creators by attributed revenue
+              {copy.topCreatorsByRevenue}
             </p>
           </div>
           <div style={{ overflowX: 'auto' }}>
@@ -575,7 +597,7 @@ export function CreatorDashboardView({
                       fontWeight: 500,
                     }}
                   >
-                    Rank
+                    {copy.rankLabel}
                   </TableHeader>
                   <TableHeader
                     style={{
@@ -584,7 +606,7 @@ export function CreatorDashboardView({
                       fontWeight: 500,
                     }}
                   >
-                    Influencer
+                    {copy.influencerLabel}
                   </TableHeader>
                   <TableHeader
                     style={{
@@ -593,7 +615,7 @@ export function CreatorDashboardView({
                       fontWeight: 500,
                     }}
                   >
-                    Revenue
+                    {copy.metricTotalRevenue}
                   </TableHeader>
                 </TableRow>
               </TableHead>
@@ -631,196 +653,149 @@ export function CreatorDashboardView({
         </div>
 
         {/* Top-Tier Shop Performance — same block as Creator Performance overview / dashboard */}
-        <div className="shopify-chart-container" style={{ marginBottom: 0 }}>
-          <div style={{ marginBottom: '24px' }}>
+        <div
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            border: '1px solid var(--shopify-border)',
+            padding: '16px',
+          }}
+        >
+          <div style={{ marginBottom: '12px' }}>
             <h3
               style={{
-                fontSize: '18px',
+                fontSize: '16px',
                 fontWeight: '600',
-                marginBottom: '8px',
                 color: 'var(--shopify-text-primary)',
-                letterSpacing: '-0.01em',
+                marginBottom: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
             >
-              Top-Tier Shop Performance
+              <ChartLineSmooth size={20} style={{ color: '#8a3ffc' }} />
+              {copy.topTierShopPerformanceTitle}
             </h3>
-            <p
-              style={{
-                fontSize: '14px',
-                color: 'var(--shopify-text-secondary)',
-                margin: 0,
-                lineHeight: '1.5',
-              }}
-            >
-              Benchmark against top performers in your category
+            <p style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', margin: 0 }}>
+              {copy.benchmarkTopPerformers}
             </p>
           </div>
-          <div style={{ marginBottom: '20px' }}>
-            {mockTopTierShopPerformance.map((shop, index) => (
-              <div key={index} className="shopify-card" style={{ marginBottom: '24px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '12px',
-                  }}
-                >
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', margin: 0 }}>
-                    {shop.shopName}
-                  </h4>
-                  <Tag type="green" size="sm">
-                    Top Performer
-                  </Tag>
-                </div>
-                <Grid narrow>
-                  <Column lg={3} md={2} sm={1}>
-                    <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>Revenue</div>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                      ${shop.metrics.revenue.toLocaleString()}
+          <div>
+            <Grid narrow style={{ marginBottom: 0 }}>
+              {[
+                {
+                  label: 'CVR (%)',
+                  values: [
+                    { name: 'You', value: mockWebsitePerformance.funnel.cvr },
+                    {
+                      name: 'Average',
+                      value:
+                        (mockTopTierShopPerformance[0].metrics.funnel.cvr + mockTopTierShopPerformance[1].metrics.funnel.cvr) / 2,
+                    },
+                    {
+                      name: 'Top 5%',
+                      value: Math.max(
+                        mockTopTierShopPerformance[0].metrics.funnel.cvr,
+                        mockTopTierShopPerformance[1].metrics.funnel.cvr
+                      ),
+                    },
+                  ],
+                  format: (v: number) => `${v.toFixed(1)}%`,
+                },
+                {
+                  label: 'AOV ($)',
+                  values: [
+                    { name: 'You', value: mockWebsitePerformance.aov },
+                    {
+                      name: 'Average',
+                      value: (mockTopTierShopPerformance[0].metrics.aov + mockTopTierShopPerformance[1].metrics.aov) / 2,
+                    },
+                    {
+                      name: 'Top 5%',
+                      value: Math.max(mockTopTierShopPerformance[0].metrics.aov, mockTopTierShopPerformance[1].metrics.aov),
+                    },
+                  ],
+                  format: (v: number) => `$${v.toFixed(0)}`,
+                },
+                {
+                  label: 'Revenue Per Click ($)',
+                  values: [
+                    { name: 'You', value: mockWebsitePerformance.revenue / Math.max(1, mockWebsitePerformance.clicks) },
+                    {
+                      name: 'Average',
+                      value:
+                        ((mockTopTierShopPerformance[0].metrics.revenue / Math.max(1, mockTopTierShopPerformance[0].metrics.clicks)) +
+                          (mockTopTierShopPerformance[1].metrics.revenue / Math.max(1, mockTopTierShopPerformance[1].metrics.clicks))) /
+                        2,
+                    },
+                    {
+                      name: 'Top 5%',
+                      value: Math.max(
+                        mockTopTierShopPerformance[0].metrics.revenue / Math.max(1, mockTopTierShopPerformance[0].metrics.clicks),
+                        mockTopTierShopPerformance[1].metrics.revenue / Math.max(1, mockTopTierShopPerformance[1].metrics.clicks)
+                      ),
+                    },
+                  ],
+                  format: (v: number) => `$${v.toFixed(2)}`,
+                },
+                {
+                  label: 'ROAS',
+                  values: [
+                    { name: 'You', value: mockWebsitePerformance.roas },
+                    {
+                      name: 'Average',
+                      value: (mockTopTierShopPerformance[0].metrics.roas + mockTopTierShopPerformance[1].metrics.roas) / 2,
+                    },
+                    {
+                      name: 'Top 5%',
+                      value: Math.max(mockTopTierShopPerformance[0].metrics.roas, mockTopTierShopPerformance[1].metrics.roas),
+                    },
+                  ],
+                  format: (v: number) => `${v.toFixed(1)}x`,
+                },
+              ].map((metric) => (
+                <Column key={metric.label} lg={4} md={4} sm={12}>
+                  <div style={{ marginBottom: 0 }}>
+                    <div style={{ fontSize: '12px', fontWeight: '400', color: 'var(--shopify-text-primary)', marginBottom: '8px' }}>
+                      {metric.label}
                     </div>
-                  </Column>
-                  <Column lg={3} md={2} sm={1}>
-                    <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>ROAS</div>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                      {shop.metrics.roas.toFixed(1)}x
+                    <div style={{ width: '100%', height: '180px', padding: '0 12px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={metric.values} margin={{ top: 5, right: 10, left: 3, bottom: 25 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e1e3e5" vertical={false} />
+                          <XAxis dataKey="name" stroke="#6d7175" tick={{ fontSize: 12, fill: '#6d7175' }} />
+                          <YAxis stroke="#6d7175" tick={{ fontSize: 12, fill: '#6d7175' }} width={40} />
+                          <Tooltip formatter={(value: number) => [metric.format(value), metric.label]} />
+                          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                            {['#7256F6', '#8d8d8d', '#f1c21b'].map((fill, idx) => (
+                              <Cell key={`${metric.label}-cell-${idx}`} fill={fill} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
-                  </Column>
-                  <Column lg={3} md={2} sm={1}>
-                    <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>CVR</div>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                      {shop.metrics.funnel.cvr.toFixed(1)}%
-                    </div>
-                  </Column>
-                  <Column lg={3} md={2} sm={1}>
-                    <div style={{ fontSize: '12px', color: 'var(--shopify-text-secondary)', marginBottom: '4px' }}>AOV</div>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--shopify-text-primary)' }}>
-                      ${shop.metrics.aov.toFixed(2)}
-                    </div>
-                  </Column>
-                </Grid>
-              </div>
-            ))}
-          </div>
+                  </div>
+                </Column>
+              ))}
+            </Grid>
 
-          <div style={{ marginTop: '24px' }}>
-            <h4
-              style={{
-                fontSize: '14px',
-                fontWeight: '600',
-                marginBottom: '24px',
-                color: 'var(--shopify-text-primary)',
-              }}
-            >
-              Your Performance vs Top-Tier Shops
-            </h4>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeader>Metric</TableHeader>
-                  <TableHeader>Your Performance</TableHeader>
-                  <TableHeader>Top-Tier Average</TableHeader>
-                  <TableHeader>Gap</TableHeader>
-                  <TableHeader>% of Top-Tier</TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow>
-                  <TableCell>Revenue</TableCell>
-                  <TableCell>${mockWebsitePerformance.revenue.toLocaleString()}</TableCell>
-                  <TableCell>
-                    $
-                    {Math.round(
-                      (mockTopTierShopPerformance[0].metrics.revenue + mockTopTierShopPerformance[1].metrics.revenue) / 2
-                    ).toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    $
-                    {(
-                      Math.round(
-                        (mockTopTierShopPerformance[0].metrics.revenue + mockTopTierShopPerformance[1].metrics.revenue) / 2
-                      ) - mockWebsitePerformance.revenue
-                    ).toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    {(
-                      (mockWebsitePerformance.revenue /
-                        Math.round(
-                          (mockTopTierShopPerformance[0].metrics.revenue + mockTopTierShopPerformance[1].metrics.revenue) / 2
-                        )) *
-                      100
-                    ).toFixed(0)}
-                    %
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>ROAS</TableCell>
-                  <TableCell>{mockWebsitePerformance.roas.toFixed(1)}x</TableCell>
-                  <TableCell>
-                    {((mockTopTierShopPerformance[0].metrics.roas + mockTopTierShopPerformance[1].metrics.roas) / 2).toFixed(1)}x
-                  </TableCell>
-                  <TableCell>
-                    {(
-                      (mockTopTierShopPerformance[0].metrics.roas + mockTopTierShopPerformance[1].metrics.roas) / 2 -
-                      mockWebsitePerformance.roas
-                    ).toFixed(1)}
-                    x
-                  </TableCell>
-                  <TableCell>
-                    {(
-                      (mockWebsitePerformance.roas /
-                        ((mockTopTierShopPerformance[0].metrics.roas + mockTopTierShopPerformance[1].metrics.roas) / 2)) *
-                      100
-                    ).toFixed(0)}
-                    %
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>CVR</TableCell>
-                  <TableCell>{mockWebsitePerformance.funnel.cvr.toFixed(1)}%</TableCell>
-                  <TableCell>
-                    {((mockTopTierShopPerformance[0].metrics.funnel.cvr + mockTopTierShopPerformance[1].metrics.funnel.cvr) / 2).toFixed(1)}%
-                  </TableCell>
-                  <TableCell>
-                    {(
-                      (mockTopTierShopPerformance[0].metrics.funnel.cvr + mockTopTierShopPerformance[1].metrics.funnel.cvr) / 2 -
-                      mockWebsitePerformance.funnel.cvr
-                    ).toFixed(1)}
-                    %
-                  </TableCell>
-                  <TableCell>
-                    {(
-                      (mockWebsitePerformance.funnel.cvr /
-                        ((mockTopTierShopPerformance[0].metrics.funnel.cvr + mockTopTierShopPerformance[1].metrics.funnel.cvr) / 2)) *
-                      100
-                    ).toFixed(0)}
-                    %
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>AOV</TableCell>
-                  <TableCell>${mockWebsitePerformance.aov.toFixed(2)}</TableCell>
-                  <TableCell>
-                    ${((mockTopTierShopPerformance[0].metrics.aov + mockTopTierShopPerformance[1].metrics.aov) / 2).toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    $
-                    {(
-                      (mockTopTierShopPerformance[0].metrics.aov + mockTopTierShopPerformance[1].metrics.aov) / 2 -
-                      mockWebsitePerformance.aov
-                    ).toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    {(
-                      (mockWebsitePerformance.aov /
-                        ((mockTopTierShopPerformance[0].metrics.aov + mockTopTierShopPerformance[1].metrics.aov) / 2)) *
-                      100
-                    ).toFixed(0)}
-                    %
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+            {/* Recommendations */}
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: '#f0edff', 
+              borderRadius: '8px', 
+              border: '1px solid #e0d9ff',
+              marginTop: '16px'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '12px' }}>
+                Recommendations
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--shopify-text-primary)', listStyleType: 'disc' }}>
+                <li style={{ marginBottom: '8px' }}>Your AOV is 10.5% below category average. Consider promoting higher-value items.</li>
+                <li style={{ marginBottom: '8px' }}>Your CVR is strong - 11% above average. Maintain current strategy.</li>
+                <li style={{ marginBottom: '8px' }}>Your return rate is 22% lower than average.</li>
+              </ul>
+            </div>
           </div>
         </div>
         </div>

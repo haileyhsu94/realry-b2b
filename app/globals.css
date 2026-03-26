@@ -644,6 +644,8 @@
 .settings-page-tabs-vertical .cds--css-grid {
   padding-left: 0px;
   padding-right: 0px;
+  padding-top: 8px;
+  padding-bottom: 0px;
 }
 
 .settings-sections-tablist.cds--tabs--vertical {
