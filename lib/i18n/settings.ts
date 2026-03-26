@@ -194,6 +194,10 @@ export type SettingsCopy = {
   salesProductOptimizationDescription: string;
   salesPerformanceVsPeersTitle: string;
   salesPerformanceVsPeersDescription: string;
+  recommendationsTitle: string;
+  recommendationAov: string;
+  recommendationCvr: string;
+  recommendationReturnRate: string;
   accountFullName: string;
   accountEmailAddress: string;
   displayLanguageTitle: string;
@@ -412,6 +416,10 @@ export const SETTINGS_I18N: Record<SupportedLocale, SettingsCopy> = {
     salesProductOptimizationDescription: 'Identify products that need optimization based on CTR and CVR performance',
     salesPerformanceVsPeersTitle: 'Performance vs Peers',
     salesPerformanceVsPeersDescription: 'Compare your performance against similar partners in your category',
+    recommendationsTitle: 'Recommendations',
+    recommendationAov: 'Your AOV is 10.5% below category average. Consider promoting higher-value items.',
+    recommendationCvr: 'Your CVR is strong - 11% above average. Maintain current strategy.',
+    recommendationReturnRate: 'Your return rate is 22% lower than average.',
     accountFullName: 'FULL NAME',
     accountEmailAddress: 'EMAIL ADDRESS',
     displayLanguageTitle: 'Display Language',
@@ -619,6 +627,10 @@ export const SETTINGS_I18N: Record<SupportedLocale, SettingsCopy> = {
     salesProductOptimizationDescription: 'CTR/CVR 성과를 바탕으로 개선이 필요한 상품을 식별합니다.',
     salesPerformanceVsPeersTitle: '동종 파트너 대비 성과',
     salesPerformanceVsPeersDescription: '동일 카테고리 유사 파트너와 성과를 비교합니다.',
+    recommendationsTitle: '추천 사항',
+    recommendationAov: 'AOV가 카테고리 평균보다 10.5% 낮습니다. 고가 상품 프로모션을 고려하세요.',
+    recommendationCvr: 'CVR이 강세입니다 - 평균 대비 11% 높습니다. 현재 전략을 유지하세요.',
+    recommendationReturnRate: '반품률이 평균보다 22% 낮습니다.',
     accountFullName: '이름',
     accountEmailAddress: '이메일 주소',
     displayLanguageTitle: '표시 언어',
@@ -826,6 +838,10 @@ export const SETTINGS_I18N: Record<SupportedLocale, SettingsCopy> = {
     salesProductOptimizationDescription: 'CTRとCVRに基づき、改善が必要な商品を特定します。',
     salesPerformanceVsPeersTitle: '同業比較パフォーマンス',
     salesPerformanceVsPeersDescription: '同カテゴリの類似パートナーと比較します。',
+    recommendationsTitle: 'おすすめ',
+    recommendationAov: 'AOVはカテゴリ平均より10.5%低いです。高単価商品の訴求を検討してください。',
+    recommendationCvr: 'CVRは好調です - 平均より11%高い状態です。現行戦略を維持しましょう。',
+    recommendationReturnRate: '返品率は平均より22%低いです。',
     accountFullName: '氏名',
     accountEmailAddress: 'メールアドレス',
     displayLanguageTitle: '表示言語',
@@ -1033,6 +1049,10 @@ export const SETTINGS_I18N: Record<SupportedLocale, SettingsCopy> = {
     salesProductOptimizationDescription: 'Identify products that need optimization based on CTR and CVR performance',
     salesPerformanceVsPeersTitle: 'Performance vs Peers',
     salesPerformanceVsPeersDescription: 'Compare your performance against similar partners in your category',
+    recommendationsTitle: 'Recommandations',
+    recommendationAov: 'Votre AOV est 10,5% inferieur a la moyenne de la categorie. Envisagez de promouvoir des articles de plus grande valeur.',
+    recommendationCvr: 'Votre CVR est fort - 11% au-dessus de la moyenne. Maintenez la strategie actuelle.',
+    recommendationReturnRate: 'Votre taux de retour est 22% inferieur a la moyenne.',
     accountFullName: 'NOM COMPLET',
     accountEmailAddress: 'ADRESSE E-MAIL',
     displayLanguageTitle: 'Langue d affichage',
@@ -1240,6 +1260,10 @@ export const SETTINGS_I18N: Record<SupportedLocale, SettingsCopy> = {
     salesProductOptimizationDescription: 'Identify products that need optimization based on CTR and CVR performance',
     salesPerformanceVsPeersTitle: 'Performance vs Peers',
     salesPerformanceVsPeersDescription: 'Compare your performance against similar partners in your category',
+    recommendationsTitle: 'Empfehlungen',
+    recommendationAov: 'Ihr AOV liegt 10,5% unter dem Kategoriedurchschnitt. Erwagen Sie, hoherwertige Artikel zu bewerben.',
+    recommendationCvr: 'Ihre CVR ist stark - 11% uber dem Durchschnitt. Behalten Sie die aktuelle Strategie bei.',
+    recommendationReturnRate: 'Ihre Ruckgabequote ist 22% niedriger als der Durchschnitt.',
     accountFullName: 'VOLLSTANDIGER NAME',
     accountEmailAddress: 'E-MAIL-ADRESSE',
     displayLanguageTitle: 'Anzeigesprache',
@@ -1447,6 +1471,10 @@ export const SETTINGS_I18N: Record<SupportedLocale, SettingsCopy> = {
     salesProductOptimizationDescription: 'Identify products that need optimization based on CTR and CVR performance',
     salesPerformanceVsPeersTitle: 'Performance vs Peers',
     salesPerformanceVsPeersDescription: 'Compare your performance against similar partners in your category',
+    recommendationsTitle: 'Recomendaciones',
+    recommendationAov: 'Su AOV esta 10,5% por debajo del promedio de la categoria. Considere promocionar articulos de mayor valor.',
+    recommendationCvr: 'Su CVR es fuerte - 11% por encima del promedio. Mantenga la estrategia actual.',
+    recommendationReturnRate: 'Su tasa de devolucion es 22% inferior al promedio.',
     accountFullName: 'NOMBRE COMPLETO',
     accountEmailAddress: 'CORREO ELECTRONICO',
     displayLanguageTitle: 'Idioma de visualizacion',

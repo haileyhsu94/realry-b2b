@@ -788,12 +788,12 @@ export function CreatorDashboardView({
               marginTop: '16px'
             }}>
               <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--shopify-text-primary)', marginBottom: '12px' }}>
-                Recommendations
+                {copy.recommendationsTitle}
               </div>
               <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--shopify-text-primary)', listStyleType: 'disc' }}>
-                <li style={{ marginBottom: '8px' }}>Your AOV is 10.5% below category average. Consider promoting higher-value items.</li>
-                <li style={{ marginBottom: '8px' }}>Your CVR is strong - 11% above average. Maintain current strategy.</li>
-                <li style={{ marginBottom: '8px' }}>Your return rate is 22% lower than average.</li>
+                <li style={{ marginBottom: '8px' }}>{copy.recommendationAov}</li>
+                <li style={{ marginBottom: '8px' }}>{copy.recommendationCvr}</li>
+                <li style={{ marginBottom: '8px' }}>{copy.recommendationReturnRate}</li>
               </ul>
             </div>
           </div>
