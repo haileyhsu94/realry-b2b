@@ -22,6 +22,8 @@ import {
   Tab,
   TabPanels,
   TabPanel,
+  OverflowMenu,
+  OverflowMenuItem,
 } from '@carbon/react';
 import {
   Dashboard,
@@ -61,6 +63,8 @@ import {
   Upload,
   CheckmarkFilled,
   Add,
+  Send,
+  ArrowRight,
 } from '@carbon/icons-react';
 import {
   LineChart,
@@ -807,6 +811,55 @@ const PartnerPerformanceDashboard = () => {
   const [creatorExcludeCancelled, setCreatorExcludeCancelled] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+  const [accountFullName, setAccountFullName] = useState('Jane Doe');
+  const [accountEmail, setAccountEmail] = useState('jane@company.com');
+  const [organizationName, setOrganizationName] = useState(mockOrganizationSettings.organizationName);
+  const [openTeamActionMenu, setOpenTeamActionMenu] = useState<string | null>(null);
+  const [teamActionMenuPos, setTeamActionMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const teamActionMenuRef = useRef<HTMLDivElement>(null);
+  const teamActionButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (teamActionMenuRef.current && !teamActionMenuRef.current.contains(event.target as Node)) {
+        const buttonEl = openTeamActionMenu ? teamActionButtonRefs.current[openTeamActionMenu] : null;
+        if (buttonEl && buttonEl.contains(event.target as Node)) return;
+        setOpenTeamActionMenu(null);
+      }
+    };
+    if (openTeamActionMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openTeamActionMenu]);
+
+  const handleOpenTeamActionMenu = (memberId: string, buttonEl: HTMLButtonElement) => {
+    if (openTeamActionMenu === memberId) {
+      setOpenTeamActionMenu(null);
+    } else {
+      const rect = buttonEl.getBoundingClientRect();
+      setTeamActionMenuPos({
+        top: rect.bottom + 4,
+        left: rect.right - 160,
+      });
+      setOpenTeamActionMenu(memberId);
+    }
+  };
+
+  const teamMembers = useMemo(() => {
+    return mockTeamMembers.map((member) => {
+      if (member.isCurrentUser) {
+        return {
+          ...member,
+          name: `${accountFullName} (You)`,
+          email: accountEmail,
+        };
+      }
+      return member;
+    });
+  }, [accountFullName, accountEmail]);
 
   useEffect(() => {
     const creatorSubSections = ['creator-overview', 'creator-detail-reports'];
@@ -892,6 +945,8 @@ const PartnerPerformanceDashboard = () => {
   type SettingsModalMode = 'invite' | 'contact' | null;
   const [settingsModal, setSettingsModal] = useState<SettingsModalMode>(null);
   const [inviteMemberEmail, setInviteMemberEmail] = useState('');
+  const [inviteEmailTags, setInviteEmailTags] = useState<string[]>([]);
+  const [inviteMemberRole, setInviteMemberRole] = useState<'Admin' | 'Viewer'>('Viewer');
   const [displayLanguage, setDisplayLanguage] = useState<SupportedLocale>(() => {
     if (typeof (globalThis as unknown as { window?: unknown }).window === 'undefined') return 'en';
     const stored = (globalThis as unknown as { localStorage?: { getItem(key: string): string | null } }).localStorage?.getItem('dashboard-display-language');
@@ -923,11 +978,58 @@ const PartnerPerformanceDashboard = () => {
 
   const DEFAULT_SUPPORT_INQUIRY_CATEGORY = 'Technical Issue';
 
-  const [inquiries, setInquiries] = useState<SupportInquiry[]>([]);
+  const INITIAL_SUPPORT_INQUIRIES: SupportInquiry[] = [
+    {
+      id: 'inq-001',
+      category: 'Technical Issue',
+      subject: 'API integration support needed',
+      messagePreview: 'We are having issues integrating your product feed API with our platform. Getting 403 errors on the /products endpoint...',
+      status: 'Open',
+      submittedAt: '2026-03-25T14:30:00Z',
+    },
+    {
+      id: 'inq-002',
+      category: 'Billing',
+      subject: 'Billing discrepancy on March invoice',
+      messagePreview: 'There seems to be a charge on our March invoice that does not match our subscription plan. Invoice #INV-2026-0312...',
+      status: 'Resolved',
+      submittedAt: '2026-03-23T09:00:00Z',
+    },
+    {
+      id: 'inq-003',
+      category: 'Feature Request',
+      subject: 'Request for bulk export functionality',
+      messagePreview: 'It would be great to have a bulk export feature for analytics data. Currently we have to export reports one by one...',
+      status: 'Open',
+      submittedAt: '2026-03-24T16:45:00Z',
+    },
+    {
+      id: 'inq-004',
+      category: 'Account Access',
+      subject: 'Team member access issue',
+      messagePreview: 'One of our team members cannot access the creator dashboard section. They have Admin role but getting permission denied...',
+      status: 'Resolved',
+      submittedAt: '2026-03-22T11:20:00Z',
+    },
+    {
+      id: 'inq-005',
+      category: 'Other',
+      subject: 'Partnership inquiry follow-up',
+      messagePreview: 'Following up on our previous conversation about the exclusive product line partnership. Would love to schedule a call...',
+      status: 'Open',
+      submittedAt: '2026-03-26T08:15:00Z',
+    },
+  ];
+
+  const [inquiries, setInquiries] = useState<SupportInquiry[]>(INITIAL_SUPPORT_INQUIRIES);
+  const [inquiryFilterCategory, setInquiryFilterCategory] = useState<string>('All');
   const [inquiryCategory, setInquiryCategory] = useState<string>(DEFAULT_SUPPORT_INQUIRY_CATEGORY);
   const [contactSubject, setContactSubject] = useState<string>('');
   const [contactMessage, setContactMessage] = useState<string>('');
   const [contactFormStatus, setContactFormStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [selectedInquiry, setSelectedInquiry] = useState<SupportInquiry | null>(null);
+  const [inquiryDrawerOpen, setInquiryDrawerOpen] = useState(false);
+  const [inquiryReplyText, setInquiryReplyText] = useState('');
 
 
   const selectedSupportInquiryCategoryItem =
@@ -3089,32 +3191,39 @@ const PartnerPerformanceDashboard = () => {
                         cursor: 'pointer'
                       }}
                     >
-                      <img 
-                        src="/avatar.png" 
+                      <img
+                        src="/avatar.png"
                         alt="User avatar"
                         style={{
-                          width: '40px',
-                          height: '40px',
+                          width: '32px',
+                          height: '32px',
                           borderRadius: '50%',
                           objectFit: 'cover'
                         }}
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          color: 'var(--shopify-text-primary)',
-                          lineHeight: '1.4',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
                           marginBottom: '2px'
                         }}>
-                          Partner Demo
+                          <span style={{
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: 'var(--shopify-text-primary)',
+                            lineHeight: '1.4',
+                          }}>
+                            {accountFullName}
+                          </span>
+                          <Tag size="sm" type="purple">Owner</Tag>
                         </div>
                         <div style={{
                           fontSize: '12px',
                           color: 'var(--shopify-text-secondary)',
                           lineHeight: '1.4'
                         }}>
-                          Business
+                          {organizationName}
                         </div>
                       </div>
                     </div>
@@ -4658,8 +4767,8 @@ const PartnerPerformanceDashboard = () => {
                       height: '36.5px',
                       width: '100%',
                       display: 'flex',
-                      alignItems: 'left',
-                      justifyContent: 'left',
+                      alignItems: 'flex-start',
+                      justifyContent: 'flex-start',
                       letterSpacing: '0.32px',
                       color: '#161616',
                       margin: 0,
@@ -4706,7 +4815,6 @@ const PartnerPerformanceDashboard = () => {
                       alignSelf: 'stretch',
                       minHeight: '100%',
                       backgroundColor: 'var(--cds-layer)',
-                      borderRight: '1px solid #e0e0e0',
                       padding: '16px 12px',
                       display: 'flex',
                       flexDirection: 'column',
@@ -4778,15 +4886,15 @@ const PartnerPerformanceDashboard = () => {
                         <TextInput
                           id="settings-account-full-name"
                           labelText={settingsCopy.accountFullName}
-                          value="Admin"
-                          readOnly
+                          value={accountFullName}
+                          onChange={(e) => setAccountFullName(e.target.value)}
                           size="md"
                         />
                         <TextInput
                           id="settings-account-email"
                           labelText={settingsCopy.accountEmailAddress}
-                          value="uniqlo_manager@realry.com"
-                          readOnly
+                          value={accountEmail}
+                          onChange={(e) => setAccountEmail(e.target.value)}
                           size="md"
                         />
                       </div>
@@ -4856,7 +4964,7 @@ const PartnerPerformanceDashboard = () => {
                         flex: 1,
                         minWidth: 0,
                         minHeight: 0,
-                        padding: '24px',
+                        padding: '24px 12px',
                         overflowY: 'auto',
                         backgroundColor: 'var(--cds-layer)',
                       }}
@@ -4956,7 +5064,7 @@ const PartnerPerformanceDashboard = () => {
                         flex: 1,
                         minWidth: 0,
                         minHeight: 0,
-                        padding: '24px',
+                        padding: '24px 12px',
                         overflowY: 'auto',
                         backgroundColor: 'var(--cds-layer)',
                       }}
@@ -5010,14 +5118,9 @@ const PartnerPerformanceDashboard = () => {
                           <TextInput
                             id="settings-org-name"
                             labelText={settingsCopy.organizationName}
-                            readOnly
-                            value={mockOrganizationSettings.organizationName}
+                            value={organizationName}
+                            onChange={(e) => setOrganizationName(e.target.value)}
                             size="md"
-                            helperText={
-                              <span style={{ fontStyle: 'italic' }}>
-                                {settingsCopy.orgDetailsReadonlyHint}
-                              </span>
-                            }
                           />
                           <div style={{ marginTop: '16px' }}>
                             <SettingsFilterableSelect
@@ -5066,162 +5169,137 @@ const PartnerPerformanceDashboard = () => {
                         >
                           {settingsCopy.associatedEntitiesDescription}
                         </p>
-                        <div style={{ width: '100%', overflowX: 'auto' }}>
-                        <Table size="sm">
-                          <TableHead>
-                            <TableRow>
-                              <TableHeader
-                                style={{
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  letterSpacing: '0.32px',
-                                  textTransform: 'uppercase',
-                                  color: '#6d7175',
-                                }}
-                              >
-                                {settingsCopy.shopNameFixed}
-                              </TableHeader>
-                              <TableHeader
-                                style={{
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  letterSpacing: '0.32px',
-                                  textTransform: 'uppercase',
-                                  color: '#6d7175',
-                                }}
-                              >
-                                {settingsCopy.displayNameLabel}
-                              </TableHeader>
-                              <TableHeader
-                                style={{
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  letterSpacing: '0.32px',
-                                  textTransform: 'uppercase',
-                                  color: '#6d7175',
-                                }}
-                              >
-                                {settingsCopy.logoLabel}
-                              </TableHeader>
-                              <TableHeader
-                                style={{
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  letterSpacing: '0.32px',
-                                  textTransform: 'uppercase',
-                                  color: '#6d7175',
-                                }}
-                              >
-                                {settingsCopy.backgroundLabel}
-                              </TableHeader>
-                              <TableHeader
-                                style={{
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  letterSpacing: '0.32px',
-                                  textTransform: 'uppercase',
-                                  color: '#6d7175',
-                                  width: '80px',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                {settingsCopy.actionLabel}
-                              </TableHeader>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {mockOrganizationSettings.associatedEntities.map((row) => (
-                              <TableRow key={row.id}>
-                                <TableCell>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <span
-                                      style={{
-                                        fontWeight: 600,
-                                        color: 'var(--shopify-text-primary)',
-                                        fontSize: '14px',
-                                      }}
-                                    >
-                                      {row.shopName}
-                                    </span>
-                                    <span style={{ fontSize: '12px', color: '#6d7175' }}>{row.email}</span>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <TextInput
-                                    id={`settings-entity-display-${row.id}`}
-                                    labelText=""
-                                    hideLabel
-                                    value={orgEntityDisplayNames[row.id] ?? row.displayName}
-                                    onChange={(e) =>
-                                      setOrgEntityDisplayNames((prev) => ({
-                                        ...prev,
-                                        [row.id]: (e.target as HTMLInputElement).value,
-                                      }))
-                                    }
-                                    size="sm"
-                                    style={{ minWidth: '140px', borderRadius: '0px' }}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div
-                                      style={{
-                                        width: 36,
-                                        height: 36,
-                                        borderRadius: '6px',
-                                        backgroundColor: 'var(--shopify-gray-100)',
-                                        border: '1px solid var(--shopify-border)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                      }}
-                                      aria-hidden
-                                    >
-                                      <Image size={18} style={{ color: '#9ca3af' }} />
-                                    </div>
-                                    <IconButton
-                                      kind="ghost"
-                                      size="sm"
-                                      label={settingsCopy.uploadLogoLabel}
-                                      onClick={() => {}}
-                                    >
-                                      <Upload size={16} />
-                                    </IconButton>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div
-                                      style={{
-                                        width: 56,
-                                        height: 32,
-                                        borderRadius: '6px',
-                                        backgroundColor: 'var(--shopify-gray-100)',
-                                        border: '1px solid var(--shopify-border)',
-                                      }}
-                                      aria-hidden
-                                    />
-                                    <IconButton
-                                      kind="ghost"
-                                      size="sm"
-                                      label={settingsCopy.uploadBackgroundLabel}
-                                      onClick={() => {}}
-                                    >
-                                      <Upload size={16} />
-                                    </IconButton>
-                                  </div>
-                                </TableCell>
-                                <TableCell style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                  <CheckmarkFilled
-                                    size={20}
-                                    style={{ color: 'var(--brand-primary)' }}
-                                    aria-label={settingsCopy.savedLabel}
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                        <div
+                          style={{
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            backgroundColor: '#fff',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: '12px 16px',
+                              borderBottom: '1px solid #e0e0e0',
+                            }}
+                          >
+                            <div style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: '#6d7175', marginRight: '16px' }}>
+                              {settingsCopy.shopNameFixed}
+                            </div>
+                            <div style={{ width: '160px', fontSize: '13px', fontWeight: 600, color: '#6d7175', marginRight: '16px' }}>
+                              {settingsCopy.displayNameLabel}
+                            </div>
+                            <div style={{ width: '120px', fontSize: '13px', fontWeight: 600, color: '#6d7175', marginRight: '16px' }}>
+                              {settingsCopy.logoLabel}
+                            </div>
+                            <div style={{ width: '140px', fontSize: '13px', fontWeight: 600, color: '#6d7175', marginRight: '16px' }}>
+                              {settingsCopy.backgroundLabel}
+                            </div>
+                            <div style={{ width: '60px', fontSize: '13px', fontWeight: 600, color: '#6d7175', textAlign: 'center' }}>
+                              {settingsCopy.actionLabel}
+                            </div>
+                          </div>
+                          {mockOrganizationSettings.associatedEntities.map((row, index) => (
+                            <div
+                              key={row.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '12px 16px',
+                                borderBottom: index < mockOrganizationSettings.associatedEntities.length - 1 ? '1px solid #e0e0e0' : 'none',
+                                transition: 'background-color 0.15s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = '#f5f5f5';
+                              }}
+                              onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = '#fff';
+                              }}
+                            >
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '16px' }}>
+                                <span
+                                  style={{
+                                    fontWeight: 600,
+                                    color: '#161616',
+                                    fontSize: '14px',
+                                  }}
+                                >
+                                  {row.shopName}
+                                </span>
+                                <span style={{ fontSize: '13px', color: '#6d7175' }}>{row.email}</span>
+                              </div>
+                              <div style={{ width: '160px', marginRight: '16px' }}>
+                                <TextInput
+                                  id={`settings-entity-display-${row.id}`}
+                                  labelText=""
+                                  hideLabel
+                                  value={orgEntityDisplayNames[row.id] ?? row.displayName}
+                                  onChange={(e) =>
+                                    setOrgEntityDisplayNames((prev) => ({
+                                      ...prev,
+                                      [row.id]: (e.target as HTMLInputElement).value,
+                                    }))
+                                  }
+                                  size="sm"
+                                  style={{ minWidth: '120px', borderRadius: '0px' }}
+                                />
+                              </div>
+                              <div style={{ width: '120px', display: 'flex', alignItems: 'center', gap: '8px', marginRight: '16px' }}>
+                                <div
+                                  style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: '6px',
+                                    backgroundColor: '#f5f5f5',
+                                    border: '1px solid #e0e0e0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                  aria-hidden
+                                >
+                                  <Image size={18} style={{ color: '#9ca3af' }} />
+                                </div>
+                                <IconButton
+                                  kind="ghost"
+                                  size="sm"
+                                  label={settingsCopy.uploadLogoLabel}
+                                  onClick={() => {}}
+                                >
+                                  <Upload size={16} />
+                                </IconButton>
+                              </div>
+                              <div style={{ width: '140px', display: 'flex', alignItems: 'center', gap: '8px', marginRight: '16px' }}>
+                                <div
+                                  style={{
+                                    width: 56,
+                                    height: 32,
+                                    borderRadius: '6px',
+                                    backgroundColor: '#f5f5f5',
+                                    border: '1px solid #e0e0e0',
+                                  }}
+                                  aria-hidden
+                                />
+                                <IconButton
+                                  kind="ghost"
+                                  size="sm"
+                                  label={settingsCopy.uploadBackgroundLabel}
+                                  onClick={() => {}}
+                                >
+                                  <Upload size={16} />
+                                </IconButton>
+                              </div>
+                              <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
+                                <CheckmarkFilled
+                                  size={20}
+                                  style={{ color: '#7256F6' }}
+                                  aria-label={settingsCopy.savedLabel}
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -5231,7 +5309,7 @@ const PartnerPerformanceDashboard = () => {
                         flex: 1,
                         minWidth: 0,
                         minHeight: 0,
-                        padding: '24px',
+                        padding: '24px 12px',
                         overflowY: 'auto',
                         backgroundColor: 'var(--cds-layer)',
                       }}
@@ -5287,6 +5365,8 @@ const PartnerPerformanceDashboard = () => {
                           renderIcon={Add}
                           onClick={() => {
                             setInviteMemberEmail('');
+                            setInviteEmailTags([]);
+                            setInviteMemberRole('Viewer');
                             setSettingsModal('invite');
                           }}
                           style={{
@@ -5305,110 +5385,144 @@ const PartnerPerformanceDashboard = () => {
                             border: '1px solid #e0e0e0',
                             borderRadius: '8px',
                             overflow: 'hidden',
+                            backgroundColor: '#fff',
                           }}
                         >
-                          <Table>
-                            <TableHead>
-                              <TableRow>
-                                <TableHeader
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: '12px 16px',
+                              borderBottom: '1px solid #e0e0e0',
+                            }}
+                          >
+                            <div style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: '#6d7175' }}>
+                              {settingsCopy.memberLabel}
+                            </div>
+                            <div style={{ width: '100px', fontSize: '13px', fontWeight: 600, color: '#6d7175' }}>
+                              {settingsCopy.roleLabel}
+                            </div>
+                            <div style={{ width: '100px', fontSize: '13px', fontWeight: 600, color: '#6d7175' }}>
+                              {settingsCopy.joinedLabel}
+                            </div>
+                            <div style={{ width: '60px', fontSize: '13px', fontWeight: 600, color: '#6d7175', textAlign: 'center' }}>
+                              {settingsCopy.actionLabel}
+                            </div>
+                          </div>
+                          {teamMembers.map((member, index) => (
+                            <div
+                              key={member.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '12px 16px',
+                                borderBottom: index < teamMembers.length - 1 ? '1px solid #e0e0e0' : 'none',
+                                transition: 'background-color 0.15s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = '#f5f5f5';
+                              }}
+                              onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = '#fff';
+                              }}
+                            >
+                              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div
                                   style={{
-                                    fontSize: '11px',
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: '50%',
+                                    backgroundColor: '#dbeafe',
+                                    color: '#1e40af',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '14px',
                                     fontWeight: 600,
-                                    letterSpacing: '0.5px',
-                                    textTransform: 'uppercase',
-                                    color: '#6d7175',
-                                    backgroundColor: '#fafafa',
+                                    flexShrink: 0,
+                                  }}
+                                  aria-hidden
+                                >
+                                  {member.name.replace(/\s*\(You\)\s*/i, '').trim().charAt(0).toUpperCase() || '?'}
+                                </div>
+                                <div>
+                                  <div
+                                    style={{
+                                      fontSize: '14px',
+                                      fontWeight: 600,
+                                      color: '#161616',
+                                      lineHeight: 1.3,
+                                    }}
+                                  >
+                                    {member.name}
+                                  </div>
+                                  <div style={{ fontSize: '13px', color: '#6d7175', marginTop: '2px' }}>
+                                    {member.email}
+                                  </div>
+                                </div>
+                              </div>
+                              <div style={{ width: '100px' }}>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '12px',
+                                    fontWeight: 500,
+                                    ...(member.role === 'OWNER' ? {
+                                      backgroundColor: '#f0e6ff',
+                                      color: '#7c3aed',
+                                    } : member.role === 'ADMIN' ? {
+                                      backgroundColor: '#e0f2ff',
+                                      color: '#0066cc',
+                                    } : {
+                                      backgroundColor: '#f0f0f0',
+                                      color: '#525252',
+                                    }),
                                   }}
                                 >
-                                  {settingsCopy.memberLabel}
-                                </TableHeader>
-                                <TableHeader
-                                  style={{
-                                    fontSize: '11px',
-                                    fontWeight: 600,
-                                    letterSpacing: '0.5px',
-                                    textTransform: 'uppercase',
-                                    color: '#6d7175',
-                                    backgroundColor: '#fafafa',
-                                  }}
-                                >
-                                  {settingsCopy.roleLabel}
-                                </TableHeader>
-                                <TableHeader
-                                  style={{
-                                    fontSize: '11px',
-                                    fontWeight: 600,
-                                    letterSpacing: '0.5px',
-                                    textTransform: 'uppercase',
-                                    color: '#6d7175',
-                                    backgroundColor: '#fafafa',
-                                  }}
-                                >
-                                  {settingsCopy.joinedLabel}
-                                </TableHeader>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {mockTeamMembers.map((member) => (
-                                <TableRow key={member.id}>
-                                  <TableCell>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                      <div
-                                        style={{
-                                          width: 40,
-                                          height: 40,
-                                          borderRadius: '50%',
-                                          backgroundColor: '#dbeafe',
-                                          color: '#1e40af',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          fontSize: '16px',
-                                          fontWeight: 600,
-                                          flexShrink: 0,
-                                        }}
-                                        aria-hidden
-                                      >
-                                        {member.name.replace(/\s*\(You\)\s*/i, '').trim().charAt(0).toUpperCase() || '?'}
-                                      </div>
-                                      <div>
-                                        <div
-                                          style={{
-                                            fontSize: '14px',
-                                            fontWeight: 600,
-                                            color: '#161616',
-                                            lineHeight: 1.3,
-                                          }}
-                                        >
-                                          {member.name}
-                                        </div>
-                                        <div style={{ fontSize: '13px', color: '#6d7175', marginTop: '2px' }}>
-                                          {member.email}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <span
-                                      style={{
-                                        display: 'inline-block',
-                                        padding: '4px 10px',
-                                        borderRadius: '6px',
-                                        fontSize: '12px',
-                                        fontWeight: 600,
-                                        letterSpacing: '0.02em',
-                                        backgroundColor: '#fce7f3',
-                                        color: '#be185d',
-                                      }}
-                                    >
-                                      {member.role}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell style={{ fontSize: '14px', color: '#525252' }}>{member.joined}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                                  {member.role === 'OWNER' ? 'Owner' : member.role === 'ADMIN' ? 'Admin' : 'Viewer'}
+                                </span>
+                              </div>
+                              <div style={{ width: '100px', fontSize: '14px', color: '#525252' }}>
+                                {member.joined}
+                              </div>
+                              <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
+                                {!member.isCurrentUser && (
+                                  <button
+                                    ref={(el) => { teamActionButtonRefs.current[member.id] = el; }}
+                                    type="button"
+                                    onClick={(e) => handleOpenTeamActionMenu(member.id, e.currentTarget)}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '32px',
+                                      height: '32px',
+                                      border: 'none',
+                                      background: 'none',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      color: '#6d7175',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = '#e0e0e0';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'transparent';
+                                    }}
+                                    aria-label="Actions"
+                                  >
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                      <circle cx="8" cy="3" r="1.5" />
+                                      <circle cx="8" cy="8" r="1.5" />
+                                      <circle cx="8" cy="13" r="1.5" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -5418,7 +5532,7 @@ const PartnerPerformanceDashboard = () => {
                         flex: 1,
                         minWidth: 0,
                         minHeight: 0,
-                        padding: '24px',
+                        padding: '24px 12px',
                         overflowY: 'auto',
                         backgroundColor: 'var(--cds-layer)',
                       }}
@@ -5511,89 +5625,189 @@ const PartnerPerformanceDashboard = () => {
                             {settingsCopy.noInquiriesLabel}
                           </div>
                         ) : (
-                          <div style={{ width: '100%', overflowX: 'auto' }}>
-                            <Table size="sm">
-                              <TableHead>
-                                <TableRow>
-                                  <TableHeader
+                          <div
+                            style={{
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              backgroundColor: '#fff',
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '12px 16px',
+                                borderBottom: '1px solid #e0e0e0',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                {['All', ...SUPPORT_INQUIRY_CATEGORIES.map(c => c.value)].map((category) => (
+                                  <button
+                                    key={category}
+                                    type="button"
+                                    onClick={() => setInquiryFilterCategory(category)}
                                     style={{
-                                      fontSize: '11px',
-                                      fontWeight: 600,
-                                      letterSpacing: '0.32px',
-                                      textTransform: 'uppercase',
-                                      color: '#6d7175',
-                                      backgroundColor: '#fafafa',
+                                      padding: '6px 12px',
+                                      fontSize: '13px',
+                                      fontWeight: inquiryFilterCategory === category ? 500 : 400,
+                                      color: inquiryFilterCategory === category ? '#161616' : '#6d7175',
+                                      backgroundColor: inquiryFilterCategory === category ? '#f0f0f0' : 'transparent',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (inquiryFilterCategory !== category) {
+                                        (e.currentTarget as HTMLElement).style.backgroundColor = '#f5f5f5';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (inquiryFilterCategory !== category) {
+                                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                      }
                                     }}
                                   >
-                                    Date
-                                  </TableHeader>
-                                  <TableHeader
-                                    style={{
-                                      fontSize: '11px',
-                                      fontWeight: 600,
-                                      letterSpacing: '0.32px',
-                                      textTransform: 'uppercase',
-                                      color: '#6d7175',
-                                      backgroundColor: '#fafafa',
-                                    }}
-                                  >
-                                    {settingsCopy.inquiryCategoryLabel}
-                                  </TableHeader>
-                                  <TableHeader
-                                    style={{
-                                      fontSize: '11px',
-                                      fontWeight: 600,
-                                      letterSpacing: '0.32px',
-                                      textTransform: 'uppercase',
-                                      color: '#6d7175',
-                                      backgroundColor: '#fafafa',
-                                    }}
-                                  >
-                                    {settingsCopy.subjectLabel}
-                                  </TableHeader>
-                                  <TableHeader
-                                    style={{
-                                      fontSize: '11px',
-                                      fontWeight: 600,
-                                      letterSpacing: '0.32px',
-                                      textTransform: 'uppercase',
-                                      color: '#6d7175',
-                                      backgroundColor: '#fafafa',
-                                      width: '260px',
-                                    }}
-                                  >
-                                    {settingsCopy.messageLabel}
-                                  </TableHeader>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {inquiries.map((inq) => (
-                                  <TableRow key={inq.id}>
-                                    <TableCell style={{ fontSize: '14px', color: '#525252' }}>
-                                      {formatSupportInquiryDate(inq.submittedAt)}
-                                    </TableCell>
-                                    <TableCell style={{ fontSize: '14px', color: '#161616' }}>{inq.category}</TableCell>
-                                    <TableCell style={{ fontSize: '14px', color: '#161616' }}>{inq.subject}</TableCell>
-                                    <TableCell>
-                                      <span
-                                        style={{
-                                          display: 'block',
-                                          maxWidth: '260px',
-                                          overflow: 'hidden',
-                                          textOverflow: 'ellipsis',
-                                          whiteSpace: 'nowrap',
-                                          color: '#525252',
-                                          fontSize: '14px',
-                                        }}
-                                        title={inq.messagePreview}
-                                      >
-                                        {inq.messagePreview}
-                                      </span>
-                                    </TableCell>
-                                  </TableRow>
+                                    {category === 'All' ? 'All' : category}
+                                  </button>
                                 ))}
-                              </TableBody>
-                            </Table>
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: '12px',
+                                  color: '#9ca3af',
+                                }}
+                              >
+                                {inquiries.filter((inq) => inquiryFilterCategory === 'All' || inq.category === inquiryFilterCategory).length} {inquiries.filter((inq) => inquiryFilterCategory === 'All' || inq.category === inquiryFilterCategory).length === 1 ? 'inquiry' : 'inquiries'}
+                              </div>
+                            </div>
+                            {inquiries
+                              .filter((inq) => inquiryFilterCategory === 'All' || inq.category === inquiryFilterCategory)
+                              .map((inq, index, filteredArr) => {
+                              const inqDate = new Date(inq.submittedAt);
+                              const timeStr = inqDate.toLocaleTimeString(undefined, {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                              });
+                              return (
+                                <div
+                                  key={inq.id}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '12px 16px',
+                                    borderBottom: index < filteredArr.length - 1 ? '1px solid #e0e0e0' : 'none',
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.15s ease',
+                                  }}
+                                  onClick={() => {
+                                    setSelectedInquiry(inq);
+                                    setInquiryDrawerOpen(true);
+                                    setInquiryReplyText('');
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    (e.currentTarget as HTMLElement).style.backgroundColor = '#f5f5f5';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    (e.currentTarget as HTMLElement).style.backgroundColor = '#fff';
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      width: '140px',
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        display: 'inline-block',
+                                        padding: '4px 10px',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        fontWeight: 500,
+                                        ...(inq.category === 'Technical Issue' ? {
+                                          backgroundColor: '#e0f2ff',
+                                          color: '#0066cc',
+                                        } : inq.category === 'Billing' ? {
+                                          backgroundColor: '#d4f7e6',
+                                          color: '#008060',
+                                        } : inq.category === 'Account Access' ? {
+                                          backgroundColor: '#f0e6ff',
+                                          color: '#7c3aed',
+                                        } : inq.category === 'Feature Request' ? {
+                                          backgroundColor: '#fff3e0',
+                                          color: '#e65100',
+                                        } : {
+                                          backgroundColor: '#f0f0f0',
+                                          color: '#525252',
+                                        }),
+                                      }}
+                                    >
+                                      {inq.category}
+                                    </span>
+                                  </div>
+                                  <div
+                                    style={{
+                                      flex: 1,
+                                      minWidth: 0,
+                                      display: 'flex',
+                                      alignItems: 'baseline',
+                                      gap: '8px',
+                                      overflow: 'hidden',
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        fontWeight: 600,
+                                        fontSize: '14px',
+                                        color: '#161616',
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      {inq.subject}
+                                    </span>
+                                    <span style={{ color: '#6d7175', fontSize: '14px' }}>-</span>
+                                    <span
+                                      style={{
+                                        color: '#6d7175',
+                                        fontSize: '14px',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                      title={inq.messagePreview}
+                                    >
+                                      {inq.messagePreview}
+                                    </span>
+                                  </div>
+                                  <div
+                                    style={{
+                                      flexShrink: 0,
+                                      marginLeft: '16px',
+                                      fontSize: '13px',
+                                      color: '#6d7175',
+                                    }}
+                                  >
+                                    {timeStr}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {inquiries.filter((inq) => inquiryFilterCategory === 'All' || inq.category === inquiryFilterCategory).length === 0 && (
+                              <div
+                                style={{
+                                  padding: '24px 16px',
+                                  textAlign: 'center',
+                                  color: '#6d7175',
+                                  fontSize: '14px',
+                                }}
+                              >
+                                No inquiries found for this category.
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -9513,6 +9727,8 @@ const PartnerPerformanceDashboard = () => {
         onRequestClose={() => {
           setSettingsModal(null);
           setInviteMemberEmail('');
+          setInviteEmailTags([]);
+          setInviteMemberRole('Viewer');
           resetContactSupportForm();
         }}
         modalHeading={
@@ -9534,6 +9750,8 @@ const PartnerPerformanceDashboard = () => {
           if (settingsModal === 'invite') {
             setSettingsModal(null);
             setInviteMemberEmail('');
+            setInviteEmailTags([]);
+            setInviteMemberRole('Viewer');
             return;
           }
           const didSend = handleSendInquiry();
@@ -9563,14 +9781,111 @@ const PartnerPerformanceDashboard = () => {
             >
               Enter the email of an existing user to add them to your organization.
             </p>
-            <TextInput
-              id="invite-member-email"
-              labelText={settingsCopy.memberEmailLabel}
-              type="email"
-              autoComplete="email"
-              placeholder="Enter email"
-              value={inviteMemberEmail}
-              onChange={(e) => setInviteMemberEmail(e.target.value)}
+            <div className="cds--form-item">
+              <label className="cds--label" htmlFor="invite-member-email">
+                {settingsCopy.memberEmailLabel}
+              </label>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 12px',
+                  minHeight: '40px',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  backgroundColor: 'var(--cds-field)',
+                  border: 'none',
+                  borderBottom: '1px solid var(--cds-border-subtle)',
+                  borderRadius: '0',
+                  cursor: 'text',
+                }}
+                onClick={() => {
+                  const input = document.getElementById('invite-member-email') as HTMLInputElement;
+                  input?.focus();
+                }}
+              >
+                {inviteEmailTags.map((email, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 8px',
+                      backgroundColor: 'var(--cds-layer-accent)',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      color: 'var(--cds-text-primary)',
+                    }}
+                  >
+                    {email}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInviteEmailTags((prev) => prev.filter((_, i) => i !== index));
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--cds-text-secondary)',
+                      }}
+                      aria-label={`Remove ${email}`}
+                    >
+                      <Close size={16} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  id="invite-member-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder={inviteEmailTags.length === 0 ? 'Enter email' : ''}
+                  value={inviteMemberEmail}
+                  onChange={(e) => setInviteMemberEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ',') && inviteMemberEmail.trim()) {
+                      e.preventDefault();
+                      const email = inviteMemberEmail.trim().replace(/,+$/, '');
+                      if (email && !inviteEmailTags.includes(email)) {
+                        setInviteEmailTags((prev) => [...prev, email]);
+                      }
+                      setInviteMemberEmail('');
+                    } else if (e.key === 'Backspace' && !inviteMemberEmail && inviteEmailTags.length > 0) {
+                      setInviteEmailTags((prev) => prev.slice(0, -1));
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    minWidth: '120px',
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    fontSize: '14px',
+                    color: 'var(--cds-text-primary)',
+                  }}
+                />
+              </div>
+            </div>
+            <Dropdown
+              id="invite-member-role"
+              titleText="Role"
+              label="Select role"
+              items={['Admin', 'Viewer'] as const}
+              selectedItem={inviteMemberRole}
+              itemToString={(item) => item || ''}
+              onChange={({ selectedItem }) => {
+                if (selectedItem) setInviteMemberRole(selectedItem as 'Admin' | 'Viewer');
+              }}
+              size="md"
+              style={{ marginTop: '16px' }}
             />
           </>
         ) : settingsModal === 'contact' ? (
@@ -9643,6 +9958,380 @@ const PartnerPerformanceDashboard = () => {
           </div>
         ) : null}
       </Modal>
+
+      {/* Team Action Menu Portal */}
+      {openTeamActionMenu && (
+        <div
+          ref={teamActionMenuRef}
+          style={{
+            position: 'fixed',
+            top: teamActionMenuPos.top,
+            left: teamActionMenuPos.left,
+            backgroundColor: 'var(--cds-layer)',
+            border: '1px solid var(--cds-border-subtle)',
+            borderRadius: '4px',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
+            zIndex: 9999,
+            minWidth: '160px',
+            overflow: 'hidden',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setOpenTeamActionMenu(null);
+              // Handle role change to Admin
+            }}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px 16px',
+              border: 'none',
+              background: 'none',
+              textAlign: 'left',
+              fontSize: '14px',
+              color: 'var(--cds-text-primary)',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--cds-layer-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            Change to Admin
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpenTeamActionMenu(null);
+              // Handle role change to Viewer
+            }}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px 16px',
+              border: 'none',
+              background: 'none',
+              textAlign: 'left',
+              fontSize: '14px',
+              color: 'var(--cds-text-primary)',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--cds-layer-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            Change to Viewer
+          </button>
+          <div style={{ borderTop: '1px solid var(--cds-border-subtle)', margin: '4px 0' }} />
+          <button
+            type="button"
+            onClick={() => {
+              setOpenTeamActionMenu(null);
+              // Handle remove member
+            }}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px 16px',
+              border: 'none',
+              background: 'none',
+              textAlign: 'left',
+              fontSize: '14px',
+              color: 'var(--cds-text-error)',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--cds-layer-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            Remove member
+          </button>
+        </div>
+      )}
+
+      {/* Inquiry Detail Drawer */}
+      {inquiryDrawerOpen && selectedInquiry && (
+        <>
+          {/* Backdrop */}
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              zIndex: 8000,
+              transition: 'opacity 0.2s ease',
+            }}
+            onClick={() => setInquiryDrawerOpen(false)}
+          />
+          {/* Drawer Panel */}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              right: 0,
+              width: '480px',
+              maxWidth: '100vw',
+              height: '100vh',
+              backgroundColor: '#fff',
+              boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.15)',
+              zIndex: 8001,
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'slideInRight 0.25s ease-out',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: '1px solid #e0e0e0',
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Chat size={20} style={{ color: '#7256F6' }} />
+                <span style={{ fontWeight: 600, fontSize: '16px', color: '#161616' }}>
+                  Inquiry Details
+                </span>
+              </div>
+              <IconButton
+                kind="ghost"
+                size="sm"
+                label="Close"
+                onClick={() => setInquiryDrawerOpen(false)}
+              >
+                <Close size={20} />
+              </IconButton>
+            </div>
+
+            {/* Inquiry Info */}
+            <div
+              style={{
+                padding: '20px',
+                borderBottom: '1px solid #e0e0e0',
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    ...(selectedInquiry.category === 'Technical Issue' ? {
+                      backgroundColor: '#e0f2ff',
+                      color: '#0066cc',
+                    } : selectedInquiry.category === 'Billing' ? {
+                      backgroundColor: '#d4f7e6',
+                      color: '#008060',
+                    } : selectedInquiry.category === 'Account Access' ? {
+                      backgroundColor: '#f0e6ff',
+                      color: '#7c3aed',
+                    } : selectedInquiry.category === 'Feature Request' ? {
+                      backgroundColor: '#fff3e0',
+                      color: '#e65100',
+                    } : {
+                      backgroundColor: '#f0f0f0',
+                      color: '#525252',
+                    }),
+                  }}
+                >
+                  {selectedInquiry.category}
+                </span>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    backgroundColor: selectedInquiry.status === 'Open' ? '#fff3e0' : '#d4f7e6',
+                    color: selectedInquiry.status === 'Open' ? '#e65100' : '#008060',
+                  }}
+                >
+                  {selectedInquiry.status}
+                </span>
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#161616', margin: '0 0 8px 0' }}>
+                {selectedInquiry.subject}
+              </h3>
+              <div style={{ fontSize: '13px', color: '#6d7175' }}>
+                {new Date(selectedInquiry.submittedAt).toLocaleDateString(undefined, {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })}
+              </div>
+            </div>
+
+            {/* Chat Messages Area */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+              }}
+            >
+              {/* Initial Message from Customer */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'flex-start',
+                }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    backgroundColor: '#e0e0e0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <User size={18} style={{ color: '#525252' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: 600, fontSize: '14px', color: '#161616' }}>Customer</span>
+                    <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                      {new Date(selectedInquiry.submittedAt).toLocaleTimeString(undefined, {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      backgroundColor: '#f5f5f5',
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      fontSize: '14px',
+                      color: '#161616',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {selectedInquiry.messagePreview}
+                  </div>
+                </div>
+              </div>
+
+              {/* Placeholder for future AI/agent responses */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '32px 16px',
+                  color: '#9ca3af',
+                  fontSize: '13px',
+                  textAlign: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Idea size={24} style={{ color: '#d0d0d0' }} />
+                <span>AI assistant coming soon</span>
+              </div>
+            </div>
+
+            {/* Reply Input */}
+            <div
+              style={{
+                padding: '16px 20px',
+                borderTop: '1px solid #e0e0e0',
+                flexShrink: 0,
+                backgroundColor: '#fafafa',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'flex-end',
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <textarea
+                    placeholder="Type your reply..."
+                    value={inquiryReplyText}
+                    onChange={(e) => setInquiryReplyText(e.target.value)}
+                    style={{
+                      width: '100%',
+                      minHeight: '80px',
+                      padding: '12px 14px',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      outline: 'none',
+                      transition: 'border-color 0.15s ease',
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#7256F6';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#e0e0e0';
+                    }}
+                  />
+                </div>
+                <Button
+                  kind="primary"
+                  size="md"
+                  renderIcon={Send}
+                  disabled={!inquiryReplyText.trim()}
+                  onClick={() => {
+                    // Handle send reply - placeholder for now
+                    setInquiryReplyText('');
+                  }}
+                  style={{
+                    backgroundColor: '#7256F6',
+                    flexShrink: 0,
+                  }}
+                >
+                  Send
+                </Button>
+              </div>
+            </div>
+          </div>
+          <style>{`
+            @keyframes slideInRight {
+              from {
+                transform: translateX(100%);
+                opacity: 0;
+              }
+              to {
+                transform: translateX(0);
+                opacity: 1;
+              }
+            }
+          `}</style>
+        </>
+      )}
     </div>
   );
 };
